@@ -1,90 +1,340 @@
 # judge-helm-charts
 
-Helm charts for Judge platform deployment to customer environments.
+Production-ready Helm charts for deploying the Judge platform with Istio service mesh support.
 
-## Purpose
+## Overview
 
-This repository contains Istio-ready, Vault-integrated Helm charts for deploying the Judge platform to customer environments. The charts are based on the upstream `testifysec/judge` charts with customer-specific modifications for:
+This repository contains Helm charts for deploying the complete Judge platform to Kubernetes clusters. The charts support multi-cloud deployments (AWS, GCP, Azure) with built-in Istio service mesh integration, OIDC authentication, and enterprise-grade security features.
 
-- Istio service mesh integration
-- HashiCorp Vault PKI integration for Fulcio/TSA certificate management
-- Multi-environment deployment support
-- Customer-specific networking and security configurations
+## Architecture
 
-## ⚠️ CRITICAL: Helm Dependency Management
+The Judge platform consists of the following components:
 
-**Always run `make deps` after modifying any subchart files!**
+### Core Services
+- **judge-api** - Core API service for artifact metadata and policy management
+- **judge-web** - Web UI for platform management
+- **archivista** - Attestation storage and retrieval service
+- **judge-ai-proxy** - AI/LLM proxy service for intelligent policy suggestions
 
-This repository uses Helm's [file:// dependencies](https://helm.sh/docs/helm/helm_dependency/) which are packaged as `.tgz` files. When you modify source files in subcharts (e.g., `charts/judge-api/templates/deployment.yaml`), the packaged `.tgz` files in `charts/judge/charts/` do NOT automatically update.
+### Authentication & Identity
+- **kratos** - Identity and user management (Ory Kratos)
+- **kratos-selfservice-ui-node** - Self-service UI for login/registration
+- **dex** - OpenID Connect (OIDC) provider for federated authentication
 
-### The Problem
-- You modify: `charts/judge-api/templates/deployment.yaml` (e.g., add Vault annotations)
-- ArgoCD deploys: `charts/judge/charts/judge-api-1.6.0.tgz` (stale version without your changes)
-- Result: **Your changes are not deployed!** ❌
+### PKI & Signing
+- **fulcio** - Code signing certificate authority
+- **tsa** - RFC 3161 timestamping authority
 
-### The Solution
-**Automated Guards:**
-1. **Pre-commit hook**: Auto-runs `make deps` when you commit subchart changes
-2. **CI/CD check**: GitHub Actions fails PRs with stale dependencies
-3. **Makefile targets**: Manual validation tools
-
-**Manual Workflow:**
-```bash
-# After modifying any subchart
-make deps              # Rebuild all .tgz files
-git add charts/judge/charts/*.tgz
-git commit -m "your message"
-
-# Check if dependencies are fresh
-make check-deps        # Fails if .tgz files are stale
-
-# Validate Vault annotations are present
-make validate          # Checks helm template output
-
-# Run all checks
-make test             # check-deps + validate
-```
-
-### Quick Reference
-| Command | Purpose |
-|---------|---------|
-| `make deps` | Rebuild all Helm dependencies (always run after subchart changes) |
-| `make check-deps` | Check if any .tgz files are stale |
-| `make validate` | Validate Helm templates and check for Vault annotations |
-| `make test` | Run all checks |
-| `make help` | Show all available targets |
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed workflow.
+### Infrastructure
+- **dapr** - Distributed application runtime for workflows and messaging
+- **mysql** - Database (optional, use external RDS/CloudSQL in production)
+- **minio** - S3-compatible object storage (optional, use S3/GCS in production)
+- **ollama** - Local LLM service (optional)
 
 ## Repository Structure
 
 ```
 charts/
-├── judge/                    # Umbrella chart for Judge platform
-│   ├── Chart.yaml
-│   ├── values.yaml
+├── judge/                         # Umbrella chart - deploys all components
+│   ├── Chart.yaml                # Dependencies and versions
+│   ├── values.yaml               # Default configuration
+│   ├── demo-values.yaml          # Example deployment configuration
+│   ├── secrets.yaml.example      # Template for sensitive credentials
 │   └── templates/
-│       ├── istio-gateway.yaml
-│       ├── istio-virtualservice.yaml
+│       ├── _helpers.tpl          # Helm template helpers
+│       ├── istio-gateway.yaml    # Istio Gateway configuration
+│       ├── istio-virtualservices.yaml
 │       └── ...
-├── archivista/              # Archivista subchart
-├── fulcio/                  # Fulcio subchart with Vault PKI integration
-├── rekor/                   # Rekor subchart
-├── tsa/                     # TSA subchart with Vault PKI integration
-└── spire/                   # SPIRE subchart
+├── archivista/                   # Archivista subchart
+├── judge-api/                    # Judge API subchart
+├── judge-web/                    # Judge Web UI subchart
+├── judge-ai-proxy/               # AI Proxy subchart
+├── kratos/                       # Kratos subchart
+├── kratos-selfservice-ui-node/   # Kratos UI subchart
+├── dex/                          # Dex OIDC provider subchart
+├── fulcio/                       # Fulcio subchart
+├── tsa/                          # TSA subchart
+├── dapr/                         # Dapr runtime subchart
+├── mysql/                        # MySQL subchart
+├── minio/                        # MinIO subchart
+└── ollama/                       # Ollama LLM subchart
 ```
 
-## Key Features
+## Quick Start
 
-- **Istio Integration**: Service port naming for protocol detection, Gateway and VirtualService configurations
-- **Dapr + Istio Compatibility**: Port exclusion annotations to prevent conflicts
-- **MySQL Sidecar Exclusion**: Proper configuration for MySQL CloudSQL proxy
-- **Vault PKI**: Integration with HashiCorp Vault for certificate management
-- **Multi-Environment**: Support for dev, staging, and production deployments
+### Prerequisites
 
-## Development
+- Kubernetes 1.24+
+- Helm 3.8+
+- Istio 1.18+ (for service mesh features)
+- PostgreSQL database (RDS, CloudSQL, or self-hosted)
+- S3-compatible storage (S3, GCS, MinIO)
 
-Charts in this repository are maintained separately from the upstream Judge charts to allow for customer-specific modifications while maintaining the ability to pull updates from upstream.
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/testifysec/judge-helm-charts.git
+   cd judge-helm-charts
+   ```
+
+2. **Copy and configure values**
+   ```bash
+   cd charts/judge
+   cp demo-values.yaml values.yaml
+   cp secrets.yaml.example secrets.yaml
+
+   # Edit values.yaml with your infrastructure configuration
+   vim values.yaml
+
+   # Edit secrets.yaml with sensitive credentials
+   vim secrets.yaml
+   ```
+
+3. **Build Helm dependencies**
+   ```bash
+   cd ../..  # Back to repo root
+   make deps
+   ```
+
+4. **Install the chart**
+   ```bash
+   helm install judge charts/judge \
+     --namespace judge \
+     --create-namespace \
+     --values charts/judge/values.yaml \
+     --values charts/judge/secrets.yaml
+   ```
+
+5. **Verify deployment**
+   ```bash
+   kubectl get pods -n judge
+   kubectl get virtualservices -n judge
+   ```
+
+## Configuration
+
+### Provider Backend Pattern
+
+The charts use a Provider Backend Pattern for multi-cloud support. Configure each service provider in `values.yaml`:
+
+```yaml
+global:
+  # Cloud infrastructure
+  cloud:
+    provider: aws  # aws, gcp, azure, local
+    aws:
+      accountId: "YOUR_AWS_ACCOUNT_ID"
+      region: us-east-1
+
+  # Container registry
+  registry:
+    provider: aws-ecr  # aws-ecr, gcp-artifact, azure-acr, docker-hub
+    url: YOUR_ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
+    aws:
+      region: us-east-1
+      accountId: "YOUR_AWS_ACCOUNT_ID"
+
+  # Database
+  database:
+    provider: aws-rds  # aws-rds, gcp-cloudsql, azure-database, local-postgres
+    type: postgresql
+    aws:
+      endpoint: your-rds-endpoint.region.rds.amazonaws.com
+      region: us-east-1
+
+  # Secrets management
+  secrets:
+    provider: k8s-secrets  # k8s-secrets, vault, aws-secrets, gcp-secrets
+    database:
+      passwordEncoded: "YOUR_URL_ENCODED_PASSWORD"
+
+  # Object storage
+  storage:
+    provider: aws-s3  # aws-s3, gcp-storage, azure-blob, minio
+    buckets:
+      archivista: your-archivista-bucket
+      judgeApi: your-judge-api-bucket
+    aws:
+      region: us-east-1
+
+  # Messaging (pub/sub)
+  messaging:
+    provider: aws-sns-sqs  # aws-sns-sqs, gcp-pubsub, azure-servicebus
+    aws:
+      snsTopicName: your-attestation-topic
+      sqsQueueName: your-attestation-queue
+```
+
+### Secrets Management
+
+**IMPORTANT**: Never commit `secrets.yaml` to version control.
+
+1. Copy the template: `cp secrets.yaml.example secrets.yaml`
+2. Fill in your sensitive credentials
+3. Deploy with both files: `helm install -f values.yaml -f secrets.yaml`
+
+See `secrets.yaml.example` for the complete template.
+
+### OIDC Authentication
+
+Configure identity providers (GitHub, GitLab, Google, etc.) in `values.yaml`:
+
+```yaml
+global:
+  oidc:
+    enabled: true
+    providers:
+      - id: github
+        provider: github
+        client_id: YOUR_GITHUB_OAUTH_CLIENT_ID
+        # client_secret in secrets.yaml
+```
+
+## Istio Integration
+
+The charts include native Istio support:
+
+- **Service Port Naming**: All services use protocol-specific port naming (`http-`, `grpc-`, etc.)
+- **VirtualServices**: Intelligent routing for all exposed services
+- **Gateway**: Centralized ingress with TLS termination
+- **Dapr Compatibility**: Port exclusion annotations prevent Dapr/Istio conflicts
+
+### Accessing Services
+
+After deployment with Istio:
+
+```bash
+# Get the ingress gateway external IP
+kubectl get svc -n istio-system istio-ingressgateway
+
+# Access services (replace with your domain)
+https://judge.your-domain.com       # Judge Web UI
+https://login.your-domain.com       # Kratos login
+https://archivista.your-domain.com  # Archivista API
+```
+
+## Development Workflow
+
+### Helm Dependency Management
+
+⚠️ **CRITICAL**: This repository uses file:// dependencies. Always run `make deps` after modifying subcharts.
+
+```bash
+# Modify a subchart
+vim charts/judge-api/templates/deployment.yaml
+
+# Rebuild dependencies (REQUIRED!)
+make deps
+
+# Commit both source and packaged files
+git add charts/judge-api/templates/deployment.yaml
+git add charts/judge/charts/*.tgz
+git commit -m "feat: update judge-api deployment"
+```
+
+### Makefile Targets
+
+| Command | Purpose |
+|---------|---------|
+| `make deps` | Rebuild all Helm dependencies |
+| `make check-deps` | Verify .tgz files are current |
+| `make validate` | Validate Helm templates |
+| `make test` | Run all checks |
+| `make clean` | Remove .tgz files |
+| `make help` | Show all targets |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed workflow.
+
+## Production Deployment
+
+### Recommended Configuration
+
+For production deployments:
+
+1. **External Database**: Use managed PostgreSQL (RDS, CloudSQL, Azure Database)
+   ```yaml
+   mysql:
+     enabled: false  # Disable embedded MySQL
+
+   global:
+     database:
+       provider: aws-rds
+       aws:
+         endpoint: prod-db.region.rds.amazonaws.com
+   ```
+
+2. **External Object Storage**: Use cloud storage (S3, GCS, Azure Blob)
+   ```yaml
+   minio:
+     enabled: false  # Disable embedded MinIO
+
+   global:
+     storage:
+       provider: aws-s3
+       buckets:
+         archivista: prod-archivista-bucket
+   ```
+
+3. **High Availability**: Scale replicas for critical services
+   ```yaml
+   judge-api:
+     replicaCount: 3
+
+   archivista:
+     replicaCount: 3
+   ```
+
+4. **Resource Limits**: Configure appropriate CPU/memory limits
+   ```yaml
+   judge-api:
+     resources:
+       requests:
+         memory: "1Gi"
+         cpu: "500m"
+       limits:
+         memory: "2Gi"
+         cpu: "1000m"
+   ```
+
+### GitOps with ArgoCD
+
+Example ArgoCD Application:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: judge-production
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/testifysec/judge-helm-charts
+    targetRevision: main
+    path: charts/judge
+    helm:
+      valueFiles:
+        - values-production.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: judge
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+## Documentation
+
+- [DEVELOPMENT.md](DEVELOPMENT.md) - Technical architecture and configuration details
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Development workflow and contribution guidelines
+- [Istio Integration](https://istio.io/latest/docs/ops/deployment/application-requirements/)
+- [Helm Best Practices](https://helm.sh/docs/chart_best_practices/)
+
+## Support
+
+For issues, questions, or feature requests, please contact TestifySec support or open an issue in this repository.
 
 ## License
 
