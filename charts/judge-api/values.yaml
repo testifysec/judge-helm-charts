@@ -1,0 +1,165 @@
+replicaCount: 1
+logLevel: "info"
+
+image:
+  registry: us-east4-docker.pkg.dev
+  repository: judge-395516/judge-image-registry
+  pullPolicy: IfNotPresent
+  tag: "v1.6.0"
+  pullSecrets:
+    - name: gcr-secret
+
+nameOverride: ""
+fullnameOverride: ""
+
+kratos:
+  # CRITICAL: Do NOT include http:// protocol prefix
+  # Judge-API code internally adds http:// when constructing URLs
+  # Including protocol causes double-prefixing: http://http://... → parse error
+  publicUrl: kratos-public.judge.svc.cluster.local
+  adminUrl: kratos-admin.judge.svc.cluster.local
+
+sqlStore:
+  backend: mysql
+  connectionString: root:root@tcp(judge-mysql.judge.svc.cluster.local:3306)/judgeapi?parseTime=true
+  # if createSecret is set to false, the helm template will look for an existing secret reffered to by secretName 
+  # if createSecret is set to true, a secret will be created with the connectionString defined above
+  createSecret: true
+  secretName: ""
+  secretKey: ""
+
+dapr:
+  pubsub:
+    sqsQueueNameOverride: ""
+    metadata: {}
+  statestore:
+    connectionStringOverride: ""
+    metadata: {}
+workflows:
+  enabled: false
+  signer:
+    secretName: ""
+    kmsUri: ""
+  slackIntegration:
+    channelId: ""
+    token: ""
+    createSecret: true
+    secretName: ""
+    channelIdKey: ""
+    tokenKey: ""
+
+vault:
+  enabled: false
+  role: judge-api
+  address: http://vault.vault.svc.cluster.local:8200
+  database:
+    path: database/creds/judge-api
+    host: ""  # RDS endpoint (set in values-prod.yaml)
+    name: postgres
+    sslmode: require
+  secrets:
+    github:
+      path: secret/data/judge/judge-api/github
+    gitlab:
+      path: secret/data/judge/judge-api/gitlab
+    anthropic:
+      path: secret/data/judge/judge-api/anthropic
+    slack:
+      path: secret/data/judge/judge-api/slack
+
+# SSP (System Security Plan) Generation Configuration
+ssp:
+  enabled: false
+  agentflowModel: "claude-sonnet-4-20250514"
+  daggerHost: "unix:///var/run/dagger/engine.sock"
+
+# Secret containing the Anthropic API key
+# If using an existing secret, set existingSecret to the name of the secret
+# and existingSecretKey to the key in the secret that contains the API key
+secret:
+  create: false
+  name: "anthropic-secret"
+  key: "anthropic-api-key"
+  apiKey: "" # Your Anthropic API key (required if create is true)
+  existingSecret: "" # Name of existing secret to use instead of creating one
+
+serviceAccount:
+  create: false
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: 
+  {}
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+volumes: []
+
+deployment:
+  env:
+    - name: LOG_LEVEL
+      value: "DEBUG"
+    #NOTE: Required vars for vuln workflows
+    - name: JUDGE_URL
+      value: "http://judge-api.judge-api.svc.cluster.local:8080"
+    - name: ARCHIVISTA_URL
+      value: "http://archivista.archivista.svc.cluster.local:8082"
+    - name: SLACK_TOKEN
+      value: ""
+    - name: SLACK_CHANNEL_ID
+      value: ""
+  volumeMounts: []
+  additionalContainers: []
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: judge-api.testifysec.localhost
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - archivista.localhost
+
+resources:
+  {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

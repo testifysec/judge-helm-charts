@@ -1,0 +1,64 @@
+namespace:
+  create: false
+  name: tsa-system
+nameOverride: "tsa"
+
+server:
+  replicaCount: 1
+  name: server
+  svcPort: 80
+  grpcSvcPort: 5554
+  secret: tsa-server-secret
+  logging:
+    production: false
+  env:
+    GOOGLE_APPLICATION_CREDENTIALS: /etc/tsa-config/cloud_credentials
+  image:
+    registry: us-east4-docker.pkg.dev 
+    repository: judge-395516/judge-image-registry
+    pullPolicy: IfNotPresent
+    tag: "v1.2.0"
+    version: "v1.2.0"
+    pullSecrets:
+      - name: gcr-secret
+  args:
+    port: 5555
+    # Valid values: tink, kms, file
+    signer: tink
+    # PEM encoded cert chain here. Order from active intermedate first to root last
+    cert_chain: chain
+    tink_enc_keyset: keyset
+    tink_key_resource: resource
+    tink_hcvault_token: token
+    kms_key_resource: resource
+  serviceAccount:
+    create: true
+    name: ""
+    annotations: {}
+    mountToken: true
+  service:
+    type: ClusterIP
+    ports:
+      - name: http
+        port: 80
+        protocol: TCP
+        targetPort: 5555
+      - name: metrics
+        port: 2112
+        protocol: TCP
+        targetPort: 2112
+  ingress:
+    http:
+      enabled: true
+      className: "nginx"
+      annotations: {}
+      hosts:
+      - path: /
+        host: "timestamp.localhost"
+      tls: []
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 65533
+
+# Force namespace of namespaced resources
+forceNamespace: ""

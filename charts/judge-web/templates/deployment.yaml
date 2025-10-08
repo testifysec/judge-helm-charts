@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "judge-web.fullname" . }}
+  labels:
+    {{- include "judge-web.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "judge-web.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "judge-web.labels" . | nindent 8 }}
+	{{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "judge-web.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "judge-web.image.repository" . }}:{{ tpl (.Values.image.tag | default (include "judge.image.defaultTag" .) | toString) . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.nginxReverseProxy.enabled }}
+          env:
+            - name: ENABLE_REVERSE_PROXIES
+              value: "true"
+            {{- if .Values.nginxReverseProxy.gatewayUrl }}
+            - name: GATEWAY_URL
+              value: {{ .Values.nginxReverseProxy.gatewayUrl }}
+            {{- end }}
+            {{- if .Values.nginxReverseProxy.archivistaUrl }}
+            - name: ARCHIVISTA_URL
+              value: {{ .Values.nginxReverseProxy.archivistaUrl }}
+            {{- end }}
+            {{- if .Values.nginxReverseProxy.judgeApiUrl }}
+            - name: JUDGE_API_URL
+              value: {{ .Values.nginxReverseProxy.judgeApiUrl }}
+            {{- end }}
+            {{- if .Values.nginxReverseProxy.kratosPublicUrl }}
+            - name: KRATOS_PUBLIC_URL 
+              value: {{ .Values.nginxReverseProxy.kratosPublicUrl }}
+            {{- end }}
+            {{- if .Values.nginxReverseProxy.kratosSelfServiceUiUrl }}
+            - name: KRATOS_SELFSERVICE_UI_URL
+              value: {{ .Values.nginxReverseProxy.kratosSelfServiceUiUrl }}
+            {{- end }}
+            - name: CLIENT_MAX_BODY_SIZE
+              value: {{ .Values.nginxReverseProxy.clientMaxBodySize | default "100M" | quote }}
+          {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+
+      imagePullSecrets:
+        - name: regcred
+
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: mysql
+type: application
+description: A Helm chart for MySQL deployment
+version: 1.6.0

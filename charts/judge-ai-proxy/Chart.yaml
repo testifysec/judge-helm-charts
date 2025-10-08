@@ -1,0 +1,14 @@
+apiVersion: v2
+name: judge-ai-proxy
+description: A Helm chart for the Judge AI proxy service
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Maintainer
+    email: maintainer@example.com
+keywords:
+  - judge
+  - claude
+  - ai
+  - proxy

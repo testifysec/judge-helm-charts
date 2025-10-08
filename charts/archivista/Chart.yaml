@@ -1,0 +1,22 @@
+apiVersion: v2
+name: archivista
+description: A Helm chart for Archivista
+
+type: application
+version: 1.6.0
+
+keywords:
+  - attestation
+
+home: https://www.testifysec.com/
+
+sources:
+  - https://github.com/testifysec/charts
+  - https://github.com/in-toto/archivista
+## DO NOT upstream
+  - https://github.com/testifysec/judge/subtrees/charts
+
+maintainers:
+  - name: TestifySec
+
+appVersion: "0.1.1"

@@ -1,0 +1,77 @@
+# Default values for judge-ai-proxy.
+
+replicaCount: 1
+
+image:
+  repository: judge-ai-proxy
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  limits:
+    cpu: 200m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
+
+# Optional nodeSelector to control where the pod is scheduled
+nodeSelector: {}
+
+# Optional tolerations
+tolerations: []
+
+# Optional affinity settings
+affinity: {}
+
+# Server configuration
+config:
+  # Claude API configuration
+  apiVersion: "2023-06-01"
+  apiEndpoint: "https://api.anthropic.com/v1/messages"
+  systemPrompt: "You are Claude, an AI assistant by Anthropic. When evaluating policies against attestation data, provide direct responses without conversational preambles. For policy evaluation, always format your response with a clear 'Status: PASS' or 'Status: FAIL' line followed by a 'Reason:' section that explains the evaluation result concisely with supporting evidence from the attestation data."
+  defaultModel: "claude-3-5-sonnet-20240620"
+  requestTimeoutSecs: 60
+
+# Secret containing the Anthropic API key
+# If using an existing secret, set existingSecret to the name of the secret
+# and existingSecretKey to the key in the secret that contains the API key
+secret:
+  create: true
+  name: judge-ai-proxy
+  key: anthropic-api-key
+  apiKey: "" # Your Anthropic API key (required if create is true)
+
+# Probe configuration for liveness and readiness
+probes:
+  liveness:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: judge-ai-proxy.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []

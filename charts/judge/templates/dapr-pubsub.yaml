@@ -1,0 +1,27 @@
+{{- if .Values.dapr.enabled -}}
+{{- if .Values.dapr.pubsub.enabled -}}
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ .Release.Name }}-judge-api-archivista-subscription
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: pubsub.aws.snssqs
+  version: v1
+  metadata:
+  - name: accessKey
+    value: ""
+  - name: secretKey
+    value: ""
+  - name: region
+    value: {{ tpl (.Values.dapr.pubsub.region | toString) . }}
+  - name: endpoint
+    value: ""
+  - name: sessionToken
+    value: ""
+  - name: sqsQueueName
+    value: {{ tpl (.Values.dapr.pubsub.sqsQueueName | toString) . }}
+  - name: snsTopicName
+    value: {{ tpl (.Values.dapr.pubsub.snsTopicName | toString) . }}
+{{- end }}
+{{- end }}

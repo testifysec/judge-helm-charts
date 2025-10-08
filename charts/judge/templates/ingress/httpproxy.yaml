@@ -1,0 +1,63 @@
+{{- if .Values.ingress.httpproxy.enabled -}}
+apiVersion: projectcontour.io/v1
+kind: HTTPProxy
+metadata:
+  name: {{ template "judge.gateway" . }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+  {{- with .Values.ingress.httpproxy.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  virtualhost:
+    fqdn: {{ .Values.ingress.httpproxy.fqdn }}
+    tls:
+      secretName: {{ .Values.ingress.httpproxy.tls.secretName }}
+  routes:
+    - conditions:
+        - prefix: /
+      services:
+        - name: judge-web
+          port: 8077
+    - conditions:
+        - prefix: /archivista
+      services:
+        - name: judge-archivista
+          port: 8082
+      pathRewritePolicy:
+        replacePrefix:
+          - replacement: /
+    - conditions:
+        - prefix: /kratos
+      services:
+        - name: kratos-public
+          port: 80
+      pathRewritePolicy:
+        replacePrefix:
+          - replacement: /
+    - conditions:
+        - prefix: /login
+      services:
+        - name: kratos-selfservice-ui-node
+          port: 80
+      pathRewritePolicy:
+        replacePrefix:
+          - replacement: /
+    - conditions:
+        - prefix: /gateway
+      services:
+        - name: judge-gateway
+          port: 4000
+      pathRewritePolicy:
+        replacePrefix:
+          - replacement: /
+    - conditions:
+        - prefix: /judge-api
+      services:
+        - name: judge-judge-api
+          port: 8080
+      pathRewritePolicy:
+        replacePrefix:
+          - replacement: /
+{{- end -}}

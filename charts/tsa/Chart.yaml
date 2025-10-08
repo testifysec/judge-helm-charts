@@ -1,0 +1,25 @@
+apiVersion: v2
+name: tsa
+description: |
+  Timestamp Authority issuing RFC3161 signed timestamps.
+
+type: application
+
+version: 1.6.0
+appVersion: 1.2.1
+
+keywords:
+  - security
+  - timestamp
+
+home: https://sigstore.dev/
+
+maintainers:
+  - name: The Sigstore Authors
+
+annotations:
+  artifacthub.io/license: Apache-2.0
+  artifacthub.io/images: |
+    - name: tsa
+      # crane digest ghcr.io/sigstore/timestamp-server:v1.2.1
+      image: ghcr.io/sigstore/timestamp-server@sha256:f4dcc96092a1b1fb5ca36d776f92a7cc62cdb1a8866c5120340f919141a3cd58

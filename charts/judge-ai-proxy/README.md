@@ -1,0 +1,151 @@
+# Judge AI Proxy Helm Chart
+
+This Helm chart deploys the Judge AI proxy, which allows Judge platform to use Anthropic's Claude API and other AI models through a standardized interface.
+
+## Prerequisites
+
+- Kubernetes 1.19+
+- Helm 3.2.0+
+
+## Getting Started
+
+### Add the Helm Repository
+
+```bash
+# If hosting in a Helm repository
+helm repo add my-repo https://charts.example.com/
+helm repo update
+```
+
+### Installing the Chart
+
+To install the chart with the release name `my-release`:
+
+```bash
+# Using a stored Anthropic API key
+helm install my-release my-repo/judge-ai-proxy \
+  --set secret.apiKey=sk-ant-your-api-key-here
+
+# Customizing the configuration
+helm install my-release my-repo/judge-ai-proxy \
+  --set secret.apiKey=sk-ant-your-api-key-here \
+  --set config.systemPrompt="You are Claude, a helpful AI assistant." \
+  --set config.defaultModel=claude-3-opus-20240229
+
+# Using an existing secret
+helm install my-release my-repo/judge-ai-proxy \
+  --set secret.existingSecret=my-secrets \
+  --set secret.existingSecretKey=anthropic-api-key
+```
+
+The command deploys the Judge AI proxy on the Kubernetes cluster in the default configuration.
+
+### Uninstalling the Chart
+
+To uninstall/delete the `my-release` deployment:
+
+```bash
+helm delete my-release
+```
+
+## Configuration
+
+The following table lists the configurable parameters of the Judge AI proxy chart and their default values.
+
+| Parameter                               | Description                                                                   | Default                       |
+|-----------------------------------------|-------------------------------------------------------------------------------|-------------------------------|
+| `replicaCount`                          | Number of replicas                                                            | `1`                           |
+| `image.repository`                      | Image repository                                                              | `judge-ai-proxy`              |
+| `image.tag`                             | Image tag                                                                     | `latest`                      |
+| `image.pullPolicy`                      | Image pull policy                                                             | `IfNotPresent`                |
+| `service.type`                          | Kubernetes Service type                                                       | `ClusterIP`                   |
+| `service.port`                          | Service port                                                                  | `8080`                        |
+| `resources.limits.cpu`                  | CPU resource limits                                                           | `200m`                        |
+| `resources.limits.memory`               | Memory resource limits                                                        | `128Mi`                       |
+| `resources.requests.cpu`                | CPU resource requests                                                         | `100m`                        |
+| `resources.requests.memory`             | Memory resource requests                                                      | `64Mi`                        |
+| `config.apiVersion`                      | Claude API version                                                           | `"2023-06-01"`                |
+| `config.apiEndpoint`                    | Claude API endpoint                                                           | `"https://api.anthropic.com/v1/messages"` |
+| `config.systemPrompt`                   | System prompt for Claude                                                      | `"You are Claude, an AI assistant by Anthropic."` |
+| `config.defaultModel`                   | Default Claude model                                                          | `"claude-3-5-sonnet-20240620"` |
+| `config.requestTimeoutSecs`             | Request timeout in seconds                                                    | `60`                          |
+| `secret.apiKey`                         | Anthropic API key (only if not using existingSecret)                          | `""`                          |
+| `secret.create`                         | Whether to create a Secret                                                    | `true`                        |
+| `secret.name`                           | Name of the Secret                                                            | `judge-ai-proxy`              |
+| `secret.key`                            | Key in the Secret for the API key                                             | `anthropic-api-key`           |
+| `secret.existingSecret`                 | Name of an existing Secret                                                    | `""`                          |
+| `secret.existingSecretKey`              | Key in the existing Secret                                                    | `""`                          |
+| `probes.liveness.enabled`               | Enable liveness probe                                                         | `true`                        |
+| `probes.liveness.initialDelaySeconds`   | Initial delay for liveness probe                                              | `10`                          |
+| `probes.liveness.periodSeconds`         | Period for liveness probe                                                     | `10`                          |
+| `probes.liveness.timeoutSeconds`        | Timeout for liveness probe                                                    | `5`                           |
+| `probes.liveness.failureThreshold`      | Failure threshold for liveness probe                                          | `3`                           |
+| `probes.readiness.enabled`              | Enable readiness probe                                                        | `true`                        |
+| `probes.readiness.initialDelaySeconds`  | Initial delay for readiness probe                                             | `5`                           |
+| `probes.readiness.periodSeconds`        | Period for readiness probe                                                    | `10`                          |
+| `probes.readiness.timeoutSeconds`       | Timeout for readiness probe                                                   | `5`                           |
+| `probes.readiness.failureThreshold`     | Failure threshold for readiness probe                                         | `3`                           |
+| `ingress.enabled`                       | Enable ingress                                                                | `false`                       |
+| `ingress.className`                     | Ingress class name                                                            | `""`                          |
+| `ingress.annotations`                   | Ingress annotations                                                           | `{}`                          |
+| `ingress.hosts`                         | Ingress hosts                                                                 | `judge-ai-proxy.local`        |
+| `ingress.tls`                           | Ingress TLS configuration                                                     | `[]`                          |
+
+## Example: Configuration with Values File
+
+Create a `values.yaml` file:
+
+```yaml
+replicaCount: 2
+
+image:
+  repository: myrepo/judge-ai-proxy
+  tag: 1.0.0
+
+service:
+  type: LoadBalancer
+  port: 8080
+
+# Configuration for the proxy
+config:
+  systemPrompt: "You are Claude, a helpful AI assistant with expert knowledge."
+  defaultModel: "claude-3-opus-20240229"
+  requestTimeoutSecs: 120
+
+# API key handling
+secret:
+  apiKey: "sk-ant-your-api-key-here"  # For demo only - use secrets in production
+  # Or use existing secret:
+  # existingSecret: "api-keys"
+  # existingSecretKey: "anthropic-api-key"
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 200m
+    memory: 128Mi
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: ai-proxy.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: judge-ai-proxy-tls
+      hosts:
+        - ai-proxy.example.com
+```
+
+Then install the chart:
+
+```bash
+helm install my-release my-repo/judge-ai-proxy -f values.yaml
+```

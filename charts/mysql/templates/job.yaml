@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-mysql
+spec:
+  template:
+    spec:
+      containers:
+      - name: init-mysql
+        image: {{ include "judge.image.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          # Wait for MySQL server to become responsive
+          until mysqladmin -h {{ .Release.Name }}-mysql -uroot -p{{ .Values.mysqlRootPassword }} ping; do
+            echo "Waiting for MySQL server to become responsive..."
+            sleep 2
+          done
+          echo "MySQL connection accepted!"
+          for script in /initdb/*.sql; do
+            echo "Executing script: $script"
+            mysql -h {{ .Release.Name }}-mysql -u root -p{{ .Values.mysqlRootPassword }} < $script
+          done
+        volumeMounts:
+        - name: init-scripts
+          mountPath: /initdb
+      restartPolicy: Never
+      {{- with default .Values.imagePullSecrets .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: {{ .Release.Name }}-mysql

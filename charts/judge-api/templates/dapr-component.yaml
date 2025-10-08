@@ -1,0 +1,52 @@
+{{- if .Values.workflows.enabled -}}
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ include "judge-api.fullname" . }}-state
+spec:
+  {{- if eq .Values.sqlStore.backend "psql" }}
+  type: state.postgresql
+  version: v2
+  {{- else }}
+  type: state.mysql
+  version: v1
+  {{- end }}
+  metadata:
+    # Connection string
+    {{- if .Values.dapr.statestore.connectionStringOverride }}
+    - name: connectionString
+      value: {{ .Values.dapr.statestore.connectionStringOverride }}
+    {{- else }}
+    - name: connectionString
+      secretKeyRef:
+       name: {{ include "judge-api.connectionStringSecret.name" . }}
+       key: {{ include "judge-api.connectionStringSecret.key" . }}
+    {{- end }}
+    - name: actorStateStore
+      value: "true"
+    {{- range .Values.dapr.statestore.metadata }}
+    - name: {{ .name }}
+      value: {{ .value | quote }}
+    {{- end }}
+---
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: {{ include "judge-api.fullname" . }}-archivista-subscription
+spec:
+  type: pubsub.aws.snssqs
+  version: v1
+  metadata:
+  - name: region
+    value: us-east-1
+  - name: disableEntityManagement
+    value: "true"
+  {{- if .Values.dapr.pubsub.sqsQueueNameOverride }}
+  - name: consumerID
+    value: {{ .Values.dapr.pubsub.sqsQueueNameOverride }}
+  {{- end }}
+  {{- range .Values.dapr.pubsub.metadata }}
+  - name: {{ .name }}
+    value: {{ .value | quote }}
+  {{- end }}
+{{- end -}}

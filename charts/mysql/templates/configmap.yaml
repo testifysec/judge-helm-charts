@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-mysql
+data:
+  01-initdb.sql: |
+    CREATE DATABASE IF NOT EXISTS archivista;
+    CREATE DATABASE IF NOT EXISTS kratos;
+    CREATE DATABASE IF NOT EXISTS judgeapi;

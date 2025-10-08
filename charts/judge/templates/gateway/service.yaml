@@ -1,0 +1,18 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "judge.gateway.fullname" . }}
+  labels:
+    {{- include "judge.labels" . | nindent 4}}
+spec:
+  selector:
+    {{- include "judge.selectorLabels" . | nindent 4 }}
+    component: gateway
+  ports:
+    - name: http
+      port: 4000
+      targetPort: 4000
+      protocol: TCP
+  type: ClusterIP
+{{- end }}

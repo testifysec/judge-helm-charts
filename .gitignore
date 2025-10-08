@@ -1,0 +1,18 @@
+# Secrets
+.secrets/
+*-secrets.yaml
+secrets.yaml
+
+# Development tools
+.claude/
+.mcp.json
+
+# Local configs
+*.local.*
+
+# Backup files
+*.bak
+
+# Helm
+*.tgz
+charts/*/charts/

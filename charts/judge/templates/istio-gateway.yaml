@@ -1,0 +1,32 @@
+{{- if .Values.istio.enabled }}
+{{- include "judge.validateDomain" . }}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ include "judge.fullname" . }}-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- toYaml .Values.istio.ingressGatewaySelector | nindent 4 }}
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*.{{ .Values.istio.domain }}"
+      # HTTP to HTTPS redirect
+      tls:
+        httpsRedirect: true
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: {{ .Values.istio.tlsSecretName | default "wildcard-tls" }}
+      hosts:
+        - "*.{{ .Values.istio.domain }}"
+{{- end }}

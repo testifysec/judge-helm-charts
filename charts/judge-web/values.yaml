@@ -1,0 +1,166 @@
+# Default values for judge-web.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  registry: us-east4-docker.pkg.dev
+  repository: judge-395516/judge-image-registry
+  tag: "v1.6.0"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# configures the nginx instance within the pod to redirect to the required services
+nginxReverseProxy:
+  enabled: false
+  archivistaUrl: http://judge-archivista.judge.svc.cluster.local:8082
+  gatewayUrl: http://judge-gateway.judge.svc.cluster.local:4000
+  judgeApiUrl: http://judge-api.judge.svc.cluster.local:8080
+  kratosPublicUrl: http://kratos-public.judge.svc.cluster.local
+  kratosSelfServiceUiUrl: http://kratos-selfservice-ui-node.judge.svc.cluster.local
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Automatically mount a ServiceAccount's API credentials?
+  automount: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8077
+  
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: tls-ca-issuer
+    kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: "judge.testifysec.localhost"
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: judge-web
+              port:
+                number: 8077
+  tls:
+    - hosts:
+        - judge.testifysec.localhost
+      secretName: judge-tls-secret
+
+# configures redirects to external services via ingress rules
+redirectIngress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: tls-ca-issuer
+    kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: "judge.testifysec.localhost"
+      paths:
+        - path: /archivista(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: judge-archivista
+              port:
+                number: 8082
+        - path: /kratos(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: kratos-public
+              port:
+                number: 80
+        - path: /login(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: kratos-selfservice-ui-node
+              port:
+                number: 80
+        - path: /judge-api(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: judge-api
+              port:
+                number: 8080
+        - path: /gateway(/|$)(.*)
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: judge-gateway
+              port:
+                number: 4000
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -1,0 +1,383 @@
+# Global configuration - SINGLE SOURCE OF TRUTH
+global:
+  # Domain for all external service URLs (VirtualServices, OIDC redirects, etc.)
+  # WARNING: Changing this requires updating istio.domain AND verifying all 22 hardcoded URLs below match
+  # See DOMAIN.md for complete documentation and update checklist
+  domain: testifysec-demo.xyz
+
+  # Container registry
+  registry:
+    provider: gcp-artifact
+    url: us-east4-docker.pkg.dev
+    repository: judge-395516/judge-image-registry
+
+  imagePullSecrets: []  # ECR auth via node IAM role, not K8s secret
+  storageClass: ""
+  ## Compatibility adaptations for Kubernetes platforms
+  ##
+
+# Istio service mesh configuration
+istio:
+  enabled: true
+  # MUST match global.domain - validation will fail if they differ
+  domain: testifysec-demo.xyz
+  tlsSecretName: wildcard-tls
+  # Selector for Istio ingress gateway (must match the label on the ingress gateway pod)
+  ingressGatewaySelector:
+    istio: ingress
+nameOverride: "judge"
+gateway:
+  enabled: true
+  replicas: 1
+  nameOverride: "judge-gateway"  # ECR repo name
+  image:
+    tag: a8d96cf
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+    requests:
+      cpu: 100m
+      memory: 512Mi
+  ingress:
+    enabled: false  # Disabled - using Istio VirtualServices
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: tls-ca-issuer
+      kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: gateway.testifysec-demo.xyz
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: gateway-tls-secret
+        hosts:
+          - gateway.testifysec-demo.xyz
+  archivista:
+    url: "http://judge-archivista.judge.svc.cluster.local:8082"
+  judgeapi:
+    url: "http://judge-api.judge.svc.cluster.local:8080"
+  login:
+    url: "https://login.testifysec-demo.xyz/login"
+kratos:
+  nameOverride: "judge-kratos"  # ECR repo name
+  image:
+    tag: v1.0.0-token-update
+  enabled: true
+  ingress:
+    public:
+      enabled: false  # Disabled - using Istio VirtualServices
+    admin:
+      enabled: false  # Disabled - using Istio VirtualServices
+  courier:
+    enabled: false
+  kratos:
+    config:
+      selfservice:
+        allowed_return_urls:
+          - https://login.testifysec-demo.xyz
+          - https://kratos.testifysec-demo.xyz
+          - https://judge.testifysec-demo.xyz
+          - https://localhost
+          - https://judge.testifysec-demo.xyz:8077
+        methods:
+          oidc:
+            config:
+              providers:
+                - id: github
+                  provider: github
+                  client_id: your-github-client-id
+                  client_secret: your-github-client-secret
+                  issuer_url: https://github.com
+                  mapper_url: file:///etc/config/kratos/github.jsonnet
+                  scope:
+                    - user
+                    - repo
+                    - read:org
+                    # -and/or
+                - id: gitlab
+                  provider: gitlab
+                  client_id: your-gitlab-client-id
+                  client_secret: your-gitlab-client-secret
+                  issuer_url: https://gitlab.com
+                  mapper_url: file:///etc/config/kratos/gitlab.jsonnet
+                  scope:
+                    - openid
+                    - profile
+                    - email
+                    - read_user
+                    - read_api
+                    - read_repository
+archivista:
+  nameOverride: "judge-archivista"  # ECR repo name
+  image:
+    tag: a8d96cf
+  enabled: true
+  ingress:
+    enabled: false  # Disabled - using Istio VirtualServices
+  workflows:
+    endpoint: http://localstack.localstack.svc.cluster.local:4566
+kratos-selfservice-ui-node:
+  nameOverride: "judge-kratos-self-service"  # ECR repo name
+  image:
+    tag: v1.6.0
+  enabled: true
+  ingress:
+    enabled: false  # Disabled - using Istio VirtualServices
+judge-api:
+  nameOverride: "judge-api"  # ECR repo name
+  image:
+    tag: a8d96cf
+  enabled: true
+  ingress:
+    enabled: false  # Disabled - using Istio VirtualServices
+  deployment:
+    env:
+      - name: ARCHIVISTA_PUBSUB_TOPIC
+        value: ""
+      - name: ARCHIVISTA_PUBSUB_NAME
+        value: "judge-judge-api-archivista-subscription"
+      - name: BLOB_STORE_USE_TLS
+        value: "true"
+      - name: BLOB_STORE_BUCKET_NAME
+        value: "{{JUDGE_BUCKET_NAME}}"
+      - name: BLOB_STORE_ENDPOINT
+        value: s3.amazonaws.com
+      - name: BLOB_STORE_CREDENTIAL_TYPE
+        value: IAM
+      - name: "__TESTIFY_SKIP_LICENSE_CHECK__"
+        value: "true"
+      - name: JUDGE_URL
+        value: '{{ include "judge.service.judgeApiUrl" . }}'
+      - name: ARCHIVISTA_URL
+        value: '{{ include "judge.service.archivistaUrl" . }}'
+      - name: GATEWAY_URL
+        value: '{{ include "judge.service.gatewayUrl" . }}'
+      - name: AI_SERVER_URL
+        value: '{{ include "judge.service.aiProxyUrl" . }}'
+judge-web:
+  nameOverride: "judge-web"  # ECR repo name
+  image:
+    tag: a8d96cf
+  enabled: true
+  ingress:
+    enabled: false  # Disabled - using Istio VirtualServices
+  nginxReverseProxy:
+    enabled: true
+    clientMaxBodySize: "100M"
+  redirectIngress:
+    enabled: false
+dapr:
+  enabled: true
+  dapr_operator:
+    image:
+      name: judge-dapr-operator
+  dapr_placement:
+    image:
+      name: judge-dapr-placement
+  dapr_sentry:
+    image:
+      name: judge-dapr-sentry
+  dapr_scheduler:
+    cluster:
+      inMemoryStorage: true
+    image:
+      name: judge-dapr-scheduler
+  dapr_sidecar_injector:
+    image:
+      name: judge-dapr-daprd
+    injectorImage:
+      name: judge-dapr-sidecar-injector
+dex:
+  nameOverride: "judge-dex"  # ECR repo name
+  enabled: true
+  image:
+    tag: v2.43.1
+  ingress:
+    enabled: false  # Disabled - using Istio VirtualServices
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: tls-ca-issuer
+      kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/rewrite-target: /
+    hosts:
+      - host: dex.testifysec-demo.xyz
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: dex-tls-secret
+        hosts:
+          - dex.testifysec-demo.xyz
+  config:
+    issuer: https://dex.testifysec-demo.xyz
+    storage:
+      type: memory
+    logger:
+      level: debug
+      format: json
+    oauth2:
+      responseTypes: ["code"]
+      skipApprovalScreen: true
+      alwaysShowLoginScreen: true
+    staticClients:
+      - id: testifysec
+        public: true
+        name: "testifysec"
+    connectors:
+      - type: gitlab
+        id: gitlab-fulcio-test
+        name: Gitlab
+        config:
+          clientID: your-gitlab-client-id
+          clientSecret: your-gitlab-client-secret
+          redirectURI: https://dex.testifysec-demo.xyz/callback
+fulcio:
+  nameOverride: "judge-fulcio"  # ECR repo name
+  enabled: true
+  image:
+    tag: v1.4.5
+  server:
+    args:
+      disable_ct_log: true
+    ingress:
+      http:
+        enabled: false  # Disabled - using Istio VirtualServices
+        className: "nginx"
+        annotations:
+          cert-manager.io/cluster-issuer: tls-ca-issuer
+          kubernetes.io/ssl-redirect: "true"
+          nginx.ingress.kubernetes.io/rewrite-target: /
+        hosts:
+          - path: /
+            host: "fulcio.testifysec-demo.xyz"
+      tls:
+        - secretName: fulcio-tls-secret
+          hosts:
+            - fulcio.testifysec-demo.xyz
+      grpc:
+        enabled: false  # Disabled - using Istio VirtualServices
+        className: "nginx"
+        annotations:
+          cert-manager.io/cluster-issuer: tls-ca-issuer
+          kubernetes.io/ssl-redirect: "true"
+          nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
+        hosts:
+          - host: fulcio.testifysec-demo.xyz
+            path: /dev.sigstore.fulcio.v2.CA
+        tls:
+          - secretName: fulcio-grpc-ingress-tls
+            hosts:
+              - fulcio.testifysec-demo.xyz
+    volumes:
+      - name: tls-ca
+        secret:
+          secretName: fulcio-tls-secret
+          items:
+            - key: ca.crt
+              path: testifysec-ca.pem
+    volumeMounts:
+      - name: tls-ca
+        mountPath: /etc/ssl/certs/testifysec-ca.pem
+        subPath: testifysec-ca.pem
+  config:
+    contents:
+      {
+        "OIDCIssuers":
+          {
+            "https://dex.testifysec-demo.xyz":
+              {
+                "IssuerURL": "https://dex.testifysec-demo.xyz",
+                "ClientID": "testifysec",
+                "Type": "email",
+              },
+          },
+      }
+tsa:
+  nameOverride: "judge-timestamp-server"  # ECR repo name
+  enabled: true
+  image:
+    tag: v1.6.0
+    version: v1.6.0
+  server:
+    args:
+      signer: memory
+    ingress:
+      http:
+        enabled: false  # Disabled - using Istio VirtualServices
+        className: "nginx"
+        annotations:
+          cert-manager.io/cluster-issuer: tls-ca-issuer
+          kubernetes.io/ssl-redirect: "true"
+        hosts:
+          - path: /
+            host: tsa.testifysec-demo.xyz
+      tls:
+        - secretName: tsa-ingress-tls
+          hosts:
+            - tsa.testifysec-demo.xyz
+mysql:
+  enabled: true
+minio:
+  enabled: true
+  image:
+    tag: RELEASE.2025-05-24T17-08-30Z
+  mc:
+    image:
+      tag: RELEASE.2025-05-21T01-59-54Z
+ollama:
+  enabled: false
+
+judge-ai-proxy:
+  nameOverride: "judge-ai-proxy"  # ECR repo name
+  enabled: true
+  image:
+    repository: judge-ai-proxy
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 8080
+  config:
+    apiVersion: "2023-06-01"
+    apiEndpoint: "https://api.anthropic.com/v1/messages"
+    systemPrompt: "You are Claude, an AI assistant by Anthropic. When evaluating policies against attestation data, provide direct responses without conversational preambles. For policy evaluation, always format your response with a clear 'Status: PASS' or 'Status: FAIL' line followed by a 'Reason:' section that explains the evaluation result concisely with supporting evidence from the attestation data."
+    defaultModel: "claude-3-5-haiku-latest"
+  ingress:
+    enabled: false  # Disabled - using Istio VirtualServices
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: tls-ca-issuer
+      kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: ai-proxy.testifysec-demo.xyz
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - secretName: ai-proxy-tls-secret
+        hosts:
+          - ai-proxy.testifysec-demo.xyz
+
+ingress:
+  httpproxy:
+    enabled: false
+    annotations: {}
+
+# SSP Generation Configuration
+# Note: SSP functionality is implemented via dagger sidecar in judge-api
+ssp:
+  enabled: true
+  # Use Dagger containerized execution for SSP generation
+  # When false: falls back to legacy in-process mock generation
+  # When true: uses isolated Dagger containers for document generation
+  useDagger: true
+  # Use AgentFlow (Claude AI) for intelligent SSP content generation
+  # Only applies when useDagger is true
+  # When false: uses template-based generation with pandoc/latex
+  # When true: uses AI-powered generation with pre-compiled binary
+  useAgentflow: true
+  # AgentFlow model to use for SSP generation
+  agentflowModel: "claude-sonnet-4-20250514"
+  # Dagger engine socket path
+  daggerHost: "unix:///var/run/dagger/engine.sock"

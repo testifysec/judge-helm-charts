@@ -1,0 +1,343 @@
+{{- if .Values.istio.enabled }}
+---
+# Gateway VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-gateway-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "gateway.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ include "judge.gateway.fullname" . }}
+            port:
+              number: 4000
+---
+# Judge Web VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-web-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "judge.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    # Login UI routes - must come before catch-all
+    # Exact match for /login (without trailing slash) - redirect to add slash
+    - match:
+        - uri:
+            exact: "/login"
+      redirect:
+        uri: "/login/"
+    # Prefix match for /login/ (with trailing slash) - rewrite and route
+    - match:
+        - uri:
+            prefix: "/login/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: kratos-selfservice-ui-node
+            port:
+              number: 80
+    # Kratos public routes
+    - match:
+        - uri:
+            prefix: "/kratos/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: kratos-public
+            port:
+              number: 80
+    # Archivista routes
+    - match:
+        - uri:
+            prefix: "/archivista/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
+            port:
+              number: 8082
+    # Judge API routes
+    - match:
+        - uri:
+            prefix: "/judge-api/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-api" (index .Values "judge-api" "nameOverride")) }}
+            port:
+              number: 8080
+    # Gateway routes
+    - match:
+        - uri:
+            prefix: "/gateway/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: {{ include "judge.gateway.fullname" . }}
+            port:
+              number: 4000
+    # Default route - must be last (catch-all)
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-web" (index .Values "judge-web" "nameOverride")) }}
+            port:
+              number: 8077
+---
+# Judge API VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-api-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "api.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-api" (index .Values "judge-api" "nameOverride")) }}
+            port:
+              number: 8080
+---
+# Archivista VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-archivista-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "archivista.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
+            port:
+              number: 8082
+---
+# Fulcio HTTP VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-fulcio-http-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "fulcio.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s-server" .Release.Name (default "judge-fulcio" .Values.fulcio.nameOverride) }}
+            port:
+              number: 80
+---
+# Dex VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-dex-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "dex.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-dex" .Values.dex.nameOverride) }}
+            port:
+              number: 5556
+---
+# TSA VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-tsa-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "tsa.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s-server" .Release.Name (default "judge-timestamp-server" .Values.tsa.nameOverride) }}
+            port:
+              number: 80
+---
+# Kratos Public VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kratos-public-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "kratos.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: kratos-public
+            port:
+              number: 80
+---
+# Kratos Admin VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kratos-admin-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "kratos-admin.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: kratos-admin
+            port:
+              number: 80
+---
+# Kratos Selfservice UI VirtualService (login)
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: login-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "login.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: kratos-selfservice-ui-node
+            port:
+              number: 80
+---
+# AI Proxy VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-ai-proxy-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "ai-proxy.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-ai-proxy" (index .Values "judge-ai-proxy" "nameOverride")) }}
+            port:
+              number: 8080
+{{- if .Values.minio.enabled }}
+---
+# MinIO VirtualService (dev/testing only)
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-minio-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "minio.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ include "judge.fullname" . }}-minio
+            port:
+              number: 9000
+{{- end }}
+{{- end }}

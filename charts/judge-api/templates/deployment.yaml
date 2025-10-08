@@ -1,0 +1,200 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "judge-api.fullname" . }}
+  labels:
+    {{- include "judge-api.labels" . | nindent 4 }}
+  {{- with .Values.deployment.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "judge-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+      {{- if .Values.workflows.enabled }}
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "judge-api"
+        # Exclude Dapr ports from Istio sidecar to prevent traffic interception conflicts
+        traffic.sidecar.istio.io/excludeInboundPorts: "50001,50002,9090"
+        traffic.sidecar.istio.io/excludeOutboundPorts: "50001,50005,50006,9090"
+      {{- end }}
+      {{- if .Values.vault.enabled }}
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+        vault.hashicorp.com/agent-inject-secret-db: {{ .Values.vault.database.path | quote }}
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{`{{- with secret `}}{{ .Values.vault.database.path | quote }}{{` -}}
+          export JUDGE_API_SQL_STORE_CONNECTION_STRING="postgresql://{{ .Data.username }}:{{ .Data.password }}@`}}{{ .Values.vault.database.host }}{{`/`}}{{ .Values.vault.database.name }}{{`?sslmode=`}}{{ .Values.vault.database.sslmode }}{{`"
+          {{- end }}`}}
+        {{- if .Values.ssp.enabled }}
+        vault.hashicorp.com/agent-inject-secret-anthropic: {{ .Values.vault.secrets.anthropic.path | quote }}
+        vault.hashicorp.com/agent-inject-template-anthropic: |
+          {{`{{- with secret `}}{{ .Values.vault.secrets.anthropic.path | quote }}{{` -}}
+          export ANTHROPIC_API_KEY="{{ .Data.data.api_key }}"
+          {{- end }}`}}
+        {{- end }}
+        {{- if .Values.workflows.enabled }}
+        vault.hashicorp.com/agent-inject-secret-slack: {{ .Values.vault.secrets.slack.path | quote }}
+        vault.hashicorp.com/agent-inject-template-slack: |
+          {{`{{- with secret `}}{{ .Values.vault.secrets.slack.path | quote }}{{` -}}
+          export SLACK_TOKEN="{{ .Data.data.token }}"
+          export SLACK_CHANNEL_ID="{{ .Data.data.channel_id }}"
+          {{- end }}`}}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "judge-api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if and .Values.ssp.enabled .Values.volumes }}
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}
+      {{- else if .Values.workflows.signer.secretName }}
+      volumes:
+        - name: signer-key-volume
+          secret:
+            secretName: {{ .Values.workflows.signer.secretName }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      
+      serviceAccountName: {{ include "judge-api.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          volumeMounts:
+          {{- with .Values.workflows.signer.secretName }}
+            - name: signer-key-volume
+              mountPath: /tmp/signer
+          {{- end }}
+          {{- if and .Values.ssp.enabled .Values.deployment.volumeMounts }}
+          {{- toYaml .Values.deployment.volumeMounts | nindent 12 }}
+          {{- end }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: {{ include "judge.image.repository" . }}:{{ tpl (.Values.image.tag | default (include "judge.image.defaultTag" .) | toString) . }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.vault.enabled }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -e
+              source /vault/secrets/db
+              {{- if .Values.ssp.enabled }}
+              source /vault/secrets/anthropic
+              {{- end }}
+              {{- if .Values.workflows.enabled }}
+              source /vault/secrets/slack
+              {{- end }}
+              exec /app/judge-api serve \
+                --enable-workflows={{ .Values.workflows.enabled }} \
+                --log-level={{ .Values.logLevel }} \
+                --sql-connection="$JUDGE_API_SQL_STORE_CONNECTION_STRING" \
+                --sql-backend={{ .Values.sqlStore.backend }} \
+                --listen=tcp://0.0.0.0:8080 \
+                --kratos-admin-url={{ .Values.kratos.adminUrl }} \
+                {{- with .Values.workflows.signer.secretName }}
+                --signer-path=/tmp/signer/private_key.pem \
+                {{- end }}
+                {{- with .Values.workflows.signer.kmsUri }}
+                --signer-kms-uri={{ . }} \
+                {{- end }}
+          {{- else }}
+          args:
+            - "serve"
+            - "--enable-workflows={{ .Values.workflows.enabled }}"
+            - "--log-level={{ .Values.logLevel }}"
+            - "--sql-connection=$(JUDGE_API_SQL_STORE_CONNECTION_STRING)"
+            - "--sql-backend={{ .Values.sqlStore.backend }}"
+            - "--listen=tcp://0.0.0.0:8080"
+            - "--kratos-admin-url={{ .Values.kratos.adminUrl }}"
+            {{- with .Values.workflows.signer.secretName }}
+            - "--signer-path=/tmp/signer/private_key.pem"
+            {{- end }}
+            {{- with .Values.workflows.signer.kmsUri }}
+            - "--signer-kms-uri={{ . }}"
+            {{- end }}
+          {{- end }}
+          env:
+            {{- if not .Values.vault.enabled }}
+            - name: JUDGE_API_SQL_STORE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "judge-api.connectionStringSecret.name" . }}
+                  key: {{ include "judge-api.connectionStringSecret.key" . }}
+            {{- if .Values.workflows.enabled }}
+            - name: SLACK_CHANNEL_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "judge-api.slackSecret.name" . }}
+                  key: {{ include "judge-api.slackSecret.channelIdKey" . }}
+            - name: SLACK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "judge-api.slackSecret.name" . }}
+                  key: {{ include "judge-api.slackSecret.tokenKey" . }}
+            {{- end }}
+            {{- if .Values.ssp.enabled }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.name | default "anthropic-secret" }}
+                  key: {{ .Values.secret.key | default "anthropic-api-key" }}
+            {{- end }}
+            {{- end }}
+            - name: JUDGE_API_SQL_STORE_BACKEND
+              value: {{ .Values.sqlStore.backend }}
+            - name: KRATOS_PUBLIC_URL
+              value: "{{ .Values.kratos.publicUrl }}"
+            - name: KRATOS_ADMIN_URL
+              value: "{{ .Values.kratos.adminUrl }}"
+            {{- range .Values.deployment.env }}
+            - name: {{ .name }}
+              {{- if .value }}
+              value: {{ tpl (.value | toString) $ | quote }}
+              {{- else if .valueFrom }}
+              valueFrom:
+                {{- toYaml .valueFrom | nindent 16 }}
+              {{- end }}
+            {{- end }}
+            {{- if .Values.ssp.enabled }}
+            - name: SSP_AGENTFLOW_MODEL
+              value: "{{ .Values.ssp.agentflowModel | default "claude-sonnet-4-20250514" }}"
+            - name: DAGGER_ENGINE_HOST
+              value: "{{ .Values.ssp.daggerHost | default "unix:///var/run/dagger/engine.sock" }}"
+            - name: DOCKER_HOST
+              value: "{{ .Values.ssp.daggerHost | default "unix:///var/run/dagger/engine.sock" }}"
+            - name: _EXPERIMENTAL_DAGGER_RUNNER_HOST
+              value: "{{ .Values.ssp.daggerHost | default "unix:///var/run/dagger/engine.sock" }}"
+            {{- end }}
+          ports:
+            - containerPort: 8080
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        {{- if and .Values.ssp.enabled .Values.deployment.additionalContainers }}
+        {{- toYaml .Values.deployment.additionalContainers | nindent 8 }}
+        {{- end }}
+
+      imagePullSecrets:
+        - name: regcred
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,303 @@
+global:
+  # Deployment metadata (cloud-agnostic)
+  domain: your-domain.com
+  environment: production
+  version: v1.15.0
+
+  # Container registry
+  # Note: ECR auth via node IAM role with appropriate pull policy
+  # Configure ECR access for your AWS account
+  registry:
+    provider: aws-ecr
+    url: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    aws:
+      region: us-east-1
+      accountId: "YOUR_AWS_ACCOUNT_ID"
+
+  # Database
+  database:
+    provider: aws-rds
+    type: postgresql
+    port: 5432
+    username: postgres
+    aws:
+      endpoint: your-rds-endpoint.region.rds.amazonaws.com
+      region: us-east-1
+
+  # Secrets management
+  secrets:
+    provider: k8s-secrets
+    # Database password configured in demo-secrets.yaml (not committed)
+
+  # Cloud infrastructure
+  cloud:
+    provider: aws
+    aws:
+      accountId: "YOUR_AWS_ACCOUNT_ID"
+      region: us-east-1
+      iamRoles:
+        archivista: YOUR_ENV-judge-archivista
+        judgeApi: YOUR_ENV-judge-judge-api
+
+  # Blob storage
+  storage:
+    provider: aws-s3
+    buckets:
+      archivista: YOUR_ENV-judge-archivista
+      judgeApi: YOUR_ENV-judge-judge
+    aws:
+      endpoint: s3.amazonaws.com
+      region: us-east-1
+      credentialType: IAM
+      useTLS: true
+
+  # Messaging
+  messaging:
+    provider: aws-sns-sqs
+    topics:
+      archivistaAttestations: YOUR_ENV-judge-archivista-attestations
+    aws:
+      region: us-east-1
+      snsTopicName: YOUR_ENV-judge-archivista-attestations
+      sqsQueueName: YOUR_ENV-judge-archivista-attestations
+
+  # OIDC Authentication Configuration
+  # Used by Kratos for OAuth/OIDC authentication
+  # Customers configure their identity providers here
+  # Sensitive credentials (client_secret) are in demo-secrets.yaml
+  oidc:
+    enabled: true
+    providers:
+      - id: github
+        provider: github
+        client_id: Ov23li04k0W901Hp85AJ
+        # client_secret configured in demo-secrets.yaml (not committed)
+        issuer_url: https://github.com
+        mapper_url: file:///etc/config/kratos/github.jsonnet
+        scope:
+          - user
+          - repo
+          - read:org
+
+archivista:
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: ""  # Empty string triggers default function to use judge.image.defaultTag helper (global.version)
+  enabled: true
+  dapr:
+    enabled: true
+  sqlStore:
+    backend: psql
+    # connectionString built by judge.rds.archivistaDsn helper
+    createSecret: true
+  serviceAccount:
+    create: true
+    name: archivista
+    annotations:
+      eks.amazonaws.com/role-arn: '{{ include "judge.iam.archivistaRole" . }}'
+  deployment:
+    annotations:
+      # Run archivista after judge-api to avoid database migration race
+      argocd.argoproj.io/sync-wave: "1"
+    env:
+      - name: ARCHIVISTA_JUDGE_GATEWAY_URL
+        value: http://YOUR_ENV-judge-judge-gateway.judge.svc.cluster.local:4000
+      - name: AWS_REGION
+        value: '{{ include "judge.aws.region" . }}'
+      - name: ARCHIVISTA_DAPR_PUBSUB_TOPIC
+        value: '{{ include "judge.messaging.topic.archivistaAttestations" . }}'
+      - name: ARCHIVISTA_DAPR_PUBSUB_COMPONENT_NAME
+        value: '{{ .Release.Name }}-judge-api-archivista-subscription'
+      - name: ARCHIVISTA_STORAGE_BACKEND
+        value: BLOB
+      - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+        value: '{{ include "judge.storage.bucket.archivista" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_ENDPOINT
+        value: '{{ include "judge.storage.endpoint" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE
+        value: '{{ include "judge.storage.credentialType" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_USE_TLS
+        value: '{{ include "judge.storage.useTLS" . }}'
+      - name: ARCHIVISTA_ENABLE_SPIFFE
+        value: "false"
+      - name: ARCHIVISTA_LISTEN_ON
+        value: tcp://0.0.0.0:8082
+      - name: ARCHIVISTA_ENABLE_GRAPHQL
+        value: "true"
+      - name: ARCHIVISTA_GRAPHQL_WEB_CLIENT_ENABLE
+        value: "true"
+      - name: ARCHIVISTA_CORS_ALLOW_ORIGINS
+        value: "*"
+
+dex:
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: v2.39.1
+
+fulcio:
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: v1.4.5
+  server:
+    name: server  # Used in fullname generation
+    volumes: []
+    volumeMounts: []
+
+tsa:
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: v1.8.0-rc.1d2b65f5.0
+  server:
+    name: server  # Used in fullname generation
+
+kratos:
+  enabled: true
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: v1.1.0-token-update
+  secret:
+    secretAnnotations:
+      # Use ArgoCD sync waves instead of Helm hooks for proper secret creation
+      argocd.argoproj.io/sync-wave: "-1"
+  configmap:
+    hashSumEnabled: false  # Disabled because ConfigMap is overridden by parent chart
+  deployment:
+    annotations:
+      # Checksum ensures deployment restarts when ConfigMap changes
+      # This references the parent chart's ConfigMap override, not the subchart's disabled template
+      checksum/judge-kratos-config: "{{ include \"judge.kratos.config.complete\" . | sha256sum }}"
+  # All kratos configuration is now generated automatically by judge.kratos.config.complete helper
+  # See charts/judge/templates/kratos-config.yaml for the ConfigMap override
+  # Customers only need to configure OIDC providers in global.oidc section
+
+kratos-selfservice-ui-node:
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: v1.11.0
+  kratosAdminUrl: "http://kratos-admin.judge.svc.cluster.local"
+  kratosPublicUrl: "{{ include \"judge.url.kratos\" . }}"
+  kratosBrowserUrl: "{{ include \"judge.url.kratos\" . }}"
+
+judge-web:
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: ""  # Empty string triggers default function to use judge.image.defaultTag helper (global.version)
+  nginxReverseProxy:
+    enabled: false  # Disabled - Istio VirtualServices handle all routing
+
+gateway:
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    # Note: tag can't be empty because gateway.image.tag in base values.yaml has a8d96cf
+    # Override with explicit version from global.version
+    tag: v1.15.0
+  archivista:
+    url: http://YOUR_ENV-judge-judge-archivista.judge.svc.cluster.local:8082
+  judgeapi:
+    url: http://YOUR_ENV-judge-judge-api.judge.svc.cluster.local:8080
+  login:
+    url: https://login.your-domain.com/login
+
+judge-ai-proxy:
+  enabled: true
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: ""  # Empty string triggers default function to use judge.image.defaultTag helper (global.version)
+  secret:
+    create: false
+    existingSecret: judge-ai-proxy-api-key
+    existingSecretKey: api-key
+
+judge-api:
+  enabled: true
+  image:
+    registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+    tag: ""  # Empty string triggers default function to use judge.image.defaultTag helper (global.version)
+  sqlStore:
+    backend: psql
+    # connectionString built by judge.rds.judgeApiDsn helper
+    createSecret: true
+  serviceAccount:
+    create: true
+    name: judge-api
+    annotations:
+      eks.amazonaws.com/role-arn: '{{ include "judge.iam.judgeApiRole" . }}'
+  deployment:
+    annotations:
+      # Run judge-api first to initialize shared database schema
+      argocd.argoproj.io/sync-wave: "0"
+    env:
+      - name: __TESTIFY_SKIP_LICENSE_CHECK__
+        value: "true"
+      - name: AWS_REGION
+        value: '{{ include "judge.aws.region" . }}'
+      - name: BLOB_STORE_BUCKET_NAME
+        value: '{{ include "judge.storage.bucket.judgeApi" . }}'
+      - name: BLOB_STORE_ENDPOINT
+        value: '{{ include "judge.storage.endpoint" . }}'
+      - name: BLOB_STORE_CREDENTIAL_TYPE
+        value: '{{ include "judge.storage.credentialType" . }}'
+      - name: BLOB_STORE_USE_TLS
+        value: '{{ include "judge.storage.useTLS" . }}'
+
+# Disable MinIO
+minio:
+  enabled: false
+
+# Disable MySQL (using RDS)
+mysql:
+  enabled: false
+
+# Configure Dapr pubsub for AWS SNS/SQS
+dapr:
+  enabled: true
+  pubsub:
+    enabled: true
+    region: '{{ include "judge.messaging.region" . }}'
+    snsTopicName: '{{ include "judge.messaging.snsTopicName" . }}'
+    sqsQueueName: '{{ include "judge.messaging.sqsQueueName" . }}'
+  # Add Istio port exclusions to Dapr control plane pods
+  # Override Dapr component image repositories to use TestifySec ECR
+  # NOTE: Dapr chart requires full path including tag when image name contains "/"
+  dapr_operator:
+    image:
+      name: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/judge-dapr-operator:1.14.4
+    deploymentAnnotations:
+      traffic.sidecar.istio.io/excludeInboundPorts: "6500,9090"
+      traffic.sidecar.istio.io/excludeOutboundPorts: "50001"
+  dapr_placement:
+    image:
+      name: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/judge-dapr-placement:1.14.4
+    statefulsetAnnotations:
+      traffic.sidecar.istio.io/excludeInboundPorts: "50005,9090"
+      traffic.sidecar.istio.io/excludeOutboundPorts: "50001"
+  dapr_sentry:
+    image:
+      name: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/judge-dapr-sentry:1.14.4
+    deploymentAnnotations:
+      traffic.sidecar.istio.io/excludeInboundPorts: "50001,9090"
+  dapr_scheduler:
+    image:
+      name: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/judge-dapr-scheduler:1.14.4
+    statefulsetAnnotations:
+      traffic.sidecar.istio.io/excludeInboundPorts: "50006,9090"
+      traffic.sidecar.istio.io/excludeOutboundPorts: "50001"
+  dapr_sidecar_injector:
+    image:
+      name: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/judge-dapr-daprd:1.14.4
+    injectorImage:
+      name: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/judge-dapr-sidecar-injector:1.14.4
+    deploymentAnnotations:
+      traffic.sidecar.istio.io/excludeInboundPorts: "4000,9090"
+      traffic.sidecar.istio.io/excludeOutboundPorts: "50001"

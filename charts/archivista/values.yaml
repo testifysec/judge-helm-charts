@@ -1,0 +1,123 @@
+replicaCount: 1
+
+image:
+  registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+  repository: ""
+  tag: v1.6.0
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  #repository: ghcr.io/in-toto/archivista
+  #tag: "0.4.0"
+
+nameOverride: "judge-archivista"
+fullnameOverride: ""
+
+sqlStore:
+  backend: mysql
+  connectionString: root:root@tcp(judge-mysql.judge.svc.cluster.local:3306)/archivista
+  # if createSecret is set to false, the helm template will look for an existing secret reffered to by secretName 
+  # if createSecret is set to true, a secret will be created with the connectionString defined above
+  createSecret: true
+  secretName: ""
+  secretKey: ""
+
+serviceAccount:
+  create: false
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+dapr:
+  enabled: false
+
+vault:
+  enabled: false
+  role: archivista
+  address: http://vault.vault.svc.cluster.local:8200
+  database:
+    path: database/creds/archivista
+    host: ""  # RDS endpoint (set in values-prod.yaml)
+    name: postgres
+    sslmode: require
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+deployment:
+  env:
+    - name: ARCHIVISTA_ENABLE_SPIFFE
+      value: "False"
+    - name: ARCHIVISTA_LISTEN_ON
+      value: tcp://0.0.0.0:8082
+    - name: ARCHIVISTA_STORAGE_BACKEND
+      value: BLOB
+    - name: ARCHIVISTA_BLOB_STORE_USE_TLS
+      value: "False"
+    - name: ARCHIVISTA_BLOB_STORE_ACCESS_KEY_ID
+      value: "minio-user"
+    - name: ARCHIVISTA_BLOB_STORE_SECRET_ACCESS_KEY_ID
+      value: "minio-password"
+    - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+      value: "archivista"
+    - name: ARCHIVISTA_BLOB_STORE_ENDPOINT
+      value: judge-minio.judge.svc.cluster.local:9000
+    - name: ARCHIVISTA_ENABLE_GRAPHQL
+      value: "true"
+    - name: ARCHIVISTA_GRAPHQL_WEB_CLIENT_ENABLE
+      value: "true"
+    - name: ARCHIVISTA_CORS_ALLOW_ORIGINS 
+      value: "*"
+    - name: MYSQLPASS
+      value: "root"
+    - name: ARCHIVISTA_ENABLE_ARTIFACT_STORE
+      value: "true"
+    
+service:
+  type: ClusterIP
+  port: 8082
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: archivista.testifysec.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - archivista.localhost
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

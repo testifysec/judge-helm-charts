@@ -1,0 +1,50 @@
+{{- if .Values.gateway.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "judge.gateway.fullname" . }}
+  labels:
+    {{ include "judge.labels" . | nindent 4 }}
+    component: gateway
+    app.kubernetes.io/component: gateway
+spec:
+  replicas: {{ .Values.gateway.replicas }}
+  selector:
+    matchLabels:
+      {{- include "judge.selectorLabels" . | nindent 6 }}
+      component: gateway
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.gateway.podAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{ include "judge.labels" . | nindent 8 }}
+        component: gateway
+        app.kubernetes.io/component: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: {{ include "judge.gateway.image" . }}
+          args: ["node", "index.js"]
+          ports:
+            - containerPort: 4000
+          env:
+            - name: AUTH_TOKEN
+              value: "my-super-secret-auth-token"
+            - name: JUDGE_LOGIN_URL
+              value: {{ .Values.gateway.login.url }}
+            - name: KRATOS_PUBLIC_URL
+              value: {{ include "judge.gateway.kratosUrl" . }}
+            - name: ARCHIVISTA_URL
+              value: {{ .Values.gateway.archivista.url }}
+            - name: JUDGE_API_URL
+              value: {{ .Values.gateway.judgeapi.url }}
+          {{- if.Values.gateway.resources }}
+          resources:
+{{- toYaml .Values.gateway.resources | nindent 12 }}
+          {{- end }}
+      imagePullSecrets:
+        - name: regcred
+{{- end }}
