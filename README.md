@@ -1,10 +1,34 @@
-# judge-helm-charts
+# Judge Helm Charts
 
-Production-ready Helm charts for deploying the Judge platform with Istio service mesh support.
+Production-ready Helm charts for deploying the Judge platform with Istio service mesh support, External Secrets Operator (ESO), and HashiCorp Vault integration.
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Production Deployment](#production-deployment)
+- [External Secrets Operator Integration](#external-secrets-operator-integration)
+- [Documentation](#documentation)
+- [Development](#development)
+- [Support](#support)
 
 ## Overview
 
-This repository contains Helm charts for deploying the complete Judge platform to Kubernetes clusters. The charts support multi-cloud deployments (AWS, GCP, Azure) with built-in Istio service mesh integration, OIDC authentication, and enterprise-grade security features.
+This repository contains Helm charts for deploying the complete Judge platform to Kubernetes clusters. The charts support multi-cloud deployments (AWS, GCP, Azure) with built-in Istio service mesh integration, OIDC authentication, secrets management via Vault, and enterprise-grade security features.
+
+## Features
+
+- **Multi-Cloud Support**: Deploy to AWS (EKS), GCP (GKE), or Azure (AKS) with provider-specific configurations
+- **Istio Service Mesh**: Native mTLS, traffic management, and observability integration
+- **External Secrets Operator**: Seamless HashiCorp Vault integration for dynamic secret management
+- **GitOps Ready**: Full ArgoCD support with sync waves for ordered deployments
+- **IAM for Service Accounts**: AWS IRSA, GCP Workload Identity, Azure Workload Identity patterns
+- **High Availability**: Multi-replica deployments with autoscaling and PodDisruptionBudgets
+- **OIDC Authentication**: Flexible identity provider integration (GitHub, GitLab, Google, etc.)
+- **Production-Ready Defaults**: Security-first configurations with least privilege principles
 
 ## Architecture
 
@@ -22,8 +46,10 @@ The Judge platform consists of the following components:
 - **dex** - OpenID Connect (OIDC) provider for federated authentication
 
 ### PKI & Signing
-- **fulcio** - Code signing certificate authority
-- **tsa** - RFC 3161 timestamping authority
+- **fulcio** - Code signing certificate authority (TODO: CI/CD system integration)
+- **tsa** - RFC 3161 timestamping authority (TODO: CI/CD system integration)
+
+**Note**: Fulcio and TSA will be accessed by CI/CD systems in future releases for automated code signing and timestamping workflows. See [Fulcio/TSA Trust Bootstrapping](docs/deployment/fulcio-tsa-trust-bootstrapping.md) for implementation roadmap.
 
 ### Infrastructure
 - **dapr** - Distributed application runtime for workflows and messaging
@@ -325,12 +351,59 @@ spec:
       selfHeal: true
 ```
 
+## External Secrets Operator Integration
+
+Judge platform integrates with External Secrets Operator for secure, dynamic secret management:
+
+### Features
+
+- **Dynamic Database Credentials**: Vault Database Secrets Engine generates short-lived PostgreSQL credentials (24h TTL)
+- **Automatic Rotation**: Secrets refresh every 1 hour with automatic pod restart
+- **Vault Kubernetes Auth**: ServiceAccount JWT-based authentication to Vault
+- **Static Secrets**: OIDC client secrets, SMTP credentials managed via Vault KV
+- **No Hardcoded Secrets**: All sensitive data sourced from Vault at runtime
+
+### Configuration
+
+```yaml
+global:
+  secrets:
+    provider: vault  # Use vault instead of k8s-secrets
+
+archivista:
+  sqlStore:
+    createSecret: false  # Delegate to ESO
+    secretName: judge-judge-archivista-database
+  vault:
+    enabled: false  # Using ESO instead of Vault Agent
+```
+
+See [examples/terraform/aws/complete/](examples/terraform/aws/complete/) for complete Vault configuration with Terraform.
+
 ## Documentation
+
+### Architecture & Design
+
+- [Component Architecture](docs/architecture/diagrams/component-architecture.md) - High-level system architecture
+- [Secrets Management](docs/architecture/diagrams/secrets-management.md) - ESO + Vault integration flow
+- [Network Topology](docs/architecture/diagrams/network-topology.md) - Istio service mesh and AWS VPC
+- [Deployment Pipeline](docs/architecture/diagrams/deployment-pipeline.md) - GitOps workflow with ArgoCD
+
+### Deployment Guides
+
+- [Terraform AWS Examples](examples/terraform/aws/complete/) - Complete infrastructure as code examples
+- [Fulcio and TSA Trust Bootstrapping](docs/deployment/fulcio-tsa-trust-bootstrapping.md) - PKI implementation roadmap
+- [Getting Started](charts/judge/docs/getting-started-with-judge-helm.md) - Initial setup guide
+- [Configuring Judge Helm](charts/judge/docs/configuring-judge-helm.md) - Complete configuration reference
+
+### External References
 
 - [DEVELOPMENT.md](DEVELOPMENT.md) - Technical architecture and configuration details
 - [CONTRIBUTING.md](CONTRIBUTING.md) - Development workflow and contribution guidelines
 - [Istio Integration](https://istio.io/latest/docs/ops/deployment/application-requirements/)
 - [Helm Best Practices](https://helm.sh/docs/chart_best_practices/)
+- [External Secrets Operator](https://external-secrets.io/)
+- [Vault Kubernetes Auth](https://www.vaultproject.io/docs/auth/kubernetes)
 
 ## Support
 
