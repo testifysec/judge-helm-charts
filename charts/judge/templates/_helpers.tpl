@@ -347,7 +347,8 @@ cookies:
   path: /
   same_site: Lax
 courier:
-  smtp: {}
+  smtp:
+    connection_uri: smtps://test:test@mailslurper:1025/?skip_ssl_verify=true
 identity:
   default_schema_id: default
   schemas:
