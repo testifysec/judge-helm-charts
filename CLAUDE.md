@@ -29,6 +29,18 @@
   - Registry URL: `178674732984.dkr.ecr.us-east-1.amazonaws.com`
   - IRSA roles in cluster account (`831646886084`) have cross-account ECR pull permissions
 
+- **RDS PostgreSQL**: `demo-judge-postgres.cenw4a6wen6f.us-east-1.rds.amazonaws.com`
+  - Instance: PostgreSQL 16
+  - **CRITICAL**: Each service requires a SEPARATE database on the same RDS instance:
+    - `judge_api` - Database for judge-api service
+    - `archivista` - Database for archivista service
+    - `kratos` - Database for Kratos identity service
+  - Vault path: `secret/demo/kubernetes/rds/testifysec-judge`
+    - `judge_api_dsn` → points to `judge_api` database
+    - `archivista_dsn` → points to `archivista` database
+    - `kratos_dsn` → points to `kratos` database
+  - **DO NOT** use the same `postgres` database for all services - this causes Atlas migration conflicts
+
 ## Important Notes
 
 - You must deploy via ArgoCD sync, debug the root cause of any sync issues
@@ -81,3 +93,4 @@
 ## Deployment Flow
 
 **ArgoCD syncs with PR branch HEAD**: ArgoCD should sync with the latest commits in https://github.com/testifysec/judge-helm-charts/pull/1 (feature/eso-vault-integration branch)
+- we need to do everything as part of gitops, dont use kubectl apply or create directly use arego to sync, recreate the app if it is stuck by purging it first
