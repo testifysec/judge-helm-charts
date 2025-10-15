@@ -3,12 +3,14 @@ Render the imageRepository with the global and chart specific values.
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
-{{- if and (eq .Values.global.registry "") (eq .Values.global.repository "") }}
+{{- $registryUrl := .Values.global.registry.url | default "" }}
+{{- $registryRepo := .Values.global.registry.repository | default "" }}
+{{- if and (eq $registryUrl "") (eq $registryRepo "") }}
 {{- print $chartName -}}
-{{- else if eq .Values.global.repository "" }}
-{{- printf "%s/%s" .Values.global.registry $chartName | trimSuffix "/" -}}
+{{- else if eq $registryRepo "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.global.registry .Values.global.repository $chartName | trimSuffix "/" -}}
+{{- printf "%s/%s/%s" $registryUrl $registryRepo $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 
@@ -17,12 +19,14 @@ Render the image for minio/mc with the global and chart specific values.
 */}}
 {{- define "minio.mc.image.repository" -}}
 {{- $chartName := default "mc" .Values.mc.nameOverride}}
-{{- if and (eq .Values.global.registry "") (eq .Values.global.repository "") }}
+{{- $registryUrl := .Values.global.registry.url | default "" }}
+{{- $registryRepo := .Values.global.registry.repository | default "" }}
+{{- if and (eq $registryUrl "") (eq $registryRepo "") }}
 {{- print $chartName -}}
-{{- else if eq .Values.global.repository "" }}
-{{- printf "%s/%s" .Values.global.registry $chartName | trimSuffix "/" -}}
+{{- else if eq $registryRepo "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.global.registry .Values.global.repository $chartName | trimSuffix "/" -}}
+{{- printf "%s/%s/%s" $registryUrl $registryRepo $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 
