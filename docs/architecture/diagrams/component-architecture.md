@@ -29,6 +29,10 @@ graph TB
     JudgeAPI --> Fulcio[Fulcio<br/>Code Signing CA]
     JudgeAPI --> TSA[TSA<br/>RFC 3161 Timestamp]
 
+    %% Key Management (TODO: Implement Tink+Vault)
+    Fulcio -.->|TODO: Tink Keyset| Vault[HashiCorp Vault<br/>KMS]
+    TSA -.->|TODO: Tink Keyset| Vault
+
     %% Infrastructure Layer
     JudgeAPI -.->|Workflows| Dapr[Dapr Runtime<br/>Messaging & State]
     Archivista -.->|Pub/Sub| Dapr
@@ -50,6 +54,7 @@ graph TB
     classDef auth fill:#fff3e0,stroke:#e65100,stroke-width:2px
     classDef core fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px
     classDef pki fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef kms fill:#fff3e0,stroke:#f57c00,stroke-width:2px
     classDef infra fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
     classDef data fill:#fff9c4,stroke:#f57f17,stroke-width:2px
 
@@ -57,6 +62,7 @@ graph TB
     class Kratos,Dex,OIDC auth
     class Gateway,JudgeAPI,Archivista,AIProxy core
     class Fulcio,TSA pki
+    class Vault kms
     class Dapr,Messaging infra
     class RDS,S3 data
 ```
@@ -79,8 +85,9 @@ graph TB
 - **Judge AI Proxy**: AI/LLM integration for intelligent policy suggestions
 
 ### PKI Services Layer
-- **Fulcio**: Code signing certificate authority (Sigstore)
-- **TSA**: RFC 3161 timestamping authority for provenance
+- **Fulcio**: Code signing certificate authority (Sigstore) - **TODO**: Configure with Tink+Vault KMS for key management
+- **TSA**: RFC 3161 timestamping authority for provenance - **TODO**: Configure with Tink+Vault KMS for key management
+- **HashiCorp Vault**: KMS for encrypting Tink keysets (signing keys)
 
 ### Infrastructure Layer
 - **Dapr Runtime**: Distributed application runtime for workflows and messaging
@@ -97,3 +104,4 @@ graph TB
 3. **API Gateway**: Federation Gateway provides unified GraphQL interface
 4. **Event-Driven**: Dapr pub/sub for asynchronous workflows
 5. **Multi-Tenancy**: Separate databases per service, shared infrastructure
+6. **PKI Key Management** (TODO): Fulcio and TSA will use Google Tink with HashiCorp Vault KMS for secure key storage and signing operations
