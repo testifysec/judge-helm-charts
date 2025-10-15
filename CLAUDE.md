@@ -41,6 +41,20 @@
     - `kratos_dsn` → points to `kratos` database
   - **DO NOT** use the same `postgres` database for all services - this causes Atlas migration conflicts
 
+- **S3 Buckets**: Separate buckets for each service
+  - `demo-judge-archivista` - Archivista attestation storage
+  - `demo-judge-judge` - Judge-API artifact storage
+  - **CRITICAL**: All AWS resources use `demo-judge-` prefix, NOT `prod-` prefix
+  - IRSA roles: `demo-judge-archivista`, `demo-judge-judge-api`
+  - SNS/SQS: `demo-judge-archivista-attestations`
+
+- **Kubernetes Service Names**: Use Helm release name prefix
+  - Pattern: `{release-name}-{chart-name}` where release-name=`judge-platform`
+  - archivista: `judge-platform-judge-archivista.judge.svc.cluster.local:8082`
+  - judge-api: `judge-platform-judge-api.judge.svc.cluster.local:8080`
+  - gateway: `judge-platform-judge-gateway.judge.svc.cluster.local:4000`
+  - **DO NOT** use hypothetical names based on nameOverride - use actual K8s service names
+
 ## Important Notes
 
 - You must deploy via ArgoCD sync, debug the root cause of any sync issues
