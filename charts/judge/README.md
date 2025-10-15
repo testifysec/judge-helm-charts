@@ -10,13 +10,15 @@ Production-ready Helm chart for deploying the complete Judge platform on Kuberne
 
 - [Overview](#overview)
 - [Prerequisites](#prerequisites)
-- [Installation](#installation)
 - [Configuration](#configuration)
+- [Installation](#installation)
 - [External Secrets Operator](#external-secrets-operator)
 - [OIDC Authentication](#oidc-authentication)
 - [Istio Service Mesh](#istio-service-mesh)
 - [Upgrading](#upgrading)
 - [Uninstallation](#uninstallation)
+- [Values Reference](#values-reference)
+- [Troubleshooting](#troubleshooting)
 - [Documentation](#documentation)
 
 ## Overview
@@ -38,6 +40,157 @@ The chart supports multi-cloud deployments (AWS, GCP, Azure) with provider-speci
 - PostgreSQL database (AWS RDS, GCP CloudSQL, Azure Database, or self-hosted)
 - S3-compatible object storage (AWS S3, GCP GCS, Azure Blob, or MinIO)
 - HashiCorp Vault (optional, for External Secrets Operator integration)
+
+## Configuration
+
+### Quick Start: What You Must Configure
+
+Before installation, you **must** configure these values in your `values.yaml`:
+
+1. **Domain name** - `global.domain: your-domain.com`
+2. **Cloud provider** - AWS account ID, region
+3. **Container registry** - ECR repository URL
+4. **Database connection** - RDS endpoint
+5. **Object storage** - S3 bucket names
+6. **IAM roles** - IRSA role ARNs for service accounts
+
+See [demo-values.yaml](demo-values.yaml) for a complete working example.
+
+### Provider Backend Pattern
+
+Judge uses a Provider Backend Pattern for multi-cloud support. Configure your infrastructure provider in `values.yaml`:
+
+```yaml
+global:
+  # Domain for all services (REQUIRED)
+  domain: your-domain.com
+
+  # Cloud infrastructure (REQUIRED)
+  cloud:
+    provider: aws  # aws, gcp, azure, local
+    aws:
+      accountId: "123456789012"
+      region: us-east-1
+
+  # Container registry (REQUIRED)
+  registry:
+    provider: aws-ecr  # aws-ecr, gcp-artifact, azure-acr, docker-hub
+    url: YOUR_ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
+    aws:
+      region: us-east-1
+
+  # Database (REQUIRED)
+  database:
+    provider: aws-rds  # aws-rds, gcp-cloudsql, azure-database, local-postgres
+    type: postgresql
+    port: 5432
+    username: postgres
+    aws:
+      endpoint: your-rds-endpoint.region.rds.amazonaws.com
+      region: us-east-1
+
+  # Object storage (REQUIRED)
+  storage:
+    provider: aws-s3  # aws-s3, gcp-storage, azure-blob, minio
+    buckets:
+      archivista: your-archivista-bucket
+      judgeApi: your-judge-api-bucket
+    aws:
+      region: us-east-1
+      credentialType: IAM  # Use IRSA
+      useTLS: true
+
+  # Messaging (OPTIONAL - for event-driven features)
+  messaging:
+    provider: aws-sns-sqs  # aws-sns-sqs, gcp-pubsub, azure-servicebus
+    aws:
+      region: us-east-1
+      snsTopicName: your-attestation-topic
+      sqsQueueName: your-attestation-queue
+```
+
+### AWS Configuration with IAM Roles for Service Accounts (IRSA)
+
+Complete AWS configuration example showing all required values:
+
+```yaml
+global:
+  domain: your-domain.com
+  cloud:
+    provider: aws
+    aws:
+      accountId: "123456789012"
+      region: us-east-1
+
+  registry:
+    provider: aws-ecr
+    url: 123456789012.dkr.ecr.us-east-1.amazonaws.com
+    aws:
+      region: us-east-1
+
+  database:
+    provider: aws-rds
+    type: postgresql
+    port: 5432
+    username: postgres
+    aws:
+      endpoint: judge-prod.us-east-1.rds.amazonaws.com
+
+  storage:
+    provider: aws-s3
+    buckets:
+      archivista: prod-judge-archivista
+      judgeApi: prod-judge-api
+    aws:
+      region: us-east-1
+      credentialType: IAM  # Use IRSA
+      useTLS: true
+
+# IAM Roles for Service Accounts (IRSA) - REQUIRED for AWS
+archivista:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/prod-archivista
+
+judge-api:
+  serviceAccount:
+    create: true
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/prod-judge-api
+```
+
+**IMPORTANT**: You must create these IAM roles with appropriate S3, SNS, and SQS permissions. See [examples/terraform/aws/complete/](../../examples/terraform/aws/complete/) for complete infrastructure setup with Terraform.
+
+### Database Credentials
+
+Choose one of these methods to provide database credentials:
+
+**Option 1: External Secrets Operator (Recommended for Production)**
+```yaml
+archivista:
+  sqlStore:
+    createSecret: false  # Delegate to ESO
+    secretName: judge-judge-archivista-database
+
+judge-api:
+  sqlStore:
+    createSecret: false
+    secretName: judge-judge-api-database
+```
+
+See [External Secrets Operator](#external-secrets-operator) section below for complete setup.
+
+**Option 2: Kubernetes Secrets (Quick Start)**
+```yaml
+global:
+  secrets:
+    provider: k8s-secrets
+    database:
+      passwordEncoded: "YOUR_URL_ENCODED_PASSWORD"
+```
+
+**IMPORTANT**: Never commit database passwords to version control. Use a separate `secrets.yaml` file (not committed) or ESO with Vault.
 
 ## Installation
 
@@ -90,96 +243,6 @@ spec:
     syncOptions:
       - CreateNamespace=true
 ```
-
-## Configuration
-
-### Provider Backend Pattern
-
-Judge uses a Provider Backend Pattern for multi-cloud support. Configure your infrastructure provider in `values.yaml`:
-
-```yaml
-global:
-  # Cloud infrastructure
-  cloud:
-    provider: aws  # aws, gcp, azure, local
-
-  # Container registry
-  registry:
-    provider: aws-ecr  # aws-ecr, gcp-artifact, azure-acr, docker-hub
-    url: YOUR_ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com
-
-  # Database
-  database:
-    provider: aws-rds  # aws-rds, gcp-cloudsql, azure-database, local-postgres
-    type: postgresql
-    aws:
-      endpoint: your-rds-endpoint.region.rds.amazonaws.com
-
-  # Object storage
-  storage:
-    provider: aws-s3  # aws-s3, gcp-storage, azure-blob, minio
-    buckets:
-      archivista: your-archivista-bucket
-      judgeApi: your-judge-api-bucket
-
-  # Messaging (optional)
-  messaging:
-    provider: aws-sns-sqs  # aws-sns-sqs, gcp-pubsub, azure-servicebus
-    aws:
-      snsTopicName: your-attestation-topic
-      sqsQueueName: your-attestation-queue
-```
-
-### AWS Configuration Example
-
-```yaml
-global:
-  domain: your-domain.com
-  cloud:
-    provider: aws
-    aws:
-      accountId: "123456789012"
-      region: us-east-1
-
-  registry:
-    provider: aws-ecr
-    url: 123456789012.dkr.ecr.us-east-1.amazonaws.com
-    aws:
-      region: us-east-1
-
-  database:
-    provider: aws-rds
-    type: postgresql
-    port: 5432
-    username: postgres
-    aws:
-      endpoint: judge-prod.us-east-1.rds.amazonaws.com
-
-  storage:
-    provider: aws-s3
-    buckets:
-      archivista: prod-judge-archivista
-      judgeApi: prod-judge-api
-    aws:
-      region: us-east-1
-      credentialType: IAM  # Use IRSA
-      useTLS: true
-
-# IAM Roles for Service Accounts (IRSA)
-archivista:
-  serviceAccount:
-    create: true
-    annotations:
-      eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/prod-archivista
-
-judge-api:
-  serviceAccount:
-    create: true
-    annotations:
-      eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/prod-judge-api
-```
-
-See [examples/terraform/aws/complete/](../../examples/terraform/aws/complete/) for complete AWS infrastructure setup with Terraform.
 
 ## External Secrets Operator
 
@@ -330,37 +393,19 @@ kubectl delete namespace judge
 # See Terraform for vault resource cleanup
 ```
 
-## Documentation
+## Values Reference
 
-### Getting Started
+For complete configuration details:
+- **All available options**: [values.yaml](values.yaml)
+- **AWS deployment example**: [demo-values.yaml](demo-values.yaml)
+- **Configuration guide**: [docs/configuring-judge-helm.md](docs/configuring-judge-helm.md)
 
-- [Getting Started Guide](docs/getting-started-with-judge-helm.md)
-- [Configuration Reference](docs/configuring-judge-helm.md)
-
-### Architecture
-
-- [Component Architecture](../../docs/architecture/diagrams/component-architecture.md)
-- [Secrets Management Flow](../../docs/architecture/diagrams/secrets-management.md)
-- [Network Topology](../../docs/architecture/diagrams/network-topology.md)
-- [Deployment Pipeline](../../docs/architecture/diagrams/deployment-pipeline.md)
-
-### Deployment
-
-- [Terraform AWS Examples](../../examples/terraform/aws/complete/)
-- [Fulcio/TSA Trust Bootstrapping](../../docs/deployment/fulcio-tsa-trust-bootstrapping.md)
-
-### Component-Specific Docs
-
-- [Archivista](docs/archivista.md)
-- [Judge API](docs/judge-api.md)
-- [Judge Web](docs/judge-web.md)
-- [Kratos](docs/kratos.md)
-
-## Values
-
-See [values.yaml](values.yaml) for all available configuration options.
-
-See [demo-values.yaml](demo-values.yaml) for a complete AWS deployment example.
+Common customizations:
+- **Replica counts**: `<service>.replicaCount`
+- **Resource limits**: `<service>.resources`
+- **Image tags**: `<service>.image.tag`
+- **Service accounts**: `<service>.serviceAccount`
+- **Environment variables**: `<service>.deployment.env`
 
 ## Troubleshooting
 
@@ -397,6 +442,32 @@ kubectl get virtualservice -n judge
 kubectl get gateway -n judge
 istioctl analyze -n judge
 ```
+
+## Documentation
+
+### Getting Started
+
+- [Getting Started Guide](docs/getting-started-with-judge-helm.md)
+- [Configuration Reference](docs/configuring-judge-helm.md)
+
+### Architecture
+
+- [Component Architecture](../../docs/architecture/diagrams/component-architecture.md)
+- [Secrets Management Flow](../../docs/architecture/diagrams/secrets-management.md)
+- [Network Topology](../../docs/architecture/diagrams/network-topology.md)
+- [Deployment Pipeline](../../docs/architecture/diagrams/deployment-pipeline.md)
+
+### Deployment
+
+- [Terraform AWS Examples](../../examples/terraform/aws/complete/)
+- [Fulcio/TSA Trust Bootstrapping](../../docs/deployment/fulcio-tsa-trust-bootstrapping.md)
+
+### Component-Specific Docs
+
+- [Archivista](docs/archivista.md)
+- [Judge API](docs/judge-api.md)
+- [Judge Web](docs/judge-web.md)
+- [Kratos](docs/kratos.md)
 
 ## Support
 
