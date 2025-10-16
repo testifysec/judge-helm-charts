@@ -51,10 +51,15 @@ graph TB
         end
 
         subgraph "AWS Managed Services"
-            RDS[(RDS PostgreSQL<br/>Port 5432)]
-            S3[S3 Buckets<br/>Artifacts & Attestations]
-            SNS[SNS Topics<br/>Event Bus]
-            SQS[SQS Queues<br/>Message Queue]
+            subgraph "RDS Instance: demo-judge-postgres"
+                RDS_JudgeAPI[(judge_api DB<br/>Port 5432)]
+                RDS_Archivista[(archivista DB<br/>Port 5432)]
+                RDS_Kratos[(kratos DB<br/>Port 5432)]
+            end
+            S3_JudgeAPI[S3: demo-judge-judge<br/>Artifact Objects]
+            S3_Archivista[S3: demo-judge-archivista<br/>Attestation Objects]
+            SNS[SNS: demo-judge-archivista-attestations<br/>Event Bus]
+            SQS[SQS: demo-judge-archivista-attestations<br/>Message Queue]
         end
     end
 
@@ -95,13 +100,14 @@ graph TB
     JudgeAPI -.->|mTLS| Dapr
     Archivista -.->|mTLS| Dapr
 
-    %% Services to AWS
-    JudgeAPI -->|Private Link<br/>VPC Endpoint| RDS
-    Archivista -->|Private Link| RDS
-    KratosPublic -->|Private Link| RDS
+    %% Services to AWS - Separate databases per service
+    JudgeAPI -->|Private Link<br/>VPC Endpoint| RDS_JudgeAPI
+    Archivista -->|Private Link| RDS_Archivista
+    KratosPublic -->|Private Link| RDS_Kratos
 
-    JudgeAPI -->|S3 API<br/>VPC Endpoint| S3
-    Archivista -->|S3 API| S3
+    %% Services to S3 - Separate buckets per service (IRSA)
+    JudgeAPI -->|S3 API<br/>VPC Endpoint<br/>IRSA| S3_JudgeAPI
+    Archivista -->|S3 API<br/>IRSA| S3_Archivista
 
     Dapr -->|VPC Endpoint| SNS
     Dapr -->|VPC Endpoint| SQS
@@ -123,7 +129,7 @@ graph TB
     class KratosPublic,KratosAdmin auth
     class Fulcio,TSA pki
     class AIProxy,Dapr infra
-    class RDS,S3,SNS,SQS aws
+    class RDS_JudgeAPI,RDS_Archivista,RDS_Kratos,S3_JudgeAPI,S3_Archivista,SNS,SQS aws
 ```
 
 ## Network Layers
@@ -224,8 +230,18 @@ spec:
 
 ### VPC Endpoints
 - **RDS**: PrivateLink for database access (no public IP)
+  - Single RDS instance (`demo-judge-postgres`) with separate databases:
+    - `judge_api` - Judge API artifact metadata (separate schema)
+    - `archivista` - Attestation metadata (separate schema)
+    - `kratos` - Identity and session data (separate schema)
+  - **CRITICAL**: Each service requires a separate database to prevent Atlas migration conflicts
 - **S3**: Gateway VPC endpoint (free, no data transfer charges)
+  - Separate buckets per service with IRSA authentication:
+    - `demo-judge-judge` - Judge API artifact storage
+    - `demo-judge-archivista` - Archivista attestation objects
+  - IAM roles: `demo-judge-judge-api` and `demo-judge-archivista`
 - **SNS/SQS**: Interface VPC endpoints for messaging
+  - Topic/Queue: `demo-judge-archivista-attestations`
 
 ## Service Port Naming Convention
 

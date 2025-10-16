@@ -162,6 +162,51 @@ judge-api:
 
 **IMPORTANT**: You must create these IAM roles with appropriate S3, SNS, and SQS permissions. See [examples/terraform/aws/complete/](../../examples/terraform/aws/complete/) for complete infrastructure setup with Terraform.
 
+### Database Architecture
+
+**CRITICAL REQUIREMENT: Separate Databases Per Service**
+
+Each Judge service MUST have its own PostgreSQL database on the same RDS/PostgreSQL instance:
+
+- **judge_api**: Judge API artifact metadata, compliance frameworks, and policy data
+- **archivista**: Archivista attestation metadata and search indices
+- **kratos**: Kratos identity, sessions, and authentication data
+
+**Why Separate Databases?**
+
+Judge services use Atlas for database migrations, which tracks schema changes via hash-based versioning. Using a shared database causes migration conflicts:
+
+```
+Error: migration files were added out of order
+```
+
+**Setup Example:**
+
+```sql
+-- Connect to your PostgreSQL instance
+psql "postgresql://postgres:password@your-rds-endpoint.amazonaws.com:5432/postgres"
+
+-- Create separate databases
+CREATE DATABASE judge_api;
+CREATE DATABASE archivista;
+CREATE DATABASE kratos;
+```
+
+Then configure each service's connection string to point to its dedicated database:
+
+```yaml
+global:
+  database:
+    provider: aws-rds
+    aws:
+      endpoint: your-rds-endpoint.amazonaws.com
+
+# Each service connects to its own database via DSN
+# archivista_dsn: postgresql://user:pass@endpoint:5432/archivista
+# judge_api_dsn: postgresql://user:pass@endpoint:5432/judge_api
+# kratos_dsn: postgresql://user:pass@endpoint:5432/kratos
+```
+
 ### Database Credentials
 
 Choose one of these methods to provide database credentials:
@@ -433,6 +478,86 @@ kubectl describe externalsecret judge-api-database -n judge
 # Check Kubernetes Secret created by ESO
 kubectl get secret judge-judge-api-database -n judge -o yaml
 ```
+
+### Atlas Migration Errors
+
+**Error: "migration files were added out of order"**
+
+This error occurs when multiple services share the same PostgreSQL database:
+
+```
+Error: migration files 20241029143514_pgsql.sql, 20241101132730_seed_compliance_frameworks.sql,
+2025012804232658_UpdateReleaseFramework.sql were added out of order.
+```
+
+**Root Cause:**
+
+Atlas uses hash-based migration tracking in the `atlas_schema_revisions` table. When judge-api, archivista, and kratos share the same database, their migrations conflict because Atlas detects "out of order" changes from different services.
+
+**Solution:**
+
+Create separate databases for each service on the same RDS instance:
+
+```bash
+# 1. Create databases
+kubectl apply -f - <<EOF
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-separate-databases
+  namespace: judge
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: create-dbs
+        image: postgres:15
+        command: ["/bin/bash", "-c"]
+        args:
+        - |
+          psql "\$DATABASE_URL" <<'SQL'
+          CREATE DATABASE judge_api;
+          CREATE DATABASE archivista;
+          CREATE DATABASE kratos;
+          SQL
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: judge-platform-judge-api-database
+              key: connectionString
+EOF
+
+# 2. Update Vault with separate DSNs
+vault kv put secret/{env}/kubernetes/rds/testifysec-judge \
+  judge_api_dsn="postgresql://user:pass@endpoint:5432/judge_api?sslmode=require" \
+  archivista_dsn="postgresql://user:pass@endpoint:5432/archivista?sslmode=require" \
+  kratos_dsn="postgresql://user:pass@endpoint:5432/kratos?sslmode=require"
+
+# 3. Force External Secrets sync
+kubectl annotate externalsecret -n judge judge-platform-judge-api-database \
+  force-sync=$(date +%s) --overwrite
+kubectl annotate externalsecret -n judge judge-platform-judge-archivista-database \
+  force-sync=$(date +%s) --overwrite
+kubectl annotate externalsecret -n judge judge-platform-judge-kratos \
+  force-sync=$(date +%s) --overwrite
+
+# 4. Restart all pods to pick up new database connections
+kubectl rollout restart deployment -n judge
+kubectl rollout restart statefulset -n judge
+```
+
+**Verification:**
+
+```bash
+# Check that each service connects to its own database
+kubectl logs -n judge -l app=judge-api --tail=50 | grep "Running migrations"
+kubectl logs -n judge -l app=archivista --tail=50 | grep "Running migrations"
+kubectl logs -n judge -l app=kratos --tail=50 | grep "Running migrations"
+```
+
+Each service should show successful migrations without conflicts.
 
 ### Istio Issues
 

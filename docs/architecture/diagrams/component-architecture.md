@@ -37,14 +37,14 @@ graph TB
     JudgeAPI -.->|Workflows| Dapr[Dapr Runtime<br/>Messaging & State]
     Archivista -.->|Pub/Sub| Dapr
 
-    %% Data Layer
-    JudgeAPI -->|PostgreSQL| RDS[(RDS Database<br/>Metadata)]
-    Archivista -->|PostgreSQL| RDS
-    Kratos -->|PostgreSQL| RDS
+    %% Data Layer - Separate databases per service
+    JudgeAPI -->|PostgreSQL| RDS_JudgeAPI[(RDS: judge_api<br/>Artifact Metadata)]
+    Archivista -->|PostgreSQL| RDS_Archivista[(RDS: archivista<br/>Attestation Metadata)]
+    Kratos -->|PostgreSQL| RDS_Kratos[(RDS: kratos<br/>Identity Data)]
 
-    %% Storage Layer
-    JudgeAPI -->|S3 API| S3[S3 Bucket<br/>Artifacts]
-    Archivista -->|S3 API| S3
+    %% Storage Layer - Separate S3 buckets per service
+    JudgeAPI -->|S3 API| S3_JudgeAPI[S3: demo-judge-judge<br/>Artifact Objects]
+    Archivista -->|S3 API| S3_Archivista[S3: demo-judge-archivista<br/>Attestation Objects]
 
     %% Messaging Layer
     Dapr -->|SNS/SQS| Messaging[AWS SNS/SQS<br/>Event Bus]
@@ -64,7 +64,7 @@ graph TB
     class Fulcio,TSA pki
     class Vault kms
     class Dapr,Messaging infra
-    class RDS,S3 data
+    class RDS_JudgeAPI,RDS_Archivista,RDS_Kratos,S3_JudgeAPI,S3_Archivista data
 ```
 
 ## Component Descriptions
@@ -94,8 +94,14 @@ graph TB
 - **AWS SNS/SQS**: Event bus for asynchronous communication
 
 ### Data Layer
-- **RDS Database**: PostgreSQL database for metadata storage
-- **S3 Bucket**: Object storage for artifacts and attestations
+- **RDS Databases**: PostgreSQL 16 databases on shared RDS instance (`demo-judge-postgres`)
+  - `judge_api`: Artifact metadata, compliance frameworks, and policy data
+  - `archivista`: Attestation metadata and search indices
+  - `kratos`: User identity, sessions, and authentication data
+  - **CRITICAL**: Each service MUST have a separate database - using shared database causes Atlas migration conflicts
+- **S3 Buckets**: Separate object storage per service (IRSA authentication)
+  - `demo-judge-judge`: Judge API artifact storage (attestations, SBOMs, policies)
+  - `demo-judge-archivista`: Archivista attestation objects and blobs
 
 ## Key Patterns
 
@@ -103,5 +109,8 @@ graph TB
 2. **Authentication Flow**: OIDC federation via Kratos and Dex
 3. **API Gateway**: Federation Gateway provides unified GraphQL interface
 4. **Event-Driven**: Dapr pub/sub for asynchronous workflows
-5. **Multi-Tenancy**: Separate databases per service, shared infrastructure
+5. **Data Isolation**: Each service has dedicated database and S3 bucket for security and schema independence
+   - Prevents migration conflicts between services (Atlas schema versioning)
+   - Enables independent service scaling and backup strategies
+   - IRSA (IAM Roles for Service Accounts) provides per-service S3 permissions
 6. **PKI Key Management** (TODO): Fulcio and TSA will use Google Tink with HashiCorp Vault KMS for secure key storage and signing operations
