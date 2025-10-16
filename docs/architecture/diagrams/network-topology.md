@@ -19,13 +19,20 @@ graph TB
                 Gateway[Istio Ingress Gateway<br/>istio-ingressgateway]
             end
 
-            subgraph "Frontend Services"
+            subgraph "Public VirtualServices"
                 VS_Web[VirtualService<br/>judge.domain.com]
                 VS_Login[VirtualService<br/>login.domain.com]
-                VS_Archivista[VirtualService<br/>archivista.domain.com]
+                VS_API[VirtualService<br/>api.domain.com]
+                VS_Gateway[VirtualService<br/>gateway.domain.com]
+                VS_Kratos[VirtualService<br/>kratos.domain.com]
+                VS_Dex[VirtualService<br/>dex.domain.com]
+                VS_Fulcio[VirtualService<br/>fulcio.domain.com]
+                VS_TSA[VirtualService<br/>tsa.domain.com]
+            end
 
-                JudgeWeb[judge-web<br/>:80]
-                KratosUI[kratos-selfservice-ui<br/>:3000]
+            subgraph "Frontend Services"
+                JudgeWeb[judge-web<br/>:8077]
+                KratosUI[kratos-selfservice-ui<br/>:80]
             end
 
             subgraph "API Services"
@@ -34,17 +41,17 @@ graph TB
                 Archivista[archivista<br/>:8082]
             end
 
-            subgraph "Auth Services"
+            subgraph "Auth Services (Internal)"
                 KratosPublic[kratos-public<br/>:80]
                 KratosAdmin[kratos-admin<br/>:80]
             end
 
             subgraph "PKI Services"
-                Fulcio[fulcio<br/>:5555]
-                TSA[tsa<br/>:3000]
+                Fulcio[fulcio<br/>:80/gRPC]
+                TSA[tsa<br/>:80]
             end
 
-            subgraph "Infrastructure Services"
+            subgraph "Infrastructure Services (Internal)"
                 AIProxy[judge-ai-proxy<br/>:8080]
                 Dapr[dapr-api<br/>:80]
             end
@@ -70,17 +77,35 @@ graph TB
     %% ALB to Istio Gateway
     ALB -->|HTTP 80| Gateway
 
-    %% Gateway to VirtualServices
+    %% Gateway to Public VirtualServices
     Gateway -->|Host: judge.domain.com| VS_Web
     Gateway -->|Host: login.domain.com| VS_Login
-    Gateway -->|Host: archivista.domain.com| VS_Archivista
+    Gateway -->|Host: api.domain.com| VS_API
+    Gateway -->|Host: gateway.domain.com| VS_Gateway
+    Gateway -->|Host: kratos.domain.com| VS_Kratos
+    Gateway -->|Host: dex.domain.com| VS_Dex
+    Gateway -->|Host: fulcio.domain.com| VS_Fulcio
+    Gateway -->|Host: tsa.domain.com| VS_TSA
 
-    %% VirtualServices to Frontend
+    %% Public VirtualServices to Services
     VS_Web -->|mTLS| JudgeWeb
     VS_Login -->|mTLS| KratosUI
+    VS_API -->|mTLS| JudgeAPI
+    VS_Gateway -->|mTLS| Gateway_Svc
+    VS_Kratos -->|mTLS| KratosPublic
+    VS_Dex -->|mTLS| Dex
+    VS_Fulcio -->|mTLS| Fulcio
+    VS_TSA -->|mTLS| TSA
 
-    %% Frontend to API Gateway
-    JudgeWeb -->|mTLS| Gateway_Svc
+    %% Frontend Path-Based Routing
+    JudgeWeb -->|/archivista/| Archivista
+    JudgeWeb -->|/upload| Archivista
+    JudgeWeb -->|/judge-api/| JudgeAPI
+    JudgeWeb -->|/gateway/| Gateway_Svc
+    JudgeWeb -->|/kratos/| KratosPublic
+    JudgeWeb -->|/login/| KratosUI
+
+    %% Frontend to Auth (internal)
     KratosUI -->|mTLS| KratosPublic
 
     %% API Gateway to Backend
@@ -150,38 +175,46 @@ graph TB
 - **TLS Mode**: PASSTHROUGH (TLS handled by ALB)
 
 ### Layer 3: Istio VirtualServices
-Intelligent routing based on HTTP Host headers:
+Intelligent routing based on HTTP Host headers. Backend services are routed internally through path-based rules on judge-web VirtualService:
 
 ```yaml
-# judge-web VirtualService
-- match:
-  - uri:
-      prefix: "/"
-  route:
-  - destination:
-      host: judge-web
-      port:
-        number: 80
-
-# kratos-selfservice-ui VirtualService
-- match:
-  - uri:
-      prefix: "/"
-  route:
-  - destination:
-      host: kratos-selfservice-ui-node
-      port:
-        number: 3000
-
-# archivista VirtualService
-- match:
-  - uri:
-      prefix: "/v1"
-  route:
-  - destination:
+# Judge Web VirtualService (public)
+judge.domain.com:
+  routes:
+  - match:
+      prefix: "/archivista/"
+    destination:
       host: archivista
-      port:
-        number: 8082
+      port: 8082
+  - match:
+      prefix: "/upload"
+    destination:
+      host: archivista
+      port: 8082
+  - match:
+      prefix: "/judge-api/"
+    destination:
+      host: judge-api
+      port: 8080
+  - match:
+      prefix: "/"
+    destination:
+      host: judge-web
+      port: 8077
+
+# Judge API VirtualService (direct public route)
+api.domain.com:
+  destination:
+    host: judge-api
+    port: 8080
+
+# Direct Public VirtualServices (one per service)
+gateway.domain.com → federation-gateway:4000
+kratos.domain.com → kratos-public:80
+login.domain.com → kratos-selfservice-ui:80
+dex.domain.com → dex:5556
+fulcio.domain.com → fulcio:80
+tsa.domain.com → tsa:80
 ```
 
 ### Layer 4: Service-to-Service Communication
@@ -341,5 +374,10 @@ Examples:
 
 Examples:
 - `judge.testifysec-demo.xyz` → ALB → Istio Gateway → VirtualService → judge-web
+  - `/archivista/` path routes internally to archivista (with auth/tenancy enforcement)
+  - `/upload` endpoint routes to archivista with secure upload validation
 - `login.testifysec-demo.xyz` → ALB → Istio Gateway → VirtualService → kratos-ui
-- `archivista.testifysec-demo.xyz` → ALB → Istio Gateway → VirtualService → archivista
+- `api.testifysec-demo.xyz` → ALB → Istio Gateway → VirtualService → judge-api
+- `gateway.testifysec-demo.xyz` → ALB → Istio Gateway → VirtualService → federation-gateway
+
+**Note**: Archivista is NOT directly exposed at `archivista.{domain}`. Access is only via path-based routing through judge-web for security enforcement.

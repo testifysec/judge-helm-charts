@@ -380,15 +380,31 @@ The chart includes native Istio support with:
 
 ### Exposed Services
 
-After deployment with Istio Gateway:
+After deployment with Istio Gateway, the following services are exposed via external domain routes:
 
 | Service | URL | Purpose |
 |---------|-----|---------|
 | Judge Web UI | `https://judge.{domain}` | Primary web interface |
+| Judge API | `https://api.{domain}` | REST API endpoints |
 | Kratos Login | `https://login.{domain}` | Authentication UI |
-| Archivista API | `https://archivista.{domain}` | Attestation API |
-| Fulcio (future) | `https://fulcio.{domain}` | Code signing CA |
-| TSA (future) | `https://tsa.{domain}` | Timestamping service |
+| Kratos Public | `https://kratos.{domain}` | OIDC public endpoints |
+| Dex OIDC | `https://dex.{domain}` | OIDC provider |
+| Fulcio | `https://fulcio.{domain}` | Code signing CA (HTTP/gRPC) |
+| TSA | `https://tsa.{domain}` | Timestamping service |
+| Gateway | `https://gateway.{domain}` | Federation gateway (GraphQL) |
+
+### Protected Internal Services
+
+The following backend services are **NOT directly exposed** externally. They are only accessible through controlled path-based routing:
+
+| Service | Internal Access | Purpose |
+|---------|-----------------|---------|
+| Archivista | `/archivista/` via judge.{domain} | Attestation storage API |
+| Archivista Upload | `/upload` via judge.{domain} | Secure upload with auth/tenancy |
+| AI Proxy | Internal cluster-only | AI service integration |
+| Kratos Admin | Internal cluster-only | Administrative interfaces |
+
+**Security Model**: Backend services use path-based routing through judge-web to enforce authentication, authorization, and multi-tenant isolation. This prevents direct exposure and reduces attack surface.
 
 ### Accessing Services
 
