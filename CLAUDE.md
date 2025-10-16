@@ -68,6 +68,27 @@ This PR adds External Secrets Operator (ESO) integration with HashiCorp Vault fo
 - **Judge-API**: `charts/judge-api/templates/external-secret-database.yaml`
 - **Archivista**: `charts/archivista/templates/external-secret-database.yaml`
 
+### 4. Service URL Templating (Issue #6)
+**Purpose**: Support multiple releases in same/different namespaces with dynamic service discovery
+
+**New Helpers Added**:
+- `judge.service.kratosAdminUrl` - Kratos admin internal service URL
+- `judge.service.kratosPublicUrl` - Kratos public internal service URL
+- `judge.service.judgeApiWebhookUrl` - Judge API webhook endpoint for Kratos registration hook
+
+**Updated Templates**:
+- `charts/judge/templates/gateway/deployment.yaml` - Uses service URL helpers instead of hardcoded values
+- `charts/judge/templates/_helpers.tpl` - Kratos config factory uses dynamic webhook URL
+
+**Result**: Service URLs now automatically include release name:
+- `http://{releaseName}-judge-archivista.{namespace}.svc.cluster.local:8082`
+- `http://{releaseName}-judge-api.{namespace}.svc.cluster.local:8080`
+- `http://{releaseName}-judge-gateway.{namespace}.svc.cluster.local:4000`
+
+**Commits**:
+- `47f593d` - Issue #6: Template service URLs to support multiple release names
+- `af42e80` - Fix: Handle nil pointer in judgeApiWebhookUrl helper
+
 ## Usage
 
 ### Enable Vault Integration
