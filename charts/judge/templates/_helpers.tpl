@@ -167,7 +167,10 @@ Format: http://{releaseName}-{serviceName}.{namespace}.svc.cluster.local:{port}
 {{- end -}}
 
 {{- define "judge.service.judgeApiWebhookUrl" -}}
-{{- $judgeApiName := default "judge-api" (index .Values "judge-api" "nameOverride") -}}
+{{- $judgeApiName := "judge-api" -}}
+{{- if hasKey .Values "judge-api" -}}
+  {{- $judgeApiName = default "judge-api" ((index .Values "judge-api").nameOverride) -}}
+{{- end -}}
 {{- printf "http://%s-%s.%s.svc.cluster.local:8080/webhook/defaulttenant" .Release.Name $judgeApiName .Release.Namespace -}}
 {{- end -}}
 
