@@ -1,0 +1,21 @@
+extends: default
+
+rules:
+  line-length:
+    max: 150
+    level: warning
+  truthy:
+    allowed-values: ['true', 'false']
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    max-spaces-inside: 1
+  brackets:
+    max-spaces-inside: 1
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+ignore: |
+  charts/*/charts/*.tgz
+  .github/workflows/

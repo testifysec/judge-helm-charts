@@ -1,0 +1,367 @@
+name: Comprehensive Helm Chart Validation
+
+on:
+  pull_request:
+    branches: [ main, develop, feature/* ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # Test 1: Service URL Pattern Validation
+  validate-service-urls:
+    name: Validate Service URLs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check service URL patterns
+        run: |
+          echo "Checking service URLs follow Kubernetes naming pattern..."
+
+          # This catches hardcoded service names that won't work with Helm releases
+          ERRORS=0
+
+          # Look for problematic patterns in values files
+          if grep -r "demo-judge-judge-" charts/ --include="*values*.yaml" 2>/dev/null; then
+            echo "❌ Found hardcoded demo-judge-judge- service names"
+            echo "   These should use Helm template functions or {release}-judge-{component}"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          # Check for prod prefix in non-prod files
+          if grep -r "prod-judge" charts/ --include="demo-values.yaml" 2>/dev/null; then
+            echo "❌ Found prod-judge prefix in demo-values.yaml"
+            ERRORS=$((ERRORS + 1))
+          fi
+
+          if [ $ERRORS -gt 0 ]; then
+            echo "Service URL validation failed with $ERRORS errors"
+            exit 1
+          fi
+          echo "✅ Service URL patterns validated"
+
+  # Test 2: AWS Resource Naming Consistency
+  validate-aws-resources:
+    name: Validate AWS Resources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check AWS resource naming
+        run: |
+          echo "Checking AWS resource naming consistency..."
+
+          # Create a script to check for consistency
+          cat > check_aws.py << 'EOF'
+          import sys
+          import re
+          import glob
+
+          errors = []
+
+          for file in glob.glob('charts/**/values*.yaml', recursive=True):
+              with open(file, 'r') as f:
+                  content = f.read()
+
+              # Find all S3 bucket names
+              buckets = re.findall(r'bucket[^:]*:\s*([a-z0-9\-]+)', content)
+              # Find all IAM role references
+              roles = re.findall(r'role-arn[^:]*:\s*[\'"]?arn:aws:iam::[0-9]+:role/([a-z0-9\-]+)', content)
+              # Find all SNS/SQS references
+              topics = re.findall(r'topic[^:]*:\s*([a-z0-9\-]+)', content)
+
+              # Check for mixed prefixes
+              all_resources = ' '.join(buckets + roles + topics)
+              if 'prod-judge' in all_resources and 'demo-judge' in all_resources:
+                  errors.append(f"Mixed prod/demo prefixes in {file}")
+
+              # Check demo-values.yaml shouldn't have prod references
+              if 'demo-values' in file and 'prod-judge' in all_resources:
+                  errors.append(f"Production references in {file}")
+
+          if errors:
+              for error in errors:
+                  print(f"❌ {error}")
+              sys.exit(1)
+          else:
+              print("✅ AWS resource naming is consistent")
+          EOF
+
+          python3 check_aws.py
+
+  # Test 3: Database Separation Check
+  validate-database-config:
+    name: Validate Database Configuration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check database separation
+        run: |
+          echo "Checking database separation..."
+
+          # Count references to shared postgres database
+          SHARED_DB=$(grep -r '/postgres"' charts/ --include="*.yaml" 2>/dev/null | wc -l)
+
+          if [ "$SHARED_DB" -gt 0 ]; then
+            echo "⚠️  Warning: Found $SHARED_DB references to shared 'postgres' database"
+            echo "   Services should use separate databases: judge_api, archivista, kratos"
+          fi
+
+          # Check for proper database names in templates
+          for db in judge_api archivista kratos; do
+            if grep -q "database.*$db" charts/ -r; then
+              echo "✅ Found $db database configuration"
+            fi
+          done
+
+  # Test 4: Helm Template Validation
+  helm-template-tests:
+    name: Helm Template Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scenario:
+          - name: minimal
+            values: |
+              mysql:
+                enabled: false
+              minio:
+                enabled: false
+              global:
+                database:
+                  host: postgres.example.com
+                  username: postgres
+                  password: testpassword
+          - name: with-eso
+            values: |
+              global:
+                externalSecrets:
+                  enabled: true
+                database:
+                  host: postgres.example.com
+                  username: postgres
+                  password: testpassword
+          - name: with-s3
+            values: |
+              minio:
+                enabled: false
+              global:
+                storage:
+                  s3:
+                    bucket: test-bucket
+                database:
+                  host: postgres.example.com
+                  username: postgres
+                  password: testpassword
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: 'v3.13.0'
+
+      - name: Create values file
+        run: |
+          cat > test-values.yaml << 'EOF'
+          ${{ matrix.scenario.values }}
+          EOF
+
+      - name: Test ${{ matrix.scenario.name }}
+        run: |
+          helm dependency update charts/judge
+          helm template test charts/judge -f test-values.yaml > /tmp/output.yaml
+
+          # Basic validation
+          if [ ! -s /tmp/output.yaml ]; then
+            echo "❌ Template generation failed"
+            exit 1
+          fi
+
+          # Check for common issues
+          if grep -q "null" /tmp/output.yaml; then
+            echo "⚠️  Warning: null values in rendered template"
+          fi
+
+          echo "✅ Scenario ${{ matrix.scenario.name }} passed"
+
+  # Test 5: External Secrets Validation
+  validate-external-secrets:
+    name: Validate External Secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate ESO configuration
+        run: |
+          echo "Validating External Secrets configuration..."
+
+          # Check all ExternalSecret templates
+          for file in $(find charts -name "*external-secret*.yaml"); do
+            echo "Checking $file..."
+
+            # Verify required annotations
+            if grep -q "kind: ExternalSecret" "$file"; then
+              if ! grep -q "argocd.argoproj.io/sync-wave" "$file"; then
+                echo "⚠️  Missing sync-wave annotation in $file"
+              fi
+            fi
+
+            # Check Vault paths follow pattern
+            if grep -q "remoteRef:" "$file"; then
+              if ! grep -q "key: \(secret/\|{{ .Values\)" "$file"; then
+                echo "⚠️  Non-standard Vault path in $file"
+              fi
+            fi
+          done
+
+          echo "✅ External Secrets configuration validated"
+
+  # Test 6: Container Image Validation
+  validate-container-images:
+    name: Validate Container Images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check image tags
+        run: |
+          echo "Checking container image tags..."
+
+          # Find all image references
+          LATEST_TAGS=$(grep -r "image:.*:latest" charts/ --include="*.yaml" 2>/dev/null || true)
+
+          if [ -n "$LATEST_TAGS" ]; then
+            echo "❌ Found :latest tags:"
+            echo "$LATEST_TAGS"
+            exit 1
+          fi
+
+          echo "✅ No :latest tags found"
+
+  # Test 7: YAML Linting
+  yaml-lint:
+    name: YAML Linting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Create yamllint config
+        run: |
+          cat > .yamllint << EOF
+          extends: default
+          rules:
+            line-length:
+              max: 150
+            truthy:
+              allowed-values: ['true', 'false']
+            comments:
+              min-spaces-from-content: 1
+          ignore: |
+            charts/*/charts/*.tgz
+          EOF
+
+      - name: Run yamllint
+        run: yamllint charts/
+
+  # Test 8: Security Scanning
+  security-scan:
+    name: Security Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'config'
+          scan-ref: 'charts/'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Test 9: Documentation Validation
+  validate-docs:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install mermaid-cli
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Validate Mermaid diagrams
+        run: |
+          # Extract and compile all mermaid diagrams
+          for file in $(find docs -name "*.md"); do
+            if grep -q "```mermaid" "$file"; then
+              echo "Validating diagrams in $file..."
+
+              # Extract mermaid blocks and test compilation
+              awk '/```mermaid/,/```/' "$file" | grep -v '```' > /tmp/test.mmd
+
+              if [ -s /tmp/test.mmd ]; then
+                mmdc -i /tmp/test.mmd -o /tmp/test.svg --quiet || {
+                  echo "❌ Invalid Mermaid diagram in $file"
+                  exit 1
+                }
+              fi
+            fi
+          done
+
+          echo "✅ All Mermaid diagrams are valid"
+
+  # Test 10: Run existing tests
+  run-chart-tests:
+    name: Run Chart Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+        with:
+          version: 'v3.13.0'
+
+      - name: Run make test
+        run: |
+          make test
+
+      - name: Run domain tests
+        run: |
+          if [ -d charts/judge/tests ]; then
+            cd charts/judge/tests
+            ./run-all-tests.sh
+          fi
+
+  # Final status check
+  all-checks-passed:
+    name: All Checks Passed
+    runs-on: ubuntu-latest
+    needs:
+      - validate-service-urls
+      - validate-aws-resources
+      - validate-database-config
+      - helm-template-tests
+      - validate-external-secrets
+      - validate-container-images
+      - yaml-lint
+      - security-scan
+      - validate-docs
+      - run-chart-tests
+    steps:
+      - name: Summary
+        run: |
+          echo "✅ All validation checks passed!"
+          echo "This PR is ready for review."

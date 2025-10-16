@@ -74,7 +74,21 @@ validate: ## Validate Helm templates
 	@echo ""
 	@echo "$(GREEN)✓ All validations passed$(NC)"
 
-test: check-deps validate ## Run all tests (dependency freshness + template validation)
+##@ Validation Checks
+
+validate-service-urls: ## Validate service URL patterns
+	@./scripts/validate_service_urls.sh
+
+validate-database: ## Check database separation
+	@python3 ./scripts/validate_database_separation.py
+
+validate-external-secrets: ## Validate External Secrets configuration
+	@./scripts/validate_external_secrets.sh
+
+validate-all: validate validate-service-urls validate-database validate-external-secrets ## Run all validation checks
+	@echo "$(GREEN)✓ All validation checks passed!$(NC)"
+
+test: check-deps validate-all ## Run all tests (dependency freshness + all validations)
 	@echo ""
 	@echo "$(GREEN)✓ All tests passed!$(NC)"
 

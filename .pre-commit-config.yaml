@@ -1,0 +1,71 @@
+# Pre-commit hooks for Judge Helm Charts
+# Install: pip install pre-commit && pre-commit install
+
+repos:
+  # Standard file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--unsafe]  # Allow Helm template functions
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+        exclude: 'charts/.*/charts/.*\.tgz'
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        args: [-c=.yamllint]
+        exclude: 'charts/.*/charts/.*\.tgz'
+
+  # Shell script checking
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: ['-x']
+        files: '\.(sh|bash)$'
+
+  # Local Helm-specific checks
+  - repo: local
+    hooks:
+      - id: helm-deps-check
+        name: Check Helm Dependencies
+        entry: make check-deps
+        language: system
+        files: ^charts/
+        pass_filenames: false
+
+      - id: validate-service-urls
+        name: Validate Service URLs
+        entry: ./scripts/validate_service_urls.sh
+        language: script
+        files: ^charts/.*values.*\.yaml$
+        pass_filenames: false
+
+      - id: validate-database-separation
+        name: Validate Database Separation
+        entry: python3 ./scripts/validate_database_separation.py
+        language: system
+        files: ^charts/.*values.*\.yaml$
+        pass_filenames: false
+
+      - id: validate-external-secrets
+        name: Validate External Secrets
+        entry: ./scripts/validate_external_secrets.sh
+        language: script
+        files: ^charts/.*external-secret.*\.yaml$
+        pass_filenames: false
+
+      - id: check-latest-tags
+        name: Check for :latest tags
+        entry: bash -c 'grep -r "image:.*:latest" charts/ --include="*.yaml" && echo "❌ Found :latest tags!" && exit 1 || exit 0'
+        language: system
+        files: ^charts/.*\.yaml$
+        pass_filenames: false
