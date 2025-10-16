@@ -14,6 +14,14 @@ global:
 
   domain: example.com
 
+  oidc:
+    enabled: false
+
+  storage:
+    buckets:
+      judgeApi: test-judge-api
+      archivista: test-archivista
+
 mysql:
   enabled: false
 
@@ -22,3 +30,28 @@ minio:
 
 kratos:
   enabled: true
+
+judge-api:
+  enabled: true
+  deployment:
+    env:
+      - name: BLOB_STORE_BUCKET_NAME
+        value: "test-judge-api"
+      - name: BLOB_STORE_ENDPOINT
+        value: "s3.amazonaws.com"
+      - name: BLOB_STORE_CREDENTIAL_TYPE
+        value: "IAM"
+
+archivista:
+  enabled: true
+  deployment:
+    env:
+      - name: BLOB_STORE_BUCKET_NAME
+        value: "test-archivista"
+
+istio:
+  domain: example.com
+
+dapr:
+  pubsub:
+    enabled: false

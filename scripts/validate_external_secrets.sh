@@ -1,7 +1,7 @@
 #!/bin/bash
 # Validate External Secrets Operator configuration
 
-set -e
+set -eo pipefail
 
 echo "=== Validating External Secrets Configuration ==="
 
@@ -53,7 +53,7 @@ for file in $ES_FILES; do
     fi
 
     # Check Vault paths follow expected pattern - but only for actual path values
-    VAULT_PATHS=$(grep "key:" "$file" | sed 's/.*key:\s*//' | tr -d '"' | tr -d "'" | grep -v "^$" | grep -v "{{")
+    VAULT_PATHS=$(grep "key:" "$file" | sed 's/.*key:\s*//' | tr -d '"' | tr -d "'" | grep -v "^$" | grep -v "{{" || true)
 
     for path_value in $VAULT_PATHS; do
         # Skip empty values and template variables
@@ -95,7 +95,7 @@ if [ -n "$SECRET_REFS" ]; then
     echo "ℹ️  Found Secret references in deployments"
 
     # Extract secret names (handle both inline and multiline formats)
-    SECRET_NAMES=$(echo "$SECRET_REFS" | grep -A1 "secretKeyRef:" | grep "name:" | sed 's/.*name:\s*//' | tr -d '"' | tr -d "'" | grep -v "{{" | sort -u)
+    SECRET_NAMES=$(echo "$SECRET_REFS" | grep -A1 "secretKeyRef:" | grep "name:" | sed 's/.*name:\s*//' | tr -d '"' | tr -d "'" | grep -v "{{" | sort -u || true)
 
     # Check if ExternalSecrets create these secrets
     for secret_name in $SECRET_NAMES; do
