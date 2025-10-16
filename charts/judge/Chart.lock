@@ -7,16 +7,16 @@ dependencies:
   version: 0.1.1
 - name: kratos
   repository: file://../kratos
-  version: 1.6.0
+  version: 1.6.1
 - name: kratos-selfservice-ui-node
   repository: file://../kratos-selfservice-ui-node
   version: 1.6.0
 - name: archivista
   repository: file://../archivista
-  version: 1.6.0
+  version: 1.6.1
 - name: judge-api
   repository: file://../judge-api
-  version: 1.6.0
+  version: 1.6.1
 - name: dapr
   repository: file://../dapr
   version: 1.14.4
@@ -38,5 +38,5 @@ dependencies:
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.0
-digest: sha256:e07e116d60abe97bc4f521346df167d7c0e290b8cb41dade277053c22bab41c3
-generated: "2025-10-07T20:02:31.06373-05:00"
+digest: sha256:5a53d3f311c384294cd36f284d31bc959b199559867ff87088a93e1ee74872b1
+generated: "2025-10-14T22:08:40.282694-05:00"
