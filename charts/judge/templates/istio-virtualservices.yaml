@@ -77,6 +77,15 @@ spec:
             host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
             port:
               number: 8082
+    # Upload endpoint (proxies to Archivista with auth/tenancy logic)
+    - match:
+        - uri:
+            prefix: "/upload"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
+            port:
+              number: 8082
     # Judge API routes
     - match:
         - uri:
@@ -131,29 +140,6 @@ spec:
             host: {{ printf "%s-%s" .Release.Name (default "judge-api" (index .Values "judge-api" "nameOverride")) }}
             port:
               number: 8080
----
-# Archivista VirtualService
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: {{ include "judge.fullname" . }}-archivista-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - "archivista.{{ .Values.istio.domain }}"
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
-            port:
-              number: 8082
 ---
 # Fulcio HTTP VirtualService
 apiVersion: networking.istio.io/v1beta1
@@ -247,29 +233,6 @@ spec:
             port:
               number: 80
 ---
-# Kratos Admin VirtualService
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: kratos-admin-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - "kratos-admin.{{ .Values.istio.domain }}"
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: kratos-admin
-            port:
-              number: 80
----
 # Kratos Selfservice UI VirtualService (login)
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
@@ -292,29 +255,6 @@ spec:
             host: kratos-selfservice-ui-node
             port:
               number: 80
----
-# AI Proxy VirtualService
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: {{ include "judge.fullname" . }}-ai-proxy-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - "ai-proxy.{{ .Values.istio.domain }}"
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: {{ printf "%s-%s" .Release.Name (default "judge-ai-proxy" (index .Values "judge-ai-proxy" "nameOverride")) }}
-            port:
-              number: 8080
 {{- if .Values.minio.enabled }}
 ---
 # MinIO VirtualService (dev/testing only)
