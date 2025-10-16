@@ -13,8 +13,22 @@ global:
 
   imagePullSecrets: []  # ECR auth via node IAM role, not K8s secret
   storageClass: ""
-  ## Compatibility adaptations for Kubernetes platforms
-  ##
+
+  # Secrets management via External Secrets Operator (ESO) + Vault
+  # These variables are used to construct Vault paths for multi-environment deployments
+  # Pattern: {env}/kubernetes/{secret-type}/{project}
+  # Examples:
+  #   - dev/kubernetes/rds/myproject (development)
+  #   - prod/kubernetes/rds/myproject (production)
+  secrets:
+    provider: "vault"  # Secret backend: vault (External Secrets Operator)
+    vault:
+      server: "https://vault.example.com"  # Vault server address (override in environment-specific values)
+      path: "secret"  # KV v2 mount path
+      version: "v2"   # KV version (v1 or v2)
+      authMountPath: "kubernetes"  # Kubernetes auth backend mount path
+      env: "dev"      # Environment identifier: dev, staging, prod (override per environment)
+      project: "myproject"  # Project identifier for path construction (override with your project)
 
 # Istio service mesh configuration
 istio:
