@@ -39,4 +39,4 @@ dependencies:
   repository: file://../judge-ai-proxy
   version: 0.1.0
 digest: sha256:5a53d3f311c384294cd36f284d31bc959b199559867ff87088a93e1ee74872b1
-generated: "2025-10-14T22:08:40.282694-05:00"
+generated: "2025-10-15T01:52:14.456257-05:00"
