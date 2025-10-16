@@ -239,6 +239,83 @@ Each Judge service MUST have its own PostgreSQL database:
   - ✅ kratos v1.1.0-token-update - Running
   - ✅ All 9 services operational
 
+## Development Practices
+
+### Helm Dependency Management - CRITICAL FOR ARGOCD
+
+**ALWAYS remember**: This repository uses `file://` relative path dependencies in `Chart.yaml`. These paths cannot be resolved by ArgoCD!
+
+#### Root Cause of OutOfSync Issues
+
+When you modify a subchart template (e.g., `charts/tsa/templates/tsa-configmap.yaml`):
+1. Your local `helm template` renders the fix correctly
+2. But ArgoCD uses **cached/stale chart versions** from when dependencies were last built
+3. ArgoCD cannot resolve `file://../tsa` paths - it needs `Chart.lock` to have concrete chart versions
+4. Result: Resources show `OutOfSync` despite your fixes being committed
+
+#### Solution: Pre-Commit Hook
+
+A pre-commit hook automatically rebuilds `Chart.lock` whenever `Chart.yaml` changes:
+
+```bash
+# Normal workflow - hook handles everything:
+$ git add charts/judge/Chart.yaml
+$ git commit -m "deps: update tsa version"
+# → Hook runs: helm dependency build charts/judge
+# → Hook updates: charts/judge/Chart.lock
+# → Hook adds Chart.lock to commit
+# ✅ Commit includes fresh Chart.lock with correct versions
+```
+
+#### Why This Matters for ArgoCD
+
+- **Before**: ArgoCD renders with old TSA template → `OutOfSync`
+- **After**: ArgoCD renders with new TSA template → `Synced`
+
+The `Chart.lock` file is what tells ArgoCD which exact chart versions to use. Without it, ArgoCD can't resolve your local file dependencies.
+
+#### If the Hook Doesn't Run
+
+```bash
+# Manual rebuild if needed
+make deps
+git add charts/*/Chart.lock
+git commit -m "deps: rebuild chart dependencies"
+```
+
+#### Workflow Rules
+
+✅ **DO**:
+- Always commit `Chart.lock` when modifying subcharts
+- Use `make deps` after any subchart template changes
+- Let the pre-commit hook handle dependency rebuilds automatically
+
+❌ **DON'T**:
+- Modify `Chart.yaml` without rebuilding dependencies
+- Forget to commit `Chart.lock` changes
+- Expect ArgoCD to work with stale dependencies
+
+### How to Debug Sync Issues
+
+If a resource is `OutOfSync` after template changes:
+
+1. **Verify Chart.lock is current**:
+   ```bash
+   make check-deps
+   ```
+
+2. **Check ArgoCD is using latest commit**:
+   ```bash
+   argocd app get judge-platform --show-operation | grep revision
+   ```
+
+3. **Verify template renders correctly locally**:
+   ```bash
+   helm template judge charts/judge -f values.yaml
+   ```
+
+4. **If still out of sync**: Delete and recreate the Application resource to force refresh
+
 ## Important Notes
 
 - You must deploy via ArgoCD sync, debug the root cause of any sync issues
@@ -247,3 +324,4 @@ Each Judge service MUST have its own PostgreSQL database:
 - Dapr pubsub enabled with SNS/SQS configuration
 - MinIO is disabled (using S3 for object storage)
 - MySQL is disabled (using RDS PostgreSQL)
+- **Chart.lock must be committed** - it tells ArgoCD which chart versions to use

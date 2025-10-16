@@ -259,12 +259,40 @@ git add charts/judge/charts/*.tgz
 git commit -m "feat: update judge-api deployment"
 ```
 
+### Automatic Dependency Management with Pre-Commit Hooks
+
+A pre-commit hook is installed that **automatically rebuilds Helm dependencies** whenever `Chart.yaml` changes:
+
+```bash
+# Hook automatically triggers when:
+$ git add charts/judge/Chart.yaml
+$ git commit -m "deps: update tsa subchart version"
+# → Hook runs: helm dependency build charts/judge
+# → Hook adds: charts/judge/Chart.lock to commit
+# ✅ Commit succeeds with locked dependencies
+```
+
+**Why this matters for ArgoCD:**
+
+ArgoCD cannot resolve local `file://` repository paths - it needs concrete chart versions locked in `Chart.lock`. Without this:
+- ArgoCD uses cached/stale chart versions
+- Template changes aren't reflected in rendered manifests
+- Resources show as `OutOfSync` despite fixes being committed
+
+**If you modify `Chart.yaml` manually** and the hook doesn't run:
+```bash
+# Force dependency rebuild
+make deps
+git add charts/*/Chart.lock
+git commit -m "deps: rebuild after Chart.yaml update"
+```
+
 ### Makefile Targets
 
 | Command | Purpose |
 |---------|---------|
-| `make deps` | Rebuild all Helm dependencies |
-| `make check-deps` | Verify .tgz files are current |
+| `make deps` | Rebuild all Helm dependencies and Chart.lock |
+| `make check-deps` | Verify Chart.lock files are current with Chart.yaml |
 | `make validate` | Validate Helm templates |
 | `make test` | Run all checks |
 | `make clean` | Remove .tgz files |
