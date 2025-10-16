@@ -335,7 +335,7 @@ resource "helm_release" "external_secrets" {
   repository = "https://charts.external-secrets.io"
   chart      = "external-secrets"
   version    = var.eso_version
-  namespace  = "external-secrets"
+  namespace  = "external-secrets-system"
 
   create_namespace = true
 
@@ -402,7 +402,7 @@ resource "kubernetes_cluster_role_binding" "external_secrets_controller" {
   subject {
     kind      = "ServiceAccount"
     name      = "external-secrets"
-    namespace = "external-secrets"
+    namespace = "external-secrets-system"
   }
 }
 
