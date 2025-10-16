@@ -239,12 +239,69 @@ arn:aws:iam::{{ .Values.global.cloud.aws.accountId }}:role/{{ .Values.global.clo
 {{- end -}}
 
 {{/*
-AWS Region helper
-Returns the AWS region from global.cloud configuration
-Supports provider pattern (currently AWS only)
+AWS Configuration Helpers
+Support both legacy global.cloud.aws and new global.aws patterns
 */}}
+
+{{- define "judge.aws.accountId" -}}
+{{- if .Values.global.aws.accountId -}}
+{{ .Values.global.aws.accountId }}
+{{- else if .Values.global.cloud.aws.accountId -}}
+{{ .Values.global.cloud.aws.accountId }}
+{{- end -}}
+{{- end -}}
+
 {{- define "judge.aws.region" -}}
+{{- if .Values.global.aws.region -}}
+{{ .Values.global.aws.region }}
+{{- else if .Values.global.cloud.aws.region -}}
 {{ .Values.global.cloud.aws.region }}
+{{- else -}}
+us-east-1
+{{- end -}}
+{{- end -}}
+
+{{- define "judge.aws.prefix" -}}
+{{ .Values.global.aws.prefix | default "judge" }}
+{{- end -}}
+
+{{/*
+AWS IRSA IAM Role ARN helpers
+Constructs: arn:aws:iam::{accountId}:role/{prefix}-{service}
+*/}}
+{{- define "judge.aws.iam.judgeApiRole" -}}
+arn:aws:iam::{{ include "judge.aws.accountId" . }}:role/{{ include "judge.aws.prefix" . }}-judge-api
+{{- end -}}
+
+{{- define "judge.aws.iam.archivistaRole" -}}
+arn:aws:iam::{{ include "judge.aws.accountId" . }}:role/{{ include "judge.aws.prefix" . }}-archivista
+{{- end -}}
+
+{{- define "judge.aws.iam.kratosRole" -}}
+arn:aws:iam::{{ include "judge.aws.accountId" . }}:role/{{ include "judge.aws.prefix" . }}-kratos
+{{- end -}}
+
+{{/*
+AWS S3 Bucket Helpers
+Constructs: {prefix}-{service}
+*/}}
+{{- define "judge.aws.s3.judgeApiBucket" -}}
+{{ include "judge.aws.prefix" . }}-judge
+{{- end -}}
+
+{{- define "judge.aws.s3.archivistaBucket" -}}
+{{ include "judge.aws.prefix" . }}-archivista
+{{- end -}}
+
+{{/*
+AWS SNS/SQS Helpers
+*/}}
+{{- define "judge.aws.sns.topic" -}}
+{{ include "judge.aws.prefix" . }}-archivista-attestations
+{{- end -}}
+
+{{- define "judge.aws.sqs.queue" -}}
+{{ include "judge.aws.prefix" . }}-archivista-attestations
 {{- end -}}
 
 {{/*

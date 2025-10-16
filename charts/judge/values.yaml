@@ -5,6 +5,43 @@ global:
   # See DOMAIN.md for complete documentation and update checklist
   domain: testifysec-demo.xyz
 
+  # AWS Configuration (for EKS deployments with IRSA)
+  # Required for proper IAM permissions and resource naming
+  # See README.md Troubleshooting section for IRSA setup
+  aws:
+    # AWS Account and Region
+    enabled: false  # Set to true for AWS deployments
+    accountId: ""  # Your AWS account ID (required for IRSA)
+    region: "us-east-1"  # AWS region
+
+    # Resource Naming Prefix
+    # Used to construct S3 bucket names, IAM roles, SNS topics, etc.
+    # Example: with prefix "demo-judge", S3 buckets become demo-judge-judge and demo-judge-archivista
+    prefix: "demo-judge"
+
+    # IRSA (IAM Roles for Service Accounts)
+    irsa:
+      enabled: false  # Set to true to enable IRSA annotations on ServiceAccounts
+      # IAM Role ARNs will be constructed as: arn:aws:iam::{accountId}:role/{prefix}-{service}
+      # Example: arn:aws:iam::123456789012:role/demo-judge-judge-api
+
+    # S3 Storage Configuration
+    s3:
+      enabled: true
+      judge:
+        bucket: "{{ .Values.global.aws.prefix }}-judge"  # Judge API artifacts
+        region: "{{ .Values.global.aws.region }}"
+      archivista:
+        bucket: "{{ .Values.global.aws.prefix }}-archivista"  # Archivista attestations
+        region: "{{ .Values.global.aws.region }}"
+
+    # SNS/SQS Messaging Configuration (for Dapr pubsub)
+    messaging:
+      enabled: true
+      snsTopic: "{{ .Values.global.aws.prefix }}-archivista-attestations"
+      sqsQueue: "{{ .Values.global.aws.prefix }}-archivista-attestations"
+      region: "{{ .Values.global.aws.region }}"
+
   # Container registry
   registry:
     provider: gcp-artifact
