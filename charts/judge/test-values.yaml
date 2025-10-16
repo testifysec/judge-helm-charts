@@ -1,0 +1,24 @@
+# Minimal values for linting and testing
+global:
+  database:
+    host: postgres.example.com
+    username: postgres
+    password: testpassword
+    port: 5432
+    aws:
+      endpoint: postgres.example.com
+
+  secrets:
+    database:
+      passwordEncoded: dGVzdHBhc3N3b3Jk  # base64 of 'testpassword'
+
+  domain: example.com
+
+mysql:
+  enabled: false
+
+minio:
+  enabled: false
+
+kratos:
+  enabled: true
