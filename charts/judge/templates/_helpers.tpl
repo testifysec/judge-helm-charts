@@ -158,6 +158,19 @@ Format: http://{releaseName}-{serviceName}.{namespace}.svc.cluster.local:{port}
 {{- printf "http://%s-%s.%s.svc.cluster.local:8080/" .Release.Name $aiProxyName .Release.Namespace -}}
 {{- end -}}
 
+{{- define "judge.service.kratosAdminUrl" -}}
+  {{- printf "http://kratos-admin.%s.svc.cluster.local" .Release.Namespace -}}
+{{- end -}}
+
+{{- define "judge.service.kratosPublicUrl" -}}
+  {{- printf "http://kratos-public.%s.svc.cluster.local" .Release.Namespace -}}
+{{- end -}}
+
+{{- define "judge.service.judgeApiWebhookUrl" -}}
+{{- $judgeApiName := default "judge-api" (index .Values "judge-api" "nameOverride") -}}
+{{- printf "http://%s-%s.%s.svc.cluster.local:8080/webhook/defaulttenant" .Release.Name $judgeApiName .Release.Namespace -}}
+{{- end -}}
+
 {{- define "judge.httpproxy" -}}
   {{- printf "%s-httpproxy" (include "judge.fullname" .) -}}
 {{- end -}}
@@ -388,7 +401,7 @@ selfservice:
           - config:
               body: base64://ZnVuY3Rpb24oY3R4KSB7CiAgICAgIGlkZW50aXR5SWQ6IGN0eC5pZGVudGl0eS5pZCwKICAgICAgdHJhaXRzOiBjdHguaWRlbnRpdHkudHJhaXRzCn0=
               method: POST
-              url: http://judge-api.judge.svc.cluster.local:8080/webhook/defaulttenant
+              url: {{ include "judge.service.judgeApiWebhookUrl" . }}
             hook: web_hook
       lifespan: 10m
       ui_url: {{ $loginUrl }}/registration
@@ -410,7 +423,7 @@ selfservice:
       enabled: false
 serve:
   admin:
-    base_url: http://kratos-admin.judge.svc.cluster.local
+    base_url: {{ include "judge.service.kratosAdminUrl" . }}
     port: 4433
   public:
     base_url: {{ $kratosUrl }}

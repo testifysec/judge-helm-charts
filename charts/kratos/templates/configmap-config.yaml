@@ -1,0 +1,19 @@
+{{- if .Values.configmap.create }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kratos.fullname" . }}-config
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kratos.labels" . | nindent 4 }}
+  annotations:
+    {{- with .Values.configmap.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+data:
+  {{- with .Values.kratos.config }}
+  kratos.yaml: |
+    {{- include "kratos.configmap" $ | nindent 4 }}
+  {{- end }}
+{{- end }}

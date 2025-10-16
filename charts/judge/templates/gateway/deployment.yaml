@@ -34,13 +34,13 @@ spec:
             - name: AUTH_TOKEN
               value: "my-super-secret-auth-token"
             - name: JUDGE_LOGIN_URL
-              value: {{ .Values.gateway.login.url }}
+              value: {{ include "judge.url.loginLogin" . }}
             - name: KRATOS_PUBLIC_URL
               value: {{ include "judge.gateway.kratosUrl" . }}
             - name: ARCHIVISTA_URL
-              value: {{ .Values.gateway.archivista.url }}
+              value: {{ include "judge.service.archivistaUrl" . }}
             - name: JUDGE_API_URL
-              value: {{ .Values.gateway.judgeapi.url }}
+              value: {{ include "judge.service.judgeApiUrl" . }}
           {{- if.Values.gateway.resources }}
           resources:
 {{- toYaml .Values.gateway.resources | nindent 12 }}
