@@ -61,7 +61,9 @@ spec:
             - -c
             - |
               echo "Processing Kratos config with environment variable substitution..."
-              cat /etc/config/kratos/kratos.yaml | sed "s|\${OIDC_GITHUB_CLIENT_ID}|${OIDC_GITHUB_CLIENT_ID}|g" | sed "s|\${OIDC_GITHUB_CLIENT_SECRET}|${OIDC_GITHUB_CLIENT_SECRET}|g" > /etc/config/kratos-processed/kratos.yaml
+              sed -e "s/\${OIDC_GITHUB_CLIENT_ID}/${OIDC_GITHUB_CLIENT_ID}/g" \
+                  -e "s/\${OIDC_GITHUB_CLIENT_SECRET}/${OIDC_GITHUB_CLIENT_SECRET}/g" \
+                  /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
               echo "Config processing complete."
           volumeMounts:
             - name: {{ include "kratos.name" . }}-config-volume
