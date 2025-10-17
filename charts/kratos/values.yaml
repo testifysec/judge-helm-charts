@@ -264,16 +264,16 @@ kratos:
             providers:
               - id: github
                 provider: github
-                client_id: YOUR_GITHUB_CLIENT_ID
-                client_secret: YOUR_GITHUB_CLIENT_SECRET
+                client_id: ${OIDC_GITHUB_CLIENT_ID}
+                client_secret: ${OIDC_GITHUB_CLIENT_SECRET}
                 issuer_url: https://github.com
                 scope:
                   - user
                 mapper_url: file:///etc/config/kratos/github.jsonnet
               - id: gitlab
                 provider: gitlab
-                client_id: YOUR_GITLAB_CLIENT_ID
-                client_secret: YOUR_GITLAB_CLIENT_SECRET
+                client_id: ${OIDC_GITLAB_CLIENT_ID}
+                client_secret: ${OIDC_GITLAB_CLIENT_SECRET}
                 issuer_url: https://gitlab.com
                 scope:
                   - openid
