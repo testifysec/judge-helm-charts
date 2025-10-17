@@ -1,0 +1,60 @@
+# Staging Preflight Configuration
+
+environment: staging
+
+global:
+  dev: true
+
+externalSecrets:
+  enabled: false  # Staging uses direct secrets, not ESO
+
+vault:
+  enabled: false  # Staging doesn't use Vault
+
+database:
+  enabled: true
+  host: "judge-staging-postgresql"  # Local PostgreSQL service
+  port: 5432
+  databases:
+    - judge_api
+    - archivista
+    - kratos
+
+aws:
+  enabled: false  # Staging uses LocalStack, not real AWS
+
+secrets:
+  fulcio:
+    enabled: true
+    name: fulcio-server-secret
+    requiredKeys:
+      - cert
+      - private
+      - public
+      - password
+
+  githubOAuth:
+    enabled: true
+    name: judge-staging-github-oauth
+    requiredKeys:
+      - clientId
+      - clientSecret
+
+services:
+  certManager:
+    enabled: true
+    namespace: cert-manager
+
+  postgresql:
+    enabled: true
+    name: judge-staging-postgresql
+    namespace: judge-staging
+
+  localstack:
+    enabled: true
+    name: localstack
+    namespace: judge-staging
+    requiredBuckets:
+      - judge-artifacts
+      - archivista
+      - archivista-attestations

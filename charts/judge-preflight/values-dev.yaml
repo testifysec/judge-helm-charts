@@ -1,0 +1,60 @@
+# Development Preflight Configuration
+
+environment: dev
+
+global:
+  dev: true
+
+externalSecrets:
+  enabled: false  # Dev uses direct secrets, not ESO
+
+vault:
+  enabled: false  # Dev doesn't use Vault
+
+database:
+  enabled: true
+  host: "judge-dev-postgresql"  # Local PostgreSQL service
+  port: 5432
+  databases:
+    - judge_api
+    - archivista
+    - kratos
+
+aws:
+  enabled: false  # Dev uses LocalStack, not real AWS
+
+secrets:
+  fulcio:
+    enabled: true
+    name: fulcio-server-secret
+    requiredKeys:
+      - cert
+      - private
+      - public
+      - password
+
+  githubOAuth:
+    enabled: true
+    name: judge-dev-github-oauth
+    requiredKeys:
+      - clientId
+      - clientSecret
+
+services:
+  certManager:
+    enabled: true
+    namespace: cert-manager
+
+  postgresql:
+    enabled: true
+    name: judge-dev-postgresql
+    namespace: judge-dev
+
+  localstack:
+    enabled: true
+    name: localstack
+    namespace: judge-dev
+    requiredBuckets:
+      - judge-artifacts
+      - archivista
+      - archivista-attestations

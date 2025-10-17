@@ -1,0 +1,287 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-preflight
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: judge-preflight
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: judge-preflight
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Release.Name }}-preflight
+      containers:
+      - name: preflight
+        image: bitnami/kubectl:latest
+        command:
+        - bash
+        - -c
+        - |
+          set -euo pipefail
+
+          # Color codes for output
+          RED='\033[0;31m'
+          GREEN='\033[0;32m'
+          YELLOW='\033[1;33m'
+          NC='\033[0m' # No Color
+
+          ERRORS=0
+
+          echo "=========================================="
+          echo "Judge Platform Preflight Checks"
+          echo "Environment: {{ .Values.environment }}"
+          echo "=========================================="
+          echo ""
+
+          # Function to check and report
+          check() {
+            local name="$1"
+            local cmd="$2"
+            local error_msg="$3"
+
+            echo -n "Checking $name... "
+            if eval "$cmd" > /dev/null 2>&1; then
+              echo -e "${GREEN}✓${NC}"
+              return 0
+            else
+              echo -e "${RED}✗${NC}"
+              echo -e "${RED}ERROR: $error_msg${NC}"
+              echo ""
+              ERRORS=$((ERRORS + 1))
+              return 1
+            fi
+          }
+
+          {{- if .Values.externalSecrets.enabled }}
+          # Check External Secrets Operator
+          echo "=== External Secrets Operator ==="
+          check "ESO namespace exists" \
+            "kubectl get namespace {{ .Values.externalSecrets.namespace }}" \
+            "External Secrets Operator namespace '{{ .Values.externalSecrets.namespace }}' not found. Install ESO first."
+
+          check "ESO pods running" \
+            "[ \$(kubectl get pods -n {{ .Values.externalSecrets.namespace }} --field-selector=status.phase=Running --no-headers | wc -l) -ge {{ .Values.externalSecrets.requiredPods }} ]" \
+            "External Secrets Operator has fewer than {{ .Values.externalSecrets.requiredPods }} running pods. Check ESO installation."
+          echo ""
+          {{- end }}
+
+          {{- if .Values.services.certManager.enabled }}
+          # Check cert-manager
+          echo "=== Cert-manager ==="
+          check "cert-manager installed" \
+            "kubectl get namespace {{ .Values.services.certManager.namespace }}" \
+            "cert-manager namespace not found. Install cert-manager for TLS certificate management."
+
+          check "cert-manager webhook ready" \
+            "kubectl get deployment cert-manager-webhook -n {{ .Values.services.certManager.namespace }} -o jsonpath='{.status.readyReplicas}' | grep -q '^[1-9]'" \
+            "cert-manager webhook not ready. Check cert-manager installation."
+          echo ""
+          {{- end }}
+
+          {{- if .Values.vault.enabled }}
+          # Check Vault connectivity (production only)
+          echo "=== Vault Connectivity ==="
+          check "Vault server reachable" \
+            "curl -k --max-time 5 {{ .Values.vault.server }}/v1/sys/health" \
+            "Cannot reach Vault server at {{ .Values.vault.server }}. Check network connectivity and Vault installation."
+
+          {{- range .Values.vault.roles }}
+          check "Vault role '{{ . }}' exists" \
+            "kubectl exec -n {{ $.Values.externalSecrets.namespace }} deploy/external-secrets -c external-secrets -- \
+             sh -c 'curl -k --max-time 5 {{ $.Values.vault.server }}/v1/auth/{{ $.Values.vault.authPath}}/role/{{ . }}' | grep -q 'bound_service_account_names'" \
+            "Vault Kubernetes auth role '{{ . }}' not found or not configured properly."
+          {{- end }}
+          echo ""
+          {{- end }}
+
+          {{- if .Values.database.enabled }}
+          # Check database connectivity
+          echo "=== Database Connectivity ==="
+          check "Database host reachable" \
+            "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/{{ .Values.database.host }}/{{ .Values.database.port }}'" \
+            "Cannot connect to database at {{ .Values.database.host }}:{{ .Values.database.port }}. Check RDS/PostgreSQL is running and network connectivity."
+          echo ""
+          {{- end }}
+
+          {{- if .Values.aws.enabled }}
+          # Check AWS resources (production only)
+          echo "=== AWS Resources ==="
+          {{- range .Values.aws.s3Buckets }}
+          check "S3 bucket '{{ . }}' exists" \
+            "aws s3 ls s3://{{ . }} --region {{ $.Values.aws.region }}" \
+            "S3 bucket '{{ . }}' not found. Create bucket or check AWS permissions."
+          {{- end }}
+
+          {{- range .Values.aws.snsTopics }}
+          check "SNS topic '{{ . }}' exists" \
+            "aws sns list-topics --region {{ $.Values.aws.region }} | grep -q '{{ . }}'" \
+            "SNS topic '{{ . }}' not found. Create topic or check AWS permissions."
+          {{- end }}
+
+          {{- range .Values.aws.sqsQueues }}
+          check "SQS queue '{{ . }}' exists" \
+            "aws sqs list-queues --region {{ $.Values.aws.region }} | grep -q '{{ . }}'" \
+            "SQS queue '{{ . }}' not found. Create queue or check AWS permissions."
+          {{- end }}
+          echo ""
+          {{- end }}
+
+          {{- if .Values.secrets.fulcio.enabled }}
+          # Check Fulcio secret
+          echo "=== Fulcio Secret ==="
+          check "Fulcio secret exists" \
+            "kubectl get secret {{ .Values.secrets.fulcio.name }} -n {{ .Release.Namespace }}" \
+            "Fulcio server secret '{{ .Values.secrets.fulcio.name }}' not found. This secret must be copied from production or generated."
+
+          {{- range .Values.secrets.fulcio.requiredKeys }}
+          check "Fulcio secret has '{{ . }}' key" \
+            "kubectl get secret {{ $.Values.secrets.fulcio.name }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.{{ . }}}' | grep -q '.'" \
+            "Fulcio secret is missing required key '{{ . }}'."
+          {{- end }}
+          echo ""
+          {{- end }}
+
+          {{- if .Values.secrets.githubOAuth.enabled }}
+          # Check GitHub OAuth secret (dev/staging only)
+          echo "=== GitHub OAuth Secret ==="
+          if ! kubectl get secret {{ .Values.secrets.githubOAuth.name }} -n {{ .Release.Namespace }} > /dev/null 2>&1; then
+            echo -e "${RED}✗ GitHub OAuth secret not found${NC}"
+            echo ""
+            echo "=========================================="
+            echo "ERROR: GitHub OAuth Secret Not Found"
+            echo "=========================================="
+            echo ""
+            echo "The secret '{{ .Values.secrets.githubOAuth.name }}' does not exist."
+            echo ""
+            echo "To create this secret, run:"
+            echo ""
+            echo "  kubectl create secret generic {{ .Values.secrets.githubOAuth.name }} \\"
+            echo "    --namespace {{ .Release.Namespace }} \\"
+            echo "    --from-literal=clientId=<your-github-client-id> \\"
+            echo "    --from-literal=clientSecret=<your-github-client-secret>"
+            echo ""
+            echo "Obtain credentials from: https://github.com/settings/developers"
+            echo "=========================================="
+            ERRORS=$((ERRORS + 1))
+          else
+            echo -e "${GREEN}✓ GitHub OAuth secret exists${NC}"
+            {{- range .Values.secrets.githubOAuth.requiredKeys }}
+            check "GitHub OAuth has '{{ . }}' key" \
+              "kubectl get secret {{ $.Values.secrets.githubOAuth.name }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.{{ . }}}' | grep -q '.'" \
+              "GitHub OAuth secret is missing required key '{{ . }}'."
+            {{- end }}
+          fi
+          echo ""
+          {{- end }}
+
+          {{- if .Values.services.postgresql.enabled }}
+          # Check PostgreSQL (dev/staging only)
+          echo "=== PostgreSQL Service ==="
+          check "PostgreSQL service exists" \
+            "kubectl get service {{ .Values.services.postgresql.name }} -n {{ .Release.Namespace }}" \
+            "PostgreSQL service not found. Deploy PostgreSQL first."
+
+          check "PostgreSQL pod ready" \
+            "kubectl get statefulset {{ .Values.services.postgresql.name }} -n {{ .Release.Namespace }} -o jsonpath='{.status.readyReplicas}' | grep -q '^[1-9]'" \
+            "PostgreSQL pod not ready. Wait for PostgreSQL to start."
+          echo ""
+          {{- end }}
+
+          {{- if .Values.services.localstack.enabled }}
+          # Check LocalStack (dev/staging only)
+          echo "=== LocalStack Service ==="
+          check "LocalStack service exists" \
+            "kubectl get service {{ .Release.Name }}-{{ .Values.services.localstack.name }} -n {{ .Release.Namespace }}" \
+            "LocalStack service not found. Deploy LocalStack first."
+
+          check "LocalStack pod ready" \
+            "kubectl get deployment {{ .Release.Name }}-{{ .Values.services.localstack.name }} -n {{ .Release.Namespace }} -o jsonpath='{.status.readyReplicas}' | grep -q '^[1-9]'" \
+            "LocalStack pod not ready. Wait for LocalStack to start."
+
+          # Check LocalStack buckets exist
+          {{- range .Values.services.localstack.requiredBuckets }}
+          check "LocalStack bucket '{{ . }}' exists" \
+            "kubectl exec deployment/{{ $.Release.Name }}-{{ $.Values.services.localstack.name }} -n {{ $.Release.Namespace }} -- awslocal s3 ls s3://{{ . }}" \
+            "LocalStack bucket '{{ . }}' not found. Check LocalStack initialization."
+          {{- end }}
+          echo ""
+          {{- end }}
+
+          # Final summary
+          echo "=========================================="
+          if [ $ERRORS -eq 0 ]; then
+            echo -e "${GREEN}✓ All preflight checks passed!${NC}"
+            echo "=========================================="
+            exit 0
+          else
+            echo -e "${RED}✗ $ERRORS preflight check(s) failed${NC}"
+            echo "=========================================="
+            echo ""
+            echo "Please fix the errors above before deploying Judge platform."
+            exit 1
+          fi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-preflight
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: judge-preflight
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-11"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}-preflight
+  labels:
+    app.kubernetes.io/name: judge-preflight
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-11"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+rules:
+- apiGroups: [""]
+  resources: ["namespaces", "services", "secrets", "pods"]
+  verbs: ["get", "list"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["get", "list"]
+- apiGroups: ["cert-manager.io"]
+  resources: ["clusterissuers", "issuers"]
+  verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Name }}-preflight
+  labels:
+    app.kubernetes.io/name: judge-preflight
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-11"
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Name }}-preflight
+subjects:
+- kind: ServiceAccount
+  name: {{ .Release.Name }}-preflight
+  namespace: {{ .Release.Namespace }}
