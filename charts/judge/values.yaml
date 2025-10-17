@@ -407,7 +407,7 @@ ollama:
 
 judge-ai-proxy:
   nameOverride: "judge-ai-proxy"  # ECR repo name
-  enabled: true
+  enabled: false  # Disabled - image not yet available in ECR
   image:
     repository: judge-ai-proxy
     tag: latest
