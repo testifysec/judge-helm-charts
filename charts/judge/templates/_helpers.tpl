@@ -534,9 +534,10 @@ selfservice:
       ui_url: {{ $loginUrl }}/verification
   methods:
     oidc:
-      enabled: {{ .Values.global.oidc.enabled | default true }}
+      enabled: {{ default true (dig "oidc" "enabled" nil .Values.global) }}
       config:
         providers:
+        {{- if .Values.global.oidc }}
         {{- range .Values.global.oidc.providers }}
         - id: {{ .id }}
           provider: {{ .provider }}
@@ -562,6 +563,7 @@ selfservice:
           scope: {{- toYaml .scope | nindent 10 }}
           {{- end }}
           {{- end }}
+        {{- end }}
         {{- end }}
     password:
       enabled: false

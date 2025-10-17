@@ -1,5 +1,8 @@
+# Dapr-specific registry configuration
+# NOTE: Uses 'registry' instead of 'global.registry' to avoid conflicts with parent chart
+registry: ghcr.io/dapr
+
 global:
-  registry: ghcr.io/dapr
   tag: '1.14.4'
   dnsSuffix: ".cluster.local"
   logAsJson: false

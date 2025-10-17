@@ -19,7 +19,7 @@ dependencies:
   version: 1.6.9
 - name: dapr
   repository: file://../dapr
-  version: 1.14.4
+  version: 1.14.5
 - name: judge-web
   repository: file://../judge-web
   version: 1.6.0
@@ -47,5 +47,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:4f3fa7711b2d9099cf73afb7a0eacd909c684091312fdef0e28112dc203bf584
-generated: "2025-10-17T08:55:17.42998-05:00"
+digest: sha256:05010826b491b3871a9293752b129cbaf7fa4df39c4abb0005a1d53898c00914
+generated: "2025-10-17T09:15:15.868183-05:00"
