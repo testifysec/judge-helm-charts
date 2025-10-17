@@ -18,6 +18,21 @@ spec:
         app: localstack
         release: {{ .Release.Name }}
     spec:
+      initContainers:
+      - name: copy-init-scripts
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          cp /tmp/init-scripts-src/init.sh /tmp/init-scripts-dest/init.sh
+          chmod +x /tmp/init-scripts-dest/init.sh
+          echo "Init script copied with executable permissions"
+        volumeMounts:
+        - name: init-scripts-src
+          mountPath: /tmp/init-scripts-src
+        - name: init-scripts-dest
+          mountPath: /tmp/init-scripts-dest
       containers:
       - name: localstack
         image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
@@ -38,10 +53,11 @@ spec:
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
-        - name: init-scripts
+        - name: init-scripts-dest
           mountPath: /etc/localstack/init/ready.d
       volumes:
-      - name: init-scripts
+      - name: init-scripts-src
         configMap:
           name: {{ .Release.Name }}-localstack-init
-          defaultMode: 0755
+      - name: init-scripts-dest
+        emptyDir: {}
