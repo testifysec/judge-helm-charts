@@ -193,8 +193,7 @@ Format: http://{releaseName}-{serviceName}.{namespace}.svc.cluster.local:{port}
 {{- end -}}
 
 {{- define "judge.service.gatewayUrl" -}}
-{{- $gatewayName := default "judge-gateway" (index .Values "gateway" "nameOverride") -}}
-{{- printf "http://%s-%s.%s.svc.cluster.local:4000" .Release.Name $gatewayName .Release.Namespace -}}
+{{- printf "http://%s-judge-gateway.%s.svc.cluster.local:4000" .Release.Name .Release.Namespace -}}
 {{- end -}}
 
 {{- define "judge.service.aiProxyUrl" -}}
