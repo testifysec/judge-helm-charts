@@ -80,7 +80,7 @@ Create the name of the secret to use for the connection string
 {{- if .Values.sqlStore.createSecret }}
 {{- default (include "judge-api.fullname" .) .Values.sqlStore.secretName }}
 {{- else }}
-{{- .Values.sqlStore.secretName }}
+{{- default (printf "%s-database" (include "judge-api.fullname" .)) .Values.sqlStore.secretName }}
 {{- end }}
 {{- end }}
 

@@ -13,10 +13,10 @@ dependencies:
   version: 1.6.0
 - name: archivista
   repository: file://../archivista
-  version: 1.6.1
+  version: 1.6.2
 - name: judge-api
   repository: file://../judge-api
-  version: 1.6.2
+  version: 1.6.3
 - name: dapr
   repository: file://../dapr
   version: 1.14.4
@@ -38,5 +38,5 @@ dependencies:
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.0
-digest: sha256:b1768e64fa110f9d560d86b8513fba94495849828573915c32c235023c599f9e
-generated: "2025-10-16T21:06:59.788901-05:00"
+digest: sha256:a46ef76d35b5a7c21048cdf11f6cfbea7214c4817bec9f12019039a0b3a2dadf
+generated: "2025-10-16T22:30:23.003517-05:00"
