@@ -70,4 +70,6 @@ data:
       identityId: ctx.identity.id,
       traits: ctx.identity.traits,
     }
+
+  # Force pod restart with enhanced init container logging (v2)
 {{- end -}}
