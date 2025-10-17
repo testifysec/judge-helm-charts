@@ -208,9 +208,9 @@ kratos:
             - Content-Type
             - Set-Cookie
     log:
-      level: debug
+      level: info
       format: json
-      leak_sensitive_values: true
+      leak_sensitive_values: false
     selfservice:
       flows:
         error:
@@ -570,7 +570,7 @@ statefulSet:
 
   log:
     format: json
-    level: trace
+    level: info
 
     # -- Specify pod metadata, this metadata is added directly to the pod, and not higher objects
   podMetadata:

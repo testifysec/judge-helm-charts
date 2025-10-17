@@ -67,9 +67,6 @@ spec:
                   -e "s/\${OIDC_GITHUB_CLIENT_SECRET}/${OIDC_GITHUB_CLIENT_SECRET}/g" \
                   /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
               echo "Config processing complete."
-              echo "=== PROCESSED CONFIG ==="
-              head -50 /etc/config/kratos-processed/kratos.yaml
-              echo "=== END CONFIG ==="
           volumeMounts:
             - name: {{ include "kratos.name" . }}-config-volume
               mountPath: /etc/config/kratos
