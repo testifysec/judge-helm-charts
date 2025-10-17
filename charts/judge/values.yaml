@@ -132,6 +132,10 @@ kratos:
     enabled: false
   kratos:
     config:
+      cookies:
+        domain: ""  # Empty = use host-only cookies (no cross-subdomain sharing, more secure)
+        path: /
+        same_site: Lax  # Good balance - "Strict" breaks OAuth, "None" less secure
       selfservice:
         allowed_return_urls:
           - https://login.testifysec-demo.xyz
@@ -198,6 +202,10 @@ kratos-selfservice-ui-node:
   image:
     tag: v1.6.0
   enabled: true
+  # Kratos URLs derived from istio.hosts.kratos + global.domain
+  # Override only if you need non-standard URLs
+  kratosPublicUrl: '{{ include "judge.url.kratos" . }}'
+  kratosBrowserUrl: '{{ include "judge.url.kratos" . }}'
 judge-api:
   nameOverride: "judge-api"  # ECR repo name
   image:
