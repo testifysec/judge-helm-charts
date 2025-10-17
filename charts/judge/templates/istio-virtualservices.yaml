@@ -52,7 +52,7 @@ spec:
         uri: "/"
       route:
         - destination:
-            host: kratos-selfservice-ui-node
+            host: {{ printf "%s-%s" .Release.Name (default "judge-kratos-self-service" (index .Values "kratos-selfservice-ui-node" "nameOverride")) }}
             port:
               number: 80
     # Kratos public routes
@@ -270,7 +270,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: kratos-selfservice-ui-node
+            host: {{ printf "%s-%s" .Release.Name (default "judge-kratos-self-service" (index .Values "kratos-selfservice-ui-node" "nameOverride")) }}
             port:
               number: 80
 {{- if .Values.minio.enabled }}
