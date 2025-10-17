@@ -169,6 +169,18 @@ spec:
                   name: {{ include "kratos.secretname" . }}
                   key: secretsCipher
                   optional: true
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientSecret
+                  optional: true
             {{- if and .Values.kratos.config.courier.smtp.connection_uri (ne .Values.kratos.config.courier.smtp.connection_uri "") }}
             - name: COURIER_SMTP_CONNECTION_URI
               valueFrom:

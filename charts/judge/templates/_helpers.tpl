@@ -478,7 +478,27 @@ selfservice:
     oidc:
       enabled: {{ .Values.global.oidc.enabled | default true }}
       config:
-        providers: {{- toYaml .Values.global.oidc.providers | nindent 8 }}
+        providers:
+        {{- range .Values.global.oidc.providers }}
+        - id: {{ .id }}
+          provider: {{ .provider }}
+          {{- if eq .provider "github" }}
+          client_id: ${OIDC_GITHUB_CLIENT_ID}
+          client_secret: ${OIDC_GITHUB_CLIENT_SECRET}
+          {{- else }}
+          client_id: {{ .client_id }}
+          client_secret: {{ .client_secret }}
+          {{- end }}
+          {{- if .issuer_url }}
+          issuer_url: {{ .issuer_url }}
+          {{- end }}
+          {{- if .mapper_url }}
+          mapper_url: {{ .mapper_url }}
+          {{- end }}
+          {{- if .scope }}
+          scope: {{- toYaml .scope | nindent 10 }}
+          {{- end }}
+        {{- end }}
     password:
       enabled: false
 serve:
