@@ -99,7 +99,6 @@ istio:
     tsa: "tsa"              # Timestamp Authority (tsa.domain)
     kratos: "kratos"        # Kratos identity service (kratos.domain)
     login: "login"          # Login UI (login.domain)
-    minio: "minio"          # MinIO (dev/testing only) (minio.domain)
 nameOverride: "judge"
 gateway:
   enabled: true
@@ -403,15 +402,6 @@ tsa:
         - secretName: tsa-ingress-tls
           hosts:
             - tsa.testifysec-demo.xyz
-mysql:
-  enabled: true
-minio:
-  enabled: true
-  image:
-    tag: RELEASE.2025-05-24T17-08-30Z
-  mc:
-    image:
-      tag: RELEASE.2025-05-21T01-59-54Z
 ollama:
   enabled: false
 

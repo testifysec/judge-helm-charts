@@ -1,10 +1,4 @@
 dependencies:
-- name: mysql
-  repository: file://../mysql
-  version: 1.6.0
-- name: minio
-  repository: file://../minio
-  version: 0.1.1
 - name: kratos
   repository: file://../kratos
   version: 1.6.18
@@ -47,5 +41,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:05010826b491b3871a9293752b129cbaf7fa4df39c4abb0005a1d53898c00914
-generated: "2025-10-17T09:15:15.868183-05:00"
+digest: sha256:8234ec4795c6b2f0d2501363ea7f93762552e57792fabd20b55b8755e2a2c553
+generated: "2025-10-17T09:19:59.35529-05:00"
