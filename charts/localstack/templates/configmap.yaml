@@ -32,3 +32,6 @@ data:
     {{- end }}
 
     echo "LocalStack initialization complete!"
+
+    # Create flag file to signal completion for readiness probe
+    touch /tmp/localstack-init-complete

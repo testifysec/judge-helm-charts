@@ -60,6 +60,8 @@ spec:
             - |
               # Check LocalStack is responding
               awslocal s3 ls > /dev/null 2>&1 || exit 1
+              # Check init script has completed
+              [ -f /tmp/localstack-init-complete ] || exit 1
               exit 0
           initialDelaySeconds: 10
           periodSeconds: 5
