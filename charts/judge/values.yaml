@@ -24,9 +24,13 @@ global:
     accountId: ""  # Your AWS account ID (required for IRSA)
     region: "us-east-1"  # AWS region
 
-    # Resource Naming Prefix
-    # Used to construct S3 bucket names, IAM roles, SNS topics, etc.
-    # Example: with prefix "demo-judge", S3 buckets become demo-judge-judge and demo-judge-archivista
+    # Resource Naming Prefix / Deployment Identifier
+    # Used to construct AWS resource names AND identify the deployment/cluster
+    # This should match your EKS cluster name to prevent resource collisions
+    # Examples:
+    #   prefix: "demo-judge"  → S3: demo-judge-judge, IAM: demo-judge-judge-api, Cluster: demo-judge
+    #   prefix: "prod-judge"  → S3: prod-judge-judge, IAM: prod-judge-judge-api, Cluster: prod-judge
+    #   prefix: "staging-judge" → S3: staging-judge-judge, IAM: staging-judge-judge-api, Cluster: staging-judge
     prefix: "demo-judge"
 
     # IRSA (IAM Roles for Service Accounts)
@@ -54,6 +58,12 @@ global:
 
   # Container registry
   registry:
+    # AWS Marketplace ECR (static account 709825985650, requires active subscription)
+    # Set to true to use AWS Marketplace official images
+    # When true: overrides provider/url/repository settings
+    awsMarketplace: false
+
+    # Standard registry configuration (used when awsMarketplace=false)
     provider: gcp-artifact
     url: us-east4-docker.pkg.dev
     repository: judge-395516/judge-image-registry

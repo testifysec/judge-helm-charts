@@ -52,28 +52,58 @@ Users can override subdomains via istio.hosts.* in values.yaml
 {{- end -}}
 
 {{/*
+Registry URL Helper
+Returns AWS Marketplace ECR if enabled, otherwise uses configured registry
+AWS Marketplace ECR: Static account 709825985650 (requires active subscription)
+*/}}
+{{- define "judge.registry.url" -}}
+{{- if .Values.global.registry.awsMarketplace -}}
+709825985650.dkr.ecr.us-east-1.amazonaws.com
+{{- else -}}
+{{ .Values.global.registry.url }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Registry Repository Helper
+AWS Marketplace uses direct format (no repository path)
+Other registries may have repository paths
+*/}}
+{{- define "judge.registry.repository" -}}
+{{- if .Values.global.registry.awsMarketplace -}}
+{{- /* Marketplace uses direct format: 709825985650.dkr.ecr.us-east-1.amazonaws.com/image-name */ -}}
+{{- else -}}
+{{ .Values.global.registry.repository }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Render the imageRepository with the global and chart specific values.
-Supports provider pattern (currently AWS ECR only)
+Supports AWS Marketplace ECR, standard ECR, GCP Artifact Registry, and custom registries
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
-{{- if eq .Values.global.registry.repository "" }}
-{{- printf "%s/%s" .Values.global.registry.url $chartName | trimSuffix "/" -}}
+{{- $registryUrl := include "judge.registry.url" . }}
+{{- $repository := include "judge.registry.repository" . }}
+{{- if eq $repository "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.global.registry.url .Values.global.registry.repository $chartName | trimSuffix "/" -}}
+{{- printf "%s/%s/%s" $registryUrl $repository $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 
 {{/*
 Render the imageRepository with the global and chart specific values, but for judge-web which in legacy was just named 'web'
-Supports provider pattern (currently AWS ECR only)
+Supports AWS Marketplace ECR, standard ECR, GCP Artifact Registry, and custom registries
 */}}
 {{- define "judge-web.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride -}}
-{{- if eq .Values.global.registry.repository "" }}
-{{- printf "%s/%s" .Values.global.registry.url $chartName | trimSuffix "/" -}}
+{{- $registryUrl := include "judge.registry.url" . }}
+{{- $repository := include "judge.registry.repository" . }}
+{{- if eq $repository "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.global.registry.url .Values.global.registry.repository $chartName | trimSuffix "/" -}}
+{{- printf "%s/%s/%s" $registryUrl $repository $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 
