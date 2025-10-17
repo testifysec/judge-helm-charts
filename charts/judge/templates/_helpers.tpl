@@ -199,8 +199,13 @@ If release name contains chart name it will be used as a full name.
 
 
 {{- define "judge.gateway.kratosUrl" -}}
-  {{- $kratosName := default "judge-kratos" .Values.kratos.nameOverride -}}
-  {{- printf "http://%s-%s-public.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
+{{- $kratosName := "judge-kratos" -}}
+{{- if hasKey .Values "kratos" -}}
+  {{- if .Values.kratos -}}
+    {{- $kratosName = default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- end -}}
+{{- end -}}
+{{- printf "http://%s-%s-public.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
 {{- end -}}
 
 {{/*
@@ -209,12 +214,20 @@ These construct internal cluster service URLs using release name pattern
 Format: http://{releaseName}-{serviceName}.{namespace}.svc.cluster.local:{port}
 */}}
 {{- define "judge.service.archivistaUrl" -}}
-{{- $archivistaName := default "judge-archivista" .Values.archivista.nameOverride -}}
+{{- $archivistaName := "judge-archivista" -}}
+{{- if hasKey .Values "archivista" -}}
+  {{- if .Values.archivista -}}
+    {{- $archivistaName = default "judge-archivista" .Values.archivista.nameOverride -}}
+  {{- end -}}
+{{- end -}}
 {{- printf "http://%s-%s.%s.svc.cluster.local:8082" .Release.Name $archivistaName .Release.Namespace -}}
 {{- end -}}
 
 {{- define "judge.service.judgeApiUrl" -}}
-{{- $judgeApiName := default "judge-api" (index .Values "judge-api" "nameOverride") -}}
+{{- $judgeApiName := "judge-api" -}}
+{{- if hasKey .Values "judge-api" -}}
+  {{- $judgeApiName = default "judge-api" ((index .Values "judge-api").nameOverride) -}}
+{{- end -}}
 {{- printf "http://%s-%s.%s.svc.cluster.local:8080" .Release.Name $judgeApiName .Release.Namespace -}}
 {{- end -}}
 
@@ -223,18 +236,31 @@ Format: http://{releaseName}-{serviceName}.{namespace}.svc.cluster.local:{port}
 {{- end -}}
 
 {{- define "judge.service.aiProxyUrl" -}}
-{{- $aiProxyName := default "judge-ai-proxy" (index .Values "judge-ai-proxy" "nameOverride") -}}
+{{- $aiProxyName := "judge-ai-proxy" -}}
+{{- if hasKey .Values "judge-ai-proxy" -}}
+  {{- $aiProxyName = default "judge-ai-proxy" ((index .Values "judge-ai-proxy").nameOverride) -}}
+{{- end -}}
 {{- printf "http://%s-%s.%s.svc.cluster.local:8080/" .Release.Name $aiProxyName .Release.Namespace -}}
 {{- end -}}
 
 {{- define "judge.service.kratosAdminUrl" -}}
-  {{- $kratosName := default "judge-kratos" .Values.kratos.nameOverride -}}
-  {{- printf "http://%s-%s-admin.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
+{{- $kratosName := "judge-kratos" -}}
+{{- if hasKey .Values "kratos" -}}
+  {{- if .Values.kratos -}}
+    {{- $kratosName = default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- end -}}
+{{- end -}}
+{{- printf "http://%s-%s-admin.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
 {{- end -}}
 
 {{- define "judge.service.kratosPublicUrl" -}}
-  {{- $kratosName := default "judge-kratos" .Values.kratos.nameOverride -}}
-  {{- printf "http://%s-%s-public.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
+{{- $kratosName := "judge-kratos" -}}
+{{- if hasKey .Values "kratos" -}}
+  {{- if .Values.kratos -}}
+    {{- $kratosName = default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- end -}}
+{{- end -}}
+{{- printf "http://%s-%s-public.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
 {{- end -}}
 
 {{- define "judge.service.judgeApiWebhookUrl" -}}
