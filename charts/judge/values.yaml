@@ -118,6 +118,7 @@ gateway:
     url: "https://login.testifysec-demo.xyz/login"
 kratos:
   nameOverride: "judge-kratos"  # ECR repo name
+  fullnameOverride: ""  # Remove fullnameOverride to ensure consistent {release}-{nameOverride} naming
   image:
     tag: v1.0.0-token-update
   enabled: true
@@ -181,6 +182,7 @@ archivista:
     endpoint: http://localstack.localstack.svc.cluster.local:4566
 kratos-selfservice-ui-node:
   nameOverride: "judge-kratos-self-service"  # ECR repo name
+  fullnameOverride: ""  # Remove fullnameOverride to ensure consistent {release}-{nameOverride} naming
   image:
     tag: v1.6.0
   enabled: true
