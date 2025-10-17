@@ -28,7 +28,7 @@ This umbrella chart deploys the complete Judge platform, including:
 - **Core Services**: judge-api, judge-web, archivista, judge-ai-proxy
 - **Authentication**: Kratos (identity), Dex (OIDC provider)
 - **PKI Services**: Fulcio (code signing CA), TSA (timestamping)
-- **Infrastructure**: Dapr (workflows), optional MySQL, MinIO
+- **Infrastructure**: Dapr (workflows)
 
 The chart supports multi-cloud deployments (AWS, GCP, Azure) with provider-specific configurations for IAM, storage, and messaging.
 
@@ -38,7 +38,7 @@ The chart supports multi-cloud deployments (AWS, GCP, Azure) with provider-speci
 - Helm 3.8+
 - Istio 1.18+ (optional but recommended)
 - PostgreSQL database (AWS RDS, GCP CloudSQL, Azure Database, or self-hosted)
-- S3-compatible object storage (AWS S3, GCP GCS, Azure Blob, or MinIO)
+- S3-compatible object storage (AWS S3, GCP GCS, Azure Blob)
 - HashiCorp Vault (optional, for External Secrets Operator integration)
 
 ## Configuration
@@ -91,7 +91,7 @@ global:
 
   # Object storage (REQUIRED)
   storage:
-    provider: aws-s3  # aws-s3, gcp-storage, azure-blob, minio
+    provider: aws-s3  # aws-s3, gcp-storage, azure-blob
     buckets:
       archivista: your-archivista-bucket
       judgeApi: your-judge-api-bucket

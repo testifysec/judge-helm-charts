@@ -22,12 +22,6 @@ global:
       judgeApi: test-judge-api
       archivista: test-archivista
 
-mysql:
-  enabled: false
-
-minio:
-  enabled: false
-
 kratos:
   enabled: true
 

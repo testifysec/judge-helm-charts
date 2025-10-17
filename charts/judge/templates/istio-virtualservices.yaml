@@ -273,31 +273,6 @@ spec:
             host: {{ printf "%s-%s" .Release.Name (default "judge-kratos-self-service" (index .Values "kratos-selfservice-ui-node" "nameOverride")) }}
             port:
               number: 80
-{{- if .Values.minio.enabled }}
----
-# MinIO VirtualService (dev/testing only)
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: {{ include "judge.fullname" . }}-minio-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - {{ include "judge.ingress.host.minio" . | quote }}
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: {{ include "judge.fullname" . }}-minio
-            port:
-              number: 9000
-{{- end }}
 {{- $previewRouterEnabled := false }}
 {{- if hasKey .Values "preview-router" }}
   {{- if index .Values "preview-router" "enabled" }}

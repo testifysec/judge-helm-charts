@@ -268,14 +268,6 @@ judge-api:
       - name: BLOB_STORE_USE_TLS
         value: '{{ include "judge.storage.useTLS" . }}'
 
-# Disable MinIO
-minio:
-  enabled: false
-
-# Disable MySQL (using RDS)
-mysql:
-  enabled: false
-
 # Configure Dapr pubsub for AWS SNS/SQS
 dapr:
   enabled: true

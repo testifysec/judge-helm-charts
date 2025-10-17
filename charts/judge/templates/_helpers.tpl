@@ -51,10 +51,6 @@ Users can override subdomains via istio.hosts.* in values.yaml
 {{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
-{{- define "judge.ingress.host.minio" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.minio | default "minio" }}{{ else }}minio{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
-{{- end -}}
-
 {{/*
 Render the imageRepository with the global and chart specific values.
 Supports provider pattern (currently AWS ECR only)
