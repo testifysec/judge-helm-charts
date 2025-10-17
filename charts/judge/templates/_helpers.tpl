@@ -129,8 +129,8 @@ If release name contains chart name it will be used as a full name.
 
 
 {{- define "judge.gateway.kratosUrl" -}}
-  {{- $gatewayName := default "gateway" .Values.gateway.nameOverride -}}
-  {{- printf "http://kratos-public.%s.svc.cluster.local" .Release.Namespace -}}
+  {{- $kratosName := default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- printf "http://%s-%s-public.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
 {{- end -}}
 
 {{/*
@@ -159,11 +159,13 @@ Format: http://{releaseName}-{serviceName}.{namespace}.svc.cluster.local:{port}
 {{- end -}}
 
 {{- define "judge.service.kratosAdminUrl" -}}
-  {{- printf "http://kratos-admin.%s.svc.cluster.local" .Release.Namespace -}}
+  {{- $kratosName := default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- printf "http://%s-%s-admin.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
 {{- end -}}
 
 {{- define "judge.service.kratosPublicUrl" -}}
-  {{- printf "http://kratos-public.%s.svc.cluster.local" .Release.Namespace -}}
+  {{- $kratosName := default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- printf "http://%s-%s-public.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
 {{- end -}}
 
 {{- define "judge.service.judgeApiWebhookUrl" -}}
