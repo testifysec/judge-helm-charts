@@ -16,7 +16,7 @@ dependencies:
   version: 1.14.5
 - name: judge-web
   repository: file://../judge-web
-  version: 1.6.0
+  version: 1.6.1
 - name: dex
   repository: file://../dex
   version: 0.17.0
@@ -41,5 +41,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:8234ec4795c6b2f0d2501363ea7f93762552e57792fabd20b55b8755e2a2c553
-generated: "2025-10-17T09:19:59.35529-05:00"
+digest: sha256:7d74f8447a0c239762ad84a9583cf41f0f54bd5874f51166e7485b395851d8cd
+generated: "2025-10-17T09:43:41.968638-05:00"
