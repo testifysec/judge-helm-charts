@@ -1,7 +1,7 @@
 dependencies:
 - name: judge-preflight
   repository: file://../judge-preflight
-  version: 0.1.1
+  version: 0.1.2
 - name: kratos
   repository: file://../kratos
   version: 1.6.22
@@ -41,5 +41,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:1b912bea06a4605f8df820498c596bd8782d98eeea485db2106b4814d78efb6d
-generated: "2025-10-17T17:49:05.028812-05:00"
+digest: sha256:dbe335c8b1ab96eac16c0a76afeaa7ad5da953723955eebf8d88157d309ffb19
+generated: "2025-10-17T17:59:17.877033-05:00"

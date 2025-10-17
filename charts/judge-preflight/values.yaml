@@ -1,53 +1,39 @@
 # Judge Preflight Validation Configuration
+#
+# NOTE: This chart is designed to be deployed as a subchart of the judge chart.
+# When deployed as a subchart, it reads configuration from the parent chart's .Values.global.*
+#
+# The values below are defaults for standalone testing/linting only.
+# In production, these will be overridden by the parent chart's global values.
 
-# Environment type: production, staging, or dev
-environment: production
-
-# Global configuration
+# Global configuration (matches parent chart structure)
 global:
-  dev: false  # Set to true for dev/staging environments
+  # Development mode flag
+  dev: false
 
-# External Secrets Operator validation
-externalSecrets:
-  enabled: true
-  namespace: external-secrets-system
-  requiredPods: 3  # Minimum number of ESO pods expected
+  # AWS Configuration
+  aws:
+    enabled: false
+    region: us-east-1
+    prefix: demo-judge
 
-# Vault validation (production only)
-vault:
-  enabled: true
-  server: "https://vault.testifysec-demo.xyz"
-  authPath: "kubernetes"
-  # Kubernetes auth roles to validate
-  roles:
-    - judge-api
-    - archivista
-    - kratos
+  # Secrets management
+  secrets:
+    provider: vault
+    vault:
+      server: https://vault.example.com
+      path: secret
+      version: v2
+      authMountPath: kubernetes
+      env: dev
+      project: myproject
 
-# Database validation
-database:
-  enabled: true
-  # For production, this should be the RDS endpoint
-  # For dev/staging, this should be the postgresql service
-  host: "demo-judge-postgres.cenw4a6wen6f.us-east-1.rds.amazonaws.com"
-  port: 5432
-  # Databases that should exist
-  databases:
-    - judge_api
-    - archivista
-    - kratos
-
-# AWS resources validation (production only)
-aws:
-  enabled: true
-  region: us-east-1
-  s3Buckets:
-    - demo-judge-judge
-    - demo-judge-archivista
-  snsTopics:
-    - demo-judge-archivista-attestations
-  sqsQueues:
-    - demo-judge-archivista-attestations
+# Service dependencies validation
+services:
+  # Cert-manager (for TLS certificates)
+  certManager:
+    enabled: true
+    namespace: cert-manager
 
 # Secrets validation
 secrets:
@@ -60,34 +46,3 @@ secrets:
       - private
       - public
       - password
-
-  # GitHub OAuth secret (dev/staging only)
-  githubOAuth:
-    enabled: false  # Set true for dev/staging
-    name: ""  # e.g., judge-dev-github-oauth
-    requiredKeys:
-      - clientId
-      - clientSecret
-
-# Service dependencies
-services:
-  # Cert-manager (for TLS certificates)
-  certManager:
-    enabled: true
-    namespace: cert-manager
-
-  # PostgreSQL (dev/staging only)
-  postgresql:
-    enabled: false  # Set true for dev/staging
-    name: postgresql
-    namespace: ""  # Will use release namespace
-
-  # LocalStack (dev/staging only)
-  localstack:
-    enabled: false  # Set true for dev/staging
-    name: localstack
-    namespace: ""  # Will use release namespace
-    requiredBuckets:
-      - judge-artifacts
-      - archivista
-      - archivista-attestations

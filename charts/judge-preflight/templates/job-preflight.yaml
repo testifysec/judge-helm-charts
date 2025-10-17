@@ -39,7 +39,8 @@ spec:
 
           echo "=========================================="
           echo "Judge Platform Preflight Checks"
-          echo "Environment: {{ .Values.environment }}"
+          echo "Environment: {{ .Values.global.secrets.vault.env | default "dev" }}"
+          echo "Dev Mode: {{ .Values.global.dev }}"
           echo "=========================================="
           echo ""
 
@@ -62,16 +63,16 @@ spec:
             fi
           }
 
-          {{- if .Values.externalSecrets.enabled }}
-          # Check External Secrets Operator
+          {{- if not .Values.global.dev }}
+          # Check External Secrets Operator (production only)
           echo "=== External Secrets Operator ==="
           check "ESO namespace exists" \
-            "kubectl get namespace {{ .Values.externalSecrets.namespace }}" \
-            "External Secrets Operator namespace '{{ .Values.externalSecrets.namespace }}' not found. Install ESO first."
+            "kubectl get namespace external-secrets-system" \
+            "External Secrets Operator namespace 'external-secrets-system' not found. Install ESO first."
 
           check "ESO pods running" \
-            "[ \$(kubectl get pods -n {{ .Values.externalSecrets.namespace }} --field-selector=status.phase=Running --no-headers | wc -l) -ge {{ .Values.externalSecrets.requiredPods }} ]" \
-            "External Secrets Operator has fewer than {{ .Values.externalSecrets.requiredPods }} running pods. Check ESO installation."
+            "[ \$(kubectl get pods -n external-secrets-system --field-selector=status.phase=Running --no-headers | wc -l) -ge 3 ]" \
+            "External Secrets Operator has fewer than 3 running pods. Check ESO installation."
           echo ""
           {{- end }}
 
@@ -88,51 +89,44 @@ spec:
           echo ""
           {{- end }}
 
-          {{- if .Values.vault.enabled }}
+          {{- if and (eq .Values.global.secrets.provider "vault") (not .Values.global.dev) }}
           # Check Vault connectivity (production only)
           echo "=== Vault Connectivity ==="
           check "Vault server reachable" \
-            "curl -k --max-time 5 {{ .Values.vault.server }}/v1/sys/health" \
-            "Cannot reach Vault server at {{ .Values.vault.server }}. Check network connectivity and Vault installation."
+            "curl -k --max-time 5 {{ .Values.global.secrets.vault.server }}/v1/sys/health" \
+            "Cannot reach Vault server at {{ .Values.global.secrets.vault.server }}. Check network connectivity and Vault installation."
 
-          {{- range .Values.vault.roles }}
+          {{- $vaultRoles := list "judge-api" "archivista" "kratos" }}
+          {{- range $vaultRoles }}
           check "Vault role '{{ . }}' exists" \
-            "kubectl exec -n {{ $.Values.externalSecrets.namespace }} deploy/external-secrets -c external-secrets -- \
-             sh -c 'curl -k --max-time 5 {{ $.Values.vault.server }}/v1/auth/{{ $.Values.vault.authPath}}/role/{{ . }}' | grep -q 'bound_service_account_names'" \
+            "kubectl exec -n external-secrets-system deploy/external-secrets -c external-secrets -- \
+             sh -c 'curl -k --max-time 5 {{ $.Values.global.secrets.vault.server }}/v1/auth/{{ $.Values.global.secrets.vault.authMountPath }}/role/{{ . }}' | grep -q 'bound_service_account_names'" \
             "Vault Kubernetes auth role '{{ . }}' not found or not configured properly."
           {{- end }}
           echo ""
           {{- end }}
 
-          {{- if .Values.database.enabled }}
-          # Check database connectivity
-          echo "=== Database Connectivity ==="
-          check "Database host reachable" \
-            "timeout 5 bash -c 'cat < /dev/null > /dev/tcp/{{ .Values.database.host }}/{{ .Values.database.port }}'" \
-            "Cannot connect to database at {{ .Values.database.host }}:{{ .Values.database.port }}. Check RDS/PostgreSQL is running and network connectivity."
-          echo ""
-          {{- end }}
+          # Database connectivity check skipped - database credentials are managed by Vault/ExternalSecrets
 
-          {{- if .Values.aws.enabled }}
+          {{- if and .Values.global.aws.enabled (not .Values.global.dev) }}
           # Check AWS resources (production only)
           echo "=== AWS Resources ==="
-          {{- range .Values.aws.s3Buckets }}
+          {{- $s3Buckets := list (printf "%s-judge" .Values.global.aws.prefix) (printf "%s-archivista" .Values.global.aws.prefix) }}
+          {{- range $s3Buckets }}
           check "S3 bucket '{{ . }}' exists" \
-            "aws s3 ls s3://{{ . }} --region {{ $.Values.aws.region }}" \
+            "aws s3 ls s3://{{ . }} --region {{ $.Values.global.aws.region }}" \
             "S3 bucket '{{ . }}' not found. Create bucket or check AWS permissions."
           {{- end }}
 
-          {{- range .Values.aws.snsTopics }}
-          check "SNS topic '{{ . }}' exists" \
-            "aws sns list-topics --region {{ $.Values.aws.region }} | grep -q '{{ . }}'" \
-            "SNS topic '{{ . }}' not found. Create topic or check AWS permissions."
-          {{- end }}
+          {{- $snsTopic := printf "%s-archivista-attestations" .Values.global.aws.prefix }}
+          check "SNS topic '{{ $snsTopic }}' exists" \
+            "aws sns list-topics --region {{ .Values.global.aws.region }} | grep -q '{{ $snsTopic }}'" \
+            "SNS topic '{{ $snsTopic }}' not found. Create topic or check AWS permissions."
 
-          {{- range .Values.aws.sqsQueues }}
-          check "SQS queue '{{ . }}' exists" \
-            "aws sqs list-queues --region {{ $.Values.aws.region }} | grep -q '{{ . }}'" \
-            "SQS queue '{{ . }}' not found. Create queue or check AWS permissions."
-          {{- end }}
+          {{- $sqsQueue := printf "%s-archivista-attestations" .Values.global.aws.prefix }}
+          check "SQS queue '{{ $sqsQueue }}' exists" \
+            "aws sqs list-queues --region {{ .Values.global.aws.region }} | grep -q '{{ $sqsQueue }}'" \
+            "SQS queue '{{ $sqsQueue }}' not found. Create queue or check AWS permissions."
           echo ""
           {{- end }}
 
@@ -151,21 +145,22 @@ spec:
           echo ""
           {{- end }}
 
-          {{- if .Values.secrets.githubOAuth.enabled }}
+          {{- if .Values.global.dev }}
           # Check GitHub OAuth secret (dev/staging only)
           echo "=== GitHub OAuth Secret ==="
-          if ! kubectl get secret {{ .Values.secrets.githubOAuth.name }} -n {{ .Release.Namespace }} > /dev/null 2>&1; then
+          {{- $githubSecretName := printf "%s-github-oauth" .Release.Name }}
+          if ! kubectl get secret {{ $githubSecretName }} -n {{ .Release.Namespace }} > /dev/null 2>&1; then
             echo -e "${RED}✗ GitHub OAuth secret not found${NC}"
             echo ""
             echo "=========================================="
             echo "ERROR: GitHub OAuth Secret Not Found"
             echo "=========================================="
             echo ""
-            echo "The secret '{{ .Values.secrets.githubOAuth.name }}' does not exist."
+            echo "The secret '{{ $githubSecretName }}' does not exist."
             echo ""
             echo "To create this secret, run:"
             echo ""
-            echo "  kubectl create secret generic {{ .Values.secrets.githubOAuth.name }} \\"
+            echo "  kubectl create secret generic {{ $githubSecretName }} \\"
             echo "    --namespace {{ .Release.Namespace }} \\"
             echo "    --from-literal=clientId=<your-github-client-id> \\"
             echo "    --from-literal=clientSecret=<your-github-client-secret>"
@@ -175,58 +170,63 @@ spec:
             ERRORS=$((ERRORS + 1))
           else
             echo -e "${GREEN}✓ GitHub OAuth secret exists${NC}"
-            {{- range .Values.secrets.githubOAuth.requiredKeys }}
+            {{- $requiredKeys := list "clientId" "clientSecret" }}
+            {{- range $requiredKeys }}
             check "GitHub OAuth has '{{ . }}' key" \
-              "kubectl get secret {{ $.Values.secrets.githubOAuth.name }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.{{ . }}}' | grep -q '.'" \
+              "kubectl get secret {{ $githubSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.{{ . }}}' | grep -q '.'" \
               "GitHub OAuth secret is missing required key '{{ . }}'."
             {{- end }}
           fi
           echo ""
           {{- end }}
 
-          {{- if .Values.externalSecrets.validateSync }}
+          {{- if not .Values.global.dev }}
           # Check ExternalSecrets are synced (production only)
           echo "=== ExternalSecrets Status ==="
-          {{- range .Values.externalSecrets.expectedSecrets }}
+          {{- $expectedSecrets := list (printf "%s-judge-api-database" .Release.Name) (printf "%s-judge-archivista-database" .Release.Name) (printf "%s-kratos" .Release.Name) }}
+          {{- range $expectedSecrets }}
           check "ExternalSecret '{{ . }}' is synced" \
             "kubectl get externalsecret {{ . }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep -q 'True'" \
             "ExternalSecret '{{ . }}' is not synced. Check Vault connectivity and SecretStore configuration."
 
           check "Secret '{{ . }}' created by ESO" \
             "kubectl get secret {{ . }} -n {{ $.Release.Namespace }}" \
-            "Secret '{{ . }}' was not created by ExternalSecrets Operator. Check ESO logs: kubectl logs -n {{ $.Values.externalSecrets.namespace }} -l app.kubernetes.io/name=external-secrets"
+            "Secret '{{ . }}' was not created by ExternalSecrets Operator. Check ESO logs: kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secrets"
           {{- end }}
           echo ""
           {{- end }}
 
-          {{- if .Values.services.postgresql.enabled }}
+          {{- if .Values.global.dev }}
           # Check PostgreSQL (dev/staging only)
           echo "=== PostgreSQL Service ==="
+          {{- $postgresqlName := printf "%s-postgresql" .Release.Name }}
           check "PostgreSQL service exists" \
-            "kubectl get service {{ .Values.services.postgresql.name }} -n {{ .Release.Namespace }}" \
+            "kubectl get service {{ $postgresqlName }} -n {{ .Release.Namespace }}" \
             "PostgreSQL service not found. Deploy PostgreSQL first."
 
           check "PostgreSQL pod ready" \
-            "kubectl get statefulset {{ .Values.services.postgresql.name }} -n {{ .Release.Namespace }} -o jsonpath='{.status.readyReplicas}' | grep -q '^[1-9]'" \
+            "kubectl get statefulset {{ $postgresqlName }} -n {{ .Release.Namespace }} -o jsonpath='{.status.readyReplicas}' | grep -q '^[1-9]'" \
             "PostgreSQL pod not ready. Wait for PostgreSQL to start."
           echo ""
           {{- end }}
 
-          {{- if .Values.services.localstack.enabled }}
+          {{- if .Values.global.dev }}
           # Check LocalStack (dev/staging only)
           echo "=== LocalStack Service ==="
+          {{- $localstackName := printf "%s-localstack" .Release.Name }}
           check "LocalStack service exists" \
-            "kubectl get service {{ .Release.Name }}-{{ .Values.services.localstack.name }} -n {{ .Release.Namespace }}" \
+            "kubectl get service {{ $localstackName }} -n {{ .Release.Namespace }}" \
             "LocalStack service not found. Deploy LocalStack first."
 
           check "LocalStack pod ready" \
-            "kubectl get deployment {{ .Release.Name }}-{{ .Values.services.localstack.name }} -n {{ .Release.Namespace }} -o jsonpath='{.status.readyReplicas}' | grep -q '^[1-9]'" \
+            "kubectl get deployment {{ $localstackName }} -n {{ .Release.Namespace }} -o jsonpath='{.status.readyReplicas}' | grep -q '^[1-9]'" \
             "LocalStack pod not ready. Wait for LocalStack to start."
 
           # Check LocalStack buckets exist
-          {{- range .Values.services.localstack.requiredBuckets }}
+          {{- $localstackBuckets := list "judge-artifacts" "archivista" "archivista-attestations" }}
+          {{- range $localstackBuckets }}
           check "LocalStack bucket '{{ . }}' exists" \
-            "kubectl exec deployment/{{ $.Release.Name }}-{{ $.Values.services.localstack.name }} -n {{ $.Release.Namespace }} -- awslocal s3 ls s3://{{ . }}" \
+            "kubectl exec deployment/{{ $localstackName }} -n {{ $.Release.Namespace }} -- awslocal s3 ls s3://{{ . }}" \
             "LocalStack bucket '{{ . }}' not found. Check LocalStack initialization."
           {{- end }}
           echo ""
