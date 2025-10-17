@@ -7,6 +7,7 @@ global:
 
 externalSecrets:
   enabled: false  # Dev uses direct secrets, not ESO
+  validateSync: false  # No ExternalSecrets to validate in dev
 
 vault:
   enabled: false  # Dev doesn't use Vault

@@ -48,11 +48,15 @@ helm install judge-preflight ./charts/judge-preflight \
 - ✅ PostgreSQL/RDS reachable
 - ✅ Fulcio server secret exists with required keys
 
-### Production Only
+### Production Only (Vault + ESO)
 
 - ✅ External Secrets Operator installed (3+ pods running)
 - ✅ Vault server reachable
 - ✅ Vault Kubernetes auth roles configured (judge-api, archivista, kratos)
+- ✅ ExternalSecrets synced to Kubernetes secrets (judge-api-database, archivista-database, kratos)
+
+### Production Only (AWS)
+
 - ✅ AWS S3 buckets exist (demo-judge-judge, demo-judge-archivista)
 - ✅ AWS SNS/SQS resources exist
 
@@ -122,6 +126,46 @@ To create this secret, run:
 
 Obtain credentials from: https://github.com/settings/developers
 ==========================================
+```
+
+## Configuration
+
+The preflight chart validates different prerequisites based on your deployment environment:
+
+### Production Environment
+Enable Vault/ESO and AWS checks:
+```yaml
+externalSecrets:
+  enabled: true
+  validateSync: true  # Verify ExternalSecrets are synced
+  expectedSecrets:
+    - judge-platform-judge-api-database
+    - judge-platform-judge-archivista-database
+    - judge-platform-judge-kratos
+
+vault:
+  enabled: true
+
+aws:
+  enabled: true
+```
+
+### Dev/Staging Environment
+Skip Vault/ESO and AWS checks:
+```yaml
+externalSecrets:
+  enabled: false
+  validateSync: false
+
+vault:
+  enabled: false
+
+aws:
+  enabled: false
+
+secrets:
+  githubOAuth:
+    enabled: true  # Dev/staging require GitHub OAuth secret
 ```
 
 ## Skipping Checks

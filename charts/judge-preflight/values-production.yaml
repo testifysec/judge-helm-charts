@@ -9,6 +9,11 @@ externalSecrets:
   enabled: true
   namespace: external-secrets-system
   requiredPods: 3
+  validateSync: true  # Verify ExternalSecrets are synced to Kubernetes secrets
+  expectedSecrets:
+    - judge-platform-judge-api-database
+    - judge-platform-judge-archivista-database
+    - judge-platform-judge-kratos
 
 vault:
   enabled: true

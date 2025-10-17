@@ -184,6 +184,21 @@ spec:
           echo ""
           {{- end }}
 
+          {{- if .Values.externalSecrets.validateSync }}
+          # Check ExternalSecrets are synced (production only)
+          echo "=== ExternalSecrets Status ==="
+          {{- range .Values.externalSecrets.expectedSecrets }}
+          check "ExternalSecret '{{ . }}' is synced" \
+            "kubectl get externalsecret {{ . }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep -q 'True'" \
+            "ExternalSecret '{{ . }}' is not synced. Check Vault connectivity and SecretStore configuration."
+
+          check "Secret '{{ . }}' created by ESO" \
+            "kubectl get secret {{ . }} -n {{ $.Release.Namespace }}" \
+            "Secret '{{ . }}' was not created by ExternalSecrets Operator. Check ESO logs: kubectl logs -n {{ $.Values.externalSecrets.namespace }} -l app.kubernetes.io/name=external-secrets"
+          {{- end }}
+          echo ""
+          {{- end }}
+
           {{- if .Values.services.postgresql.enabled }}
           # Check PostgreSQL (dev/staging only)
           echo "=== PostgreSQL Service ==="

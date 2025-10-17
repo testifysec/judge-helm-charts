@@ -7,6 +7,7 @@ global:
 
 externalSecrets:
   enabled: false  # Staging uses direct secrets, not ESO
+  validateSync: false  # No ExternalSecrets to validate in staging
 
 vault:
   enabled: false  # Staging doesn't use Vault
