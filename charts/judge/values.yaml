@@ -121,6 +121,9 @@ kratos:
   image:
     tag: v1.0.0-token-update
   enabled: true
+  deployment:
+    serviceAccount:
+      create: true  # Required for SecretStore ServiceAccount ref to work correctly
   ingress:
     public:
       enabled: false  # Disabled - using Istio VirtualServices
@@ -170,6 +173,8 @@ archivista:
   image:
     tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
+  serviceAccount:
+    create: true  # Required for SecretStore ServiceAccount ref to work correctly
   ingress:
     enabled: false  # Disabled - using Istio VirtualServices
   workflows:
@@ -186,6 +191,8 @@ judge-api:
   image:
     tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
+  serviceAccount:
+    create: true  # Required for SecretStore ServiceAccount ref to work correctly
   ingress:
     enabled: false  # Disabled - using Istio VirtualServices
   deployment:
