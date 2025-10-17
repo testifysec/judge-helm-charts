@@ -30,7 +30,8 @@ service:
 init:
   s3Buckets:
     - judge-artifacts
-    - archivista-attestations
+    - archivista  # Archivista blob storage bucket
+    - archivista-attestations  # Legacy bucket name, kept for compatibility
   sqsQueues:
     - archivista-attestations
   snsTopics:
