@@ -35,7 +35,7 @@ dependencies:
     repository: file://../minio
     condition: minio.enabled
   - name: kratos
-    version: 1.6.3
+    version: 1.6.4
     repository: file://../kratos
     condition: kratos.enabled
   - name: kratos-selfservice-ui-node
