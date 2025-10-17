@@ -100,7 +100,7 @@ spec:
                 --sql-connection="$JUDGE_API_SQL_STORE_CONNECTION_STRING" \
                 --sql-backend={{ .Values.sqlStore.backend }} \
                 --listen=tcp://0.0.0.0:8080 \
-                --kratos-admin-url={{ .Values.kratos.adminUrl }} \
+                --kratos-admin-url={{ include "judge.service.kratosAdminUrl" . }} \
                 {{- with .Values.workflows.signer.secretName }}
                 --signer-path=/tmp/signer/private_key.pem \
                 {{- end }}
@@ -115,7 +115,7 @@ spec:
             - "--sql-connection=$(JUDGE_API_SQL_STORE_CONNECTION_STRING)"
             - "--sql-backend={{ .Values.sqlStore.backend }}"
             - "--listen=tcp://0.0.0.0:8080"
-            - "--kratos-admin-url={{ .Values.kratos.adminUrl }}"
+            - "--kratos-admin-url={{ include "judge.service.kratosAdminUrl" . }}"
             {{- with .Values.workflows.signer.secretName }}
             - "--signer-path=/tmp/signer/private_key.pem"
             {{- end }}
@@ -153,9 +153,9 @@ spec:
             - name: JUDGE_API_SQL_STORE_BACKEND
               value: {{ .Values.sqlStore.backend }}
             - name: KRATOS_PUBLIC_URL
-              value: "{{ .Values.kratos.publicUrl }}"
+              value: "{{ include "judge.service.kratosPublicUrl" . }}"
             - name: KRATOS_ADMIN_URL
-              value: "{{ .Values.kratos.adminUrl }}"
+              value: "{{ include "judge.service.kratosAdminUrl" . }}"
             {{- range .Values.deployment.env }}
             - name: {{ .name }}
               {{- if .value }}
