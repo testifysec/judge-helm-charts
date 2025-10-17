@@ -186,6 +186,7 @@ kratos:
     serve:
       admin:
         base_url: http://kratos-admin.judge.svc.cluster.local
+        host: 127.0.0.1
         port: 4433
       public:
         port: 4434
