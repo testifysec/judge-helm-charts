@@ -247,7 +247,7 @@ judge-web:
   ingress:
     enabled: false  # Disabled - using Istio VirtualServices
   nginxReverseProxy:
-    enabled: true
+    enabled: false  # Disabled by default - hardcoded service names cause issues with release prefixes
     clientMaxBodySize: "100M"
   redirectIngress:
     enabled: false
