@@ -552,8 +552,7 @@ selfservice:
     oidc:
       enabled: {{ default true (dig "oidc" "enabled" nil .Values.global) }}
       config:
-        providers:
-        {{- if .Values.global.oidc }}
+        providers: {{- if and .Values.global.oidc .Values.global.oidc.providers }}
         {{- range .Values.global.oidc.providers }}
         - id: {{ .id }}
           provider: {{ .provider }}
@@ -580,6 +579,7 @@ selfservice:
           {{- end }}
           {{- end }}
         {{- end }}
+        {{- else }} []
         {{- end }}
     password:
       enabled: false
