@@ -7,7 +7,7 @@ dependencies:
   version: 0.1.1
 - name: kratos
   repository: file://../kratos
-  version: 1.6.2
+  version: 1.6.3
 - name: kratos-selfservice-ui-node
   repository: file://../kratos-selfservice-ui-node
   version: 1.6.0
@@ -38,5 +38,5 @@ dependencies:
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.0
-digest: sha256:98156cf9acb7af3e8e2ddd1f11d24c4e94408bdb79aa6b7817bacab30e511322
-generated: "2025-10-16T19:29:14.194369-05:00"
+digest: sha256:6576dfb976d3f4f142f22aeed7c742eb388d5e679efaa923454663939d236fb6
+generated: "2025-10-16T19:46:18.401964-05:00"
