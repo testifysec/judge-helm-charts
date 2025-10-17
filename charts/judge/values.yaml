@@ -176,6 +176,22 @@ archivista:
     create: true  # Required for SecretStore ServiceAccount ref to work correctly
   workflows:
     endpoint: http://localstack.localstack.svc.cluster.local:4566
+  deployment:
+    env:
+      - name: ARCHIVISTA_LISTEN_ON
+        value: tcp://0.0.0.0:8082
+      - name: ARCHIVISTA_STORAGE_BACKEND
+        value: '{{ include "judge.s3.archivista.storageBackend" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_ENDPOINT
+        value: '{{ include "judge.s3.endpoint" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE
+        value: '{{ include "judge.s3.credentialType" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_USE_TLS
+        value: '{{ include "judge.s3.useTLS" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+        value: '{{ include "judge.s3.archivista.bucketName" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_REGION
+        value: '{{ include "judge.s3.region" . }}'
 kratos-selfservice-ui-node:
   nameOverride: "judge-kratos-self-service"  # ECR repo name
   fullnameOverride: ""  # Remove fullnameOverride to ensure consistent {release}-{nameOverride} naming
@@ -196,13 +212,13 @@ judge-api:
       - name: ARCHIVISTA_PUBSUB_NAME
         value: "judge-judge-api-archivista-subscription"
       - name: BLOB_STORE_USE_TLS
-        value: "true"
+        value: '{{ include "judge.s3.useTLS" . }}'
       - name: BLOB_STORE_BUCKET_NAME
-        value: "{{JUDGE_BUCKET_NAME}}"
+        value: '{{ include "judge.s3.judgeApi.bucketName" . }}'
       - name: BLOB_STORE_ENDPOINT
-        value: s3.amazonaws.com
+        value: '{{ include "judge.s3.endpoint" . }}'
       - name: BLOB_STORE_CREDENTIAL_TYPE
-        value: IAM
+        value: '{{ include "judge.s3.credentialType" . }}'
       - name: "__TESTIFY_SKIP_LICENSE_CHECK__"
         value: "true"
       - name: JUDGE_URL

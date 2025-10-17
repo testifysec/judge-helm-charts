@@ -687,3 +687,84 @@ us-east-1
 {{ .Values.global.messaging.aws.region }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+AWS S3 Blob Storage Configuration Helpers
+These helpers provide complete S3 configuration for Judge API and Archivista
+Supports dev mode (LocalStack) and production (AWS S3) automatically
+Usage in subchart deployment templates:
+  - name: BLOB_STORE_ENDPOINT
+    value: {{ include "judge.s3.endpoint" . | quote }}
+*/}}
+
+{{/*
+S3 Endpoint - Returns s3.amazonaws.com for prod, LocalStack for dev
+*/}}
+{{- define "judge.s3.endpoint" -}}
+{{- if .Values.global.dev -}}
+{{ .Release.Name }}-localstack.{{ .Release.Namespace }}.svc.cluster.local:4566
+{{- else -}}
+s3.amazonaws.com
+{{- end -}}
+{{- end -}}
+
+{{/*
+S3 Use TLS - Returns "true" for prod, "false" for dev (LocalStack)
+*/}}
+{{- define "judge.s3.useTLS" -}}
+{{- if .Values.global.dev -}}
+false
+{{- else -}}
+true
+{{- end -}}
+{{- end -}}
+
+{{/*
+S3 Credential Type - Returns IAM for prod, static for dev
+*/}}
+{{- define "judge.s3.credentialType" -}}
+{{- if .Values.global.dev -}}
+static
+{{- else -}}
+IAM
+{{- end -}}
+{{- end -}}
+
+{{/*
+S3 Region - Returns configured region from global.aws.region
+*/}}
+{{- define "judge.s3.region" -}}
+{{ include "judge.aws.region" . }}
+{{- end -}}
+
+{{/*
+Archivista-specific S3 helpers
+These use ARCHIVISTA_ prefixed env var names
+*/}}
+{{- define "judge.s3.archivista.bucketName" -}}
+{{- if .Values.global.dev -}}
+archivista
+{{- else -}}
+{{ include "judge.aws.s3.archivistaBucket" . }}
+{{- end -}}
+{{- end -}}
+
+{{- define "judge.s3.archivista.storageBackend" -}}
+{{- if .Values.global.dev -}}
+BLOB
+{{- else -}}
+BLOB
+{{- end -}}
+{{- end -}}
+
+{{/*
+Judge API-specific S3 helpers
+These use BLOB_STORE_ prefixed env var names
+*/}}
+{{- define "judge.s3.judgeApi.bucketName" -}}
+{{- if .Values.global.dev -}}
+judge
+{{- else -}}
+{{ include "judge.aws.s3.judgeApiBucket" . }}
+{{- end -}}
+{{- end -}}
