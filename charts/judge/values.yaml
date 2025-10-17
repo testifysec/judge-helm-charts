@@ -355,17 +355,8 @@ fulcio:
           - secretName: fulcio-grpc-ingress-tls
             hosts:
               - fulcio.testifysec-demo.xyz
-    volumes:
-      - name: tls-ca
-        secret:
-          secretName: fulcio-tls-secret
-          items:
-            - key: ca.crt
-              path: testifysec-ca.pem
-    volumeMounts:
-      - name: tls-ca
-        mountPath: /etc/ssl/certs/testifysec-ca.pem
-        subPath: testifysec-ca.pem
+    # volumes and volumeMounts removed - only needed when using ingress with cert-manager
+    # For Istio deployments, TLS is handled by the ingress gateway
   config:
     contents:
       {
