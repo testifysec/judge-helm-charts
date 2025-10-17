@@ -8,7 +8,7 @@ metadata:
     component: gateway
     app.kubernetes.io/component: gateway
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "3"
 spec:
   replicas: {{ .Values.gateway.replicas }}
   selector:
