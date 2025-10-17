@@ -113,21 +113,6 @@ gateway:
     requests:
       cpu: 100m
       memory: 512Mi
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
-    className: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: tls-ca-issuer
-      kubernetes.io/ssl-redirect: "true"
-    hosts:
-      - host: gateway.testifysec-demo.xyz
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: gateway-tls-secret
-        hosts:
-          - gateway.testifysec-demo.xyz
   archivista:
     url: "http://judge-archivista.judge.svc.cluster.local:8082"
   judgeapi:
@@ -143,11 +128,6 @@ kratos:
   deployment:
     serviceAccount:
       create: true  # Required for SecretStore ServiceAccount ref to work correctly
-  ingress:
-    public:
-      enabled: false  # Disabled - using Istio VirtualServices
-    admin:
-      enabled: false  # Disabled - using Istio VirtualServices
   courier:
     enabled: false
   kratos:
@@ -194,8 +174,6 @@ archivista:
   enabled: true
   serviceAccount:
     create: true  # Required for SecretStore ServiceAccount ref to work correctly
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
   workflows:
     endpoint: http://localstack.localstack.svc.cluster.local:4566
 kratos-selfservice-ui-node:
@@ -204,8 +182,6 @@ kratos-selfservice-ui-node:
   image:
     tag: v1.6.0
   enabled: true
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
 judge-api:
   nameOverride: "judge-api"  # ECR repo name
   image:
@@ -213,8 +189,6 @@ judge-api:
   enabled: true
   serviceAccount:
     create: true  # Required for SecretStore ServiceAccount ref to work correctly
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
   deployment:
     env:
       - name: ARCHIVISTA_PUBSUB_TOPIC
@@ -244,13 +218,9 @@ judge-web:
   image:
     tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
   nginxReverseProxy:
     enabled: false  # Disabled by default - hardcoded service names cause issues with release prefixes
     clientMaxBodySize: "100M"
-  redirectIngress:
-    enabled: false
 dapr:
   enabled: true
   # Dapr uses its own registry field to avoid conflicts with parent chart's global.registry
@@ -279,22 +249,6 @@ dex:
   enabled: true
   image:
     tag: v2.43.1
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
-    className: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: tls-ca-issuer
-      kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/rewrite-target: /
-    hosts:
-      - host: dex.testifysec-demo.xyz
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - secretName: dex-tls-secret
-        hosts:
-          - dex.testifysec-demo.xyz
   config:
     issuer: https://dex.testifysec-demo.xyz
     storage:
@@ -326,35 +280,6 @@ fulcio:
   server:
     args:
       disable_ct_log: true
-    ingress:
-      http:
-        enabled: false  # Disabled - using Istio VirtualServices
-        className: "nginx"
-        annotations:
-          cert-manager.io/cluster-issuer: tls-ca-issuer
-          kubernetes.io/ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/rewrite-target: /
-        hosts:
-          - path: /
-            host: "fulcio.testifysec-demo.xyz"
-      tls:
-        - secretName: fulcio-tls-secret
-          hosts:
-            - fulcio.testifysec-demo.xyz
-      grpc:
-        enabled: false  # Disabled - using Istio VirtualServices
-        className: "nginx"
-        annotations:
-          cert-manager.io/cluster-issuer: tls-ca-issuer
-          kubernetes.io/ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-        hosts:
-          - host: fulcio.testifysec-demo.xyz
-            path: /dev.sigstore.fulcio.v2.CA
-        tls:
-          - secretName: fulcio-grpc-ingress-tls
-            hosts:
-              - fulcio.testifysec-demo.xyz
     # volumes and volumeMounts removed - only needed when using ingress with cert-manager
     # For Istio deployments, TLS is handled by the ingress gateway
   config:
@@ -379,20 +304,6 @@ tsa:
   server:
     args:
       signer: memory
-    ingress:
-      http:
-        enabled: false  # Disabled - using Istio VirtualServices
-        className: "nginx"
-        annotations:
-          cert-manager.io/cluster-issuer: tls-ca-issuer
-          kubernetes.io/ssl-redirect: "true"
-        hosts:
-          - path: /
-            host: tsa.testifysec-demo.xyz
-      tls:
-        - secretName: tsa-ingress-tls
-          hosts:
-            - tsa.testifysec-demo.xyz
 
 judge-ai-proxy:
   nameOverride: "judge-ai-proxy"  # ECR repo name
@@ -408,26 +319,6 @@ judge-ai-proxy:
     apiEndpoint: "https://api.anthropic.com/v1/messages"
     systemPrompt: "You are Claude, an AI assistant by Anthropic. When evaluating policies against attestation data, provide direct responses without conversational preambles. For policy evaluation, always format your response with a clear 'Status: PASS' or 'Status: FAIL' line followed by a 'Reason:' section that explains the evaluation result concisely with supporting evidence from the attestation data."
     defaultModel: "claude-3-5-haiku-latest"
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
-    className: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: tls-ca-issuer
-      kubernetes.io/ssl-redirect: "true"
-    hosts:
-      - host: ai-proxy.testifysec-demo.xyz
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: ai-proxy-tls-secret
-        hosts:
-          - ai-proxy.testifysec-demo.xyz
-
-ingress:
-  httpproxy:
-    enabled: false
-    annotations: {}
 
 # SSP Generation Configuration
 # Note: SSP functionality is implemented via dagger sidecar in judge-api
