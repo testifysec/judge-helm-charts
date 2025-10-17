@@ -53,6 +53,39 @@ spec:
 {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
+        - name: {{ .Chart.Name }}-process-config
+          image: {{ include "judge.image.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          imagePullPolicy: {{ include "kratos.imagePullPolicy" . }}
+          command:
+            - sh
+            - -c
+            - |
+              echo "Processing Kratos config with environment variable substitution..."
+              envsubst '${OIDC_GITHUB_CLIENT_ID} ${OIDC_GITHUB_CLIENT_SECRET}' < /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
+              echo "Config processing complete."
+          volumeMounts:
+            - name: {{ include "kratos.name" . }}-config-volume
+              mountPath: /etc/config/kratos
+              readOnly: true
+            - name: {{ include "kratos.name" . }}-config-processed
+              mountPath: /etc/config/kratos-processed
+          env:
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientSecret
+                  optional: true
+          {{- with .Values.securityContext }}
+          securityContext:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
       {{- if .Values.deployment.extraInitContainers  }}
         {{- tpl  .Values.deployment.extraInitContainers . | nindent 8 }}
       {{- end }}
@@ -71,7 +104,7 @@ spec:
           args: ["migrate", "sql", "-e", "--yes", "--config", "/etc/config/kratos/kratos.yaml"]
           {{- end }}
           volumeMounts:
-            - name: {{ include "kratos.name" . }}-config-volume
+            - name: {{ include "kratos.name" . }}-config-processed
               mountPath: /etc/config/kratos
               readOnly: true
           {{- with .Values.deployment.extraVolumeMounts }}
@@ -102,6 +135,8 @@ spec:
         - name: {{ include "kratos.name" . }}-config-volume
           configMap:
             name: {{ include "kratos.fullname" . }}-config
+        - name: {{ include "kratos.name" . }}-config-processed
+          emptyDir: {}
         {{- $root := . -}}
         {{- range $method, $methodEntry := .Values.kratos.emailTemplates }}
         {{- range $result, $resultEntry := $methodEntry }}
@@ -134,7 +169,7 @@ spec:
             {{- if .Values.deployment.extraVolumeMounts }}
               {{- toYaml .Values.deployment.extraVolumeMounts | nindent 12 }}
             {{- end }}
-            - name: {{ include "kratos.name" . }}-config-volume
+            - name: {{ include "kratos.name" . }}-config-processed
               mountPath: /etc/config/kratos
               readOnly: true
             {{- $root := . -}}
