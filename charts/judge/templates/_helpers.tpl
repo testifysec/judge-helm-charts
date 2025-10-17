@@ -504,7 +504,6 @@ selfservice:
 serve:
   admin:
     base_url: {{ include "judge.service.kratosAdminUrl" . }}
-    host: 127.0.0.1
     port: 4433
   public:
     base_url: {{ $kratosUrl }}
