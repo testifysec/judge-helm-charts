@@ -4,12 +4,14 @@ This prevents configuration drift where URLs use different domains.
 Usage: {{ include "judge.validateDomain" . }}
 */}}
 {{- define "judge.validateDomain" -}}
-{{- if .Values.istio.enabled }}
-{{- if ne .Values.global.domain .Values.istio.domain }}
-{{- fail (printf "ERROR: global.domain (%s) MUST match istio.domain (%s). Update istio.domain in values.yaml to match global.domain." .Values.global.domain .Values.istio.domain) }}
-{{- end }}
-{{- end }}
-{{- end }}
+{{- if .Values.istio -}}
+{{- if .Values.istio.enabled -}}
+{{- if ne .Values.global.domain .Values.istio.domain -}}
+{{- fail (printf "ERROR: global.domain (%s) MUST match istio.domain (%s). Update istio.domain in values.yaml to match global.domain." .Values.global.domain .Values.istio.domain) -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
 
 {{/*
 Istio Ingress Hostname Helpers
@@ -18,39 +20,39 @@ Format: {subdomain}.{istio.domain}
 Users can override subdomains via istio.hosts.* in values.yaml
 */}}
 {{- define "judge.ingress.host.gateway" -}}
-{{ .Values.istio.hosts.gateway | default "gateway" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.gateway | default "gateway" }}{{ else }}gateway{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.web" -}}
-{{ .Values.istio.hosts.web | default "judge" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.web | default "judge" }}{{ else }}judge{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.api" -}}
-{{ .Values.istio.hosts.api | default "api" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.api | default "api" }}{{ else }}api{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.fulcio" -}}
-{{ .Values.istio.hosts.fulcio | default "fulcio" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.fulcio | default "fulcio" }}{{ else }}fulcio{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.dex" -}}
-{{ .Values.istio.hosts.dex | default "dex" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.dex | default "dex" }}{{ else }}dex{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.tsa" -}}
-{{ .Values.istio.hosts.tsa | default "tsa" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.tsa | default "tsa" }}{{ else }}tsa{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.kratos" -}}
-{{ .Values.istio.hosts.kratos | default "kratos" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.kratos | default "kratos" }}{{ else }}kratos{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.login" -}}
-{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{- define "judge.ingress.host.minio" -}}
-{{ .Values.istio.hosts.minio | default "minio" }}.{{ .Values.istio.domain }}
+{{ if .Values.istio }}{{ .Values.istio.hosts.minio | default "minio" }}{{ else }}minio{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
 {{- end -}}
 
 {{/*
@@ -244,19 +246,19 @@ Domain URL helpers
 These construct URLs from global.domain configuration
 */}}
 {{- define "judge.url.kratos" -}}
-https://{{ .Values.istio.hosts.kratos | default "kratos" }}.{{ .Values.global.domain }}
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.kratos | default "kratos" }}{{ else }}kratos{{ end }}.{{ .Values.global.domain }}
 {{- end -}}
 
 {{- define "judge.url.login" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}
 {{- end -}}
 
 {{- define "judge.url.judge" -}}
-https://{{ .Values.istio.hosts.web | default "judge" }}.{{ .Values.global.domain }}
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.web | default "judge" }}{{ else }}judge{{ end }}.{{ .Values.global.domain }}
 {{- end -}}
 
 {{- define "judge.url.dex" -}}
-https://{{ .Values.istio.hosts.dex | default "dex" }}.{{ .Values.global.domain }}
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.dex | default "dex" }}{{ else }}dex{{ end }}.{{ .Values.global.domain }}
 {{- end -}}
 
 {{- define "judge.url.wildcard" -}}
@@ -414,31 +416,31 @@ eliminating string concatenation in values files
 */}}
 
 {{- define "judge.url.loginError" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/error
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/error
 {{- end -}}
 
 {{- define "judge.url.loginSettings" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/settings
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/settings
 {{- end -}}
 
 {{- define "judge.url.loginRecovery" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/recovery
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/recovery
 {{- end -}}
 
 {{- define "judge.url.loginVerification" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/verification
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/verification
 {{- end -}}
 
 {{- define "judge.url.loginBase" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/
 {{- end -}}
 
 {{- define "judge.url.loginLogin" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/login
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/login
 {{- end -}}
 
 {{- define "judge.url.loginRegistration" -}}
-https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/registration
+https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/registration
 {{- end -}}
 
 {{/*
@@ -458,9 +460,14 @@ Kratos URL Strategy (CRITICAL):
 */}}
 {{- define "judge.kratos.config.complete" -}}
 {{- $domain := .Values.global.domain -}}
-{{- $kratosSubdomain := .Values.istio.hosts.kratos | default "kratos" -}}
-{{- $loginSubdomain := .Values.istio.hosts.login | default "login" -}}
-{{- $webSubdomain := .Values.istio.hosts.web | default "judge" -}}
+{{- $kratosSubdomain := "kratos" -}}
+{{- $loginSubdomain := "login" -}}
+{{- $webSubdomain := "judge" -}}
+{{- if .Values.istio -}}
+{{- $kratosSubdomain = .Values.istio.hosts.kratos | default "kratos" -}}
+{{- $loginSubdomain = .Values.istio.hosts.login | default "login" -}}
+{{- $webSubdomain = .Values.istio.hosts.web | default "judge" -}}
+{{- end -}}
 {{- $kratosUrl := printf "https://%s.%s" $kratosSubdomain $domain -}}
 {{- $loginUrl := printf "https://%s.%s" $loginSubdomain $domain -}}
 {{- $judgeUrl := printf "https://%s.%s" $webSubdomain $domain -}}
