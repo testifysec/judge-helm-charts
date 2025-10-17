@@ -354,6 +354,22 @@ AWS SNS/SQS Helpers
 {{- end -}}
 
 {{/*
+AWS IRSA Annotation Helper
+Auto-generates eks.amazonaws.com/role-arn annotation when IRSA is enabled
+Usage: {{ include "judge.aws.irsa.annotations" (dict "service" "archivista" "root" .) }}
+Returns: map with annotation when enabled, empty map when disabled
+DRY: Single source of truth - global.aws configuration
+UX: One toggle (global.aws.irsa.enabled) controls all services
+*/}}
+{{- define "judge.aws.irsa.annotations" -}}
+{{- $service := .service -}}
+{{- $root := .root -}}
+{{- if and $root.Values.global.aws $root.Values.global.aws.irsa $root.Values.global.aws.irsa.enabled -}}
+eks.amazonaws.com/role-arn: arn:aws:iam::{{ include "judge.aws.accountId" $root }}:role/{{ include "judge.aws.prefix" $root }}-{{ $service }}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Storage helpers
 These construct blob storage configuration from global.storage
 Supports provider pattern (currently AWS S3 only)

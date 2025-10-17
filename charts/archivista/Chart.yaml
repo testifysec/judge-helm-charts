@@ -3,7 +3,7 @@ name: archivista
 description: A Helm chart for Archivista
 
 type: application
-version: 1.6.9
+version: 1.6.10
 
 keywords:
   - attestation
