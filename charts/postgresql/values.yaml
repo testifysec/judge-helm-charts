@@ -1,0 +1,35 @@
+image:
+  repository: public.ecr.aws/docker/library/postgres
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+auth:
+  username: judge
+  password: dev-preview-password  # Only for dev environments!
+  database: postgres
+
+# Init databases
+initDatabases:
+  - judge_api
+  - archivista
+  - kratos
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5432
+
+# Persistence
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""  # Use default storage class

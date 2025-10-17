@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-localstack
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: localstack
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: localstack
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: localstack
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: localstack
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 4566
+          name: edge
+        - containerPort: 4510-4559
+          name: services
+        env:
+        - name: SERVICES
+          value: {{ join "," .Values.services | quote }}
+        - name: DEBUG
+          value: "1"
+        - name: DATA_DIR
+          value: "/tmp/localstack/data"
+        - name: DOCKER_HOST
+          value: "unix:///var/run/docker.sock"
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: init-scripts
+          mountPath: /etc/localstack/init/ready.d
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: {{ .Release.Name }}-localstack-init

@@ -1,0 +1,35 @@
+image:
+  repository: public.ecr.aws/localstack/localstack
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# Services to enable in LocalStack
+services:
+  - s3
+  - sqs
+  - sns
+  - secretsmanager
+
+# Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 2Gi
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 4566
+
+# Init configuration - buckets and queues to create
+init:
+  s3Buckets:
+    - judge-artifacts
+    - archivista-attestations
+  sqsQueues:
+    - archivista-attestations
+  snsTopics:
+    - archivista-attestations

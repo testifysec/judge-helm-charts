@@ -591,3 +591,85 @@ serve:
       - Set-Cookie
     port: 4434
 {{- end -}}
+
+{{/*
+Dev-Mode Infrastructure Helpers
+These helpers switch between dev infrastructure (LocalStack/PostgreSQL) and production (AWS RDS/S3/SNS/SQS)
+based on the global.dev flag. This enables self-contained preview environments with zero AWS dependencies.
+*/}}
+
+{{/*
+Database Endpoint Helpers
+Returns PostgreSQL DSN for dev mode, RDS DSN for production
+*/}}
+{{- define "judge.database.endpoint.archivista" -}}
+{{- if .Values.global.dev -}}
+postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/archivista?sslmode=disable
+{{- else -}}
+postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/archivista?sslmode=require
+{{- end -}}
+{{- end -}}
+
+{{- define "judge.database.endpoint.kratos" -}}
+{{- if .Values.global.dev -}}
+postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/kratos?sslmode=disable
+{{- else -}}
+postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/kratos?sslmode=require
+{{- end -}}
+{{- end -}}
+
+{{- define "judge.database.endpoint.judgeApi" -}}
+{{- if .Values.global.dev -}}
+postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/judge_api?sslmode=disable
+{{- else -}}
+postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/judge_api?sslmode=require
+{{- end -}}
+{{- end -}}
+
+{{/*
+Storage Endpoint Helpers
+Returns LocalStack endpoint for dev mode, S3 endpoint for production
+*/}}
+{{- define "judge.storage.endpoint.dev" -}}
+{{- if .Values.global.dev -}}
+http://{{ .Release.Name }}-localstack.{{ .Release.Namespace }}.svc.cluster.local:4566
+{{- else -}}
+{{ .Values.global.storage.aws.endpoint }}
+{{- end -}}
+{{- end -}}
+
+{{- define "judge.storage.useTLS.dev" -}}
+{{- if .Values.global.dev -}}
+false
+{{- else -}}
+{{ .Values.global.storage.aws.useTLS }}
+{{- end -}}
+{{- end -}}
+
+{{- define "judge.storage.credentialType.dev" -}}
+{{- if .Values.global.dev -}}
+static
+{{- else -}}
+{{ .Values.global.storage.aws.credentialType }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Messaging Endpoint Helpers
+Returns LocalStack SNS/SQS configuration for dev mode, AWS for production
+*/}}
+{{- define "judge.messaging.endpoint.dev" -}}
+{{- if .Values.global.dev -}}
+http://{{ .Release.Name }}-localstack.{{ .Release.Namespace }}.svc.cluster.local:4566
+{{- else -}}
+https://sns.{{ include "judge.messaging.region" . }}.amazonaws.com
+{{- end -}}
+{{- end -}}
+
+{{- define "judge.messaging.region.dev" -}}
+{{- if .Values.global.dev -}}
+us-east-1
+{{- else -}}
+{{ .Values.global.messaging.aws.region }}
+{{- end -}}
+{{- end -}}
