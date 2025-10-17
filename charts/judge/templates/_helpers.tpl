@@ -12,6 +12,48 @@ Usage: {{ include "judge.validateDomain" . }}
 {{- end }}
 
 {{/*
+Istio Ingress Hostname Helpers
+These construct public-facing hostnames for VirtualServices.
+Format: {subdomain}.{istio.domain}
+Users can override subdomains via istio.hosts.* in values.yaml
+*/}}
+{{- define "judge.ingress.host.gateway" -}}
+{{ .Values.istio.hosts.gateway | default "gateway" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.web" -}}
+{{ .Values.istio.hosts.web | default "judge" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.api" -}}
+{{ .Values.istio.hosts.api | default "api" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.fulcio" -}}
+{{ .Values.istio.hosts.fulcio | default "fulcio" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.dex" -}}
+{{ .Values.istio.hosts.dex | default "dex" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.tsa" -}}
+{{ .Values.istio.hosts.tsa | default "tsa" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.kratos" -}}
+{{ .Values.istio.hosts.kratos | default "kratos" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.login" -}}
+{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{- define "judge.ingress.host.minio" -}}
+{{ .Values.istio.hosts.minio | default "minio" }}.{{ .Values.istio.domain }}
+{{- end -}}
+
+{{/*
 Render the imageRepository with the global and chart specific values.
 Supports provider pattern (currently AWS ECR only)
 */}}

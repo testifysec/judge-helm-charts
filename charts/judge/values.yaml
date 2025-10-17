@@ -81,6 +81,20 @@ istio:
   # Selector for Istio ingress gateway (must match the label on the ingress gateway pod)
   ingressGatewaySelector:
     istio: ingress
+
+  # Public ingress hostnames (subdomains only - will be appended to istio.domain)
+  # Override these in your values file to customize public-facing URLs
+  # Example: hosts.web: "attestation" becomes attestation.yourdomain.com
+  hosts:
+    gateway: "gateway"      # Gateway service API (gateway.domain)
+    web: "judge"            # Main Judge web UI (judge.domain)
+    api: "api"              # Judge API (api.domain)
+    fulcio: "fulcio"        # Fulcio code signing CA (fulcio.domain)
+    dex: "dex"              # Dex OIDC provider (dex.domain)
+    tsa: "tsa"              # Timestamp Authority (tsa.domain)
+    kratos: "kratos"        # Kratos identity service (kratos.domain)
+    login: "login"          # Login UI (login.domain)
+    minio: "minio"          # MinIO (dev/testing only) (minio.domain)
 nameOverride: "judge"
 gateway:
   enabled: true

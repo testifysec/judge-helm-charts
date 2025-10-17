@@ -10,7 +10,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "gateway.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.gateway" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -33,7 +33,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "judge.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.web" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -128,7 +128,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "api.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.api" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -151,7 +151,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "fulcio.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.fulcio" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -174,7 +174,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "dex.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.dex" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -197,7 +197,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "tsa.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.tsa" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -220,7 +220,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "kratos.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.kratos" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -243,7 +243,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "login.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.login" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -267,7 +267,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "minio.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.minio" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
