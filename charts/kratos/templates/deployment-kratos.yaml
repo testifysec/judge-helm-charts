@@ -60,20 +60,33 @@ spec:
             - /bin/sh
             - -c
             - |
-              echo "Processing Kratos config with environment variable substitution..."
+              echo "=== Starting Kratos config processing ==="
               echo "OIDC_GITHUB_CLIENT_ID=$OIDC_GITHUB_CLIENT_ID"
               echo "OIDC_GITHUB_CLIENT_SECRET=$OIDC_GITHUB_CLIENT_SECRET"
+
+              # List source ConfigMap contents
+              echo "=== Source ConfigMap files at /etc/config/kratos ==="
+              ls -la /etc/config/kratos/
+              echo "=== Checking for jsonnet files ==="
+              find /etc/config/kratos -name "*.jsonnet" -exec ls -la {} \;
+
               # Process kratos.yaml with sed for credential substitution
+              echo "=== Processing kratos.yaml ==="
               sed -e "s/\${OIDC_GITHUB_CLIENT_ID}/${OIDC_GITHUB_CLIENT_ID}/g" \
                   -e "s/\${OIDC_GITHUB_CLIENT_SECRET}/${OIDC_GITHUB_CLIENT_SECRET}/g" \
                   /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
+              echo "kratos.yaml processed successfully"
+
               # Copy OIDC mapper files (github.jsonnet, gitlab.jsonnet, etc.)
-              for file in /etc/config/kratos/*.jsonnet; do
-                if [ -f "$file" ]; then
-                  cp "$file" /etc/config/kratos-processed/
-                fi
-              done
-              echo "Config processing complete."
+              echo "=== Copying mapper files ==="
+              cp /etc/config/kratos/github.jsonnet /etc/config/kratos-processed/ && echo "Copied github.jsonnet" || echo "FAILED to copy github.jsonnet"
+              cp /etc/config/kratos/gitlab.jsonnet /etc/config/kratos-processed/ && echo "Copied gitlab.jsonnet" || echo "FAILED to copy gitlab.jsonnet"
+
+              # Verify files were copied
+              echo "=== Target emptyDir volume contents ==="
+              ls -la /etc/config/kratos-processed/
+
+              echo "=== Config processing complete ==="
           volumeMounts:
             - name: {{ include "kratos.name" . }}-config-volume
               mountPath: /etc/config/kratos
