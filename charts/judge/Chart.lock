@@ -34,12 +34,12 @@ dependencies:
   version: 0.1.1
 - name: localstack
   repository: file://../localstack
-  version: 0.1.9
+  version: 0.1.10
 - name: postgresql
   repository: file://../postgresql
   version: 0.1.1
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:06c040a965d8735fd0103820063789328f7302a6c647fca35a9a7519dc697ffb
-generated: "2025-10-17T18:27:52.44528-05:00"
+digest: sha256:0eafb7f7151373b10d98552552c26f783436bb9e990a4ba795ab6b802bb1d6d3
+generated: "2025-10-17T18:43:36.298466-05:00"

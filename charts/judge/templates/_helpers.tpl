@@ -693,7 +693,21 @@ Returns PostgreSQL DSN for dev mode, RDS DSN for production
 {{- if .Values.global.dev -}}
 postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/archivista?sslmode=disable
 {{- else -}}
-postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/archivista?sslmode=require
+{{- $username := "archivista" -}}
+{{- $password := "PLACEHOLDER_PASSWORD" -}}
+{{- $endpoint := "localhost" -}}
+{{- $port := "5432" -}}
+{{- if and .Values.global .Values.global.database -}}
+  {{- $username = default "archivista" .Values.global.database.username -}}
+  {{- $port = default "5432" .Values.global.database.port -}}
+  {{- if .Values.global.database.aws -}}
+    {{- $endpoint = default "localhost" .Values.global.database.aws.endpoint -}}
+  {{- end -}}
+{{- end -}}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.database -}}
+  {{- $password = default "PLACEHOLDER_PASSWORD" .Values.global.secrets.database.passwordEncoded -}}
+{{- end -}}
+postgres://{{ $username }}:{{ $password }}@{{ $endpoint }}:{{ $port }}/archivista?sslmode=require
 {{- end -}}
 {{- end -}}
 
@@ -701,7 +715,21 @@ postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.data
 {{- if .Values.global.dev -}}
 postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/kratos?sslmode=disable
 {{- else -}}
-postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/kratos?sslmode=require
+{{- $username := "kratos" -}}
+{{- $password := "PLACEHOLDER_PASSWORD" -}}
+{{- $endpoint := "localhost" -}}
+{{- $port := "5432" -}}
+{{- if and .Values.global .Values.global.database -}}
+  {{- $username = default "kratos" .Values.global.database.username -}}
+  {{- $port = default "5432" .Values.global.database.port -}}
+  {{- if .Values.global.database.aws -}}
+    {{- $endpoint = default "localhost" .Values.global.database.aws.endpoint -}}
+  {{- end -}}
+{{- end -}}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.database -}}
+  {{- $password = default "PLACEHOLDER_PASSWORD" .Values.global.secrets.database.passwordEncoded -}}
+{{- end -}}
+postgres://{{ $username }}:{{ $password }}@{{ $endpoint }}:{{ $port }}/kratos?sslmode=require
 {{- end -}}
 {{- end -}}
 
@@ -709,7 +737,21 @@ postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.data
 {{- if .Values.global.dev -}}
 postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/judge_api?sslmode=disable
 {{- else -}}
-postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/judge_api?sslmode=require
+{{- $username := "judge" -}}
+{{- $password := "PLACEHOLDER_PASSWORD" -}}
+{{- $endpoint := "localhost" -}}
+{{- $port := "5432" -}}
+{{- if and .Values.global .Values.global.database -}}
+  {{- $username = default "judge" .Values.global.database.username -}}
+  {{- $port = default "5432" .Values.global.database.port -}}
+  {{- if .Values.global.database.aws -}}
+    {{- $endpoint = default "localhost" .Values.global.database.aws.endpoint -}}
+  {{- end -}}
+{{- end -}}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.database -}}
+  {{- $password = default "PLACEHOLDER_PASSWORD" .Values.global.secrets.database.passwordEncoded -}}
+{{- end -}}
+postgres://{{ $username }}:{{ $password }}@{{ $endpoint }}:{{ $port }}/judge_api?sslmode=require
 {{- end -}}
 {{- end -}}
 
