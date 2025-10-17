@@ -60,16 +60,12 @@ spec:
             - |
               # Check LocalStack is responding
               awslocal s3 ls > /dev/null 2>&1 || exit 1
-              # Verify all required buckets exist
-              {{- range .Values.init.s3Buckets }}
-              awslocal s3 ls s3://{{ . }} > /dev/null 2>&1 || exit 1
-              {{- end }}
               exit 0
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 12
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
