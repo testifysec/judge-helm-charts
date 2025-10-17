@@ -1,4 +1,10 @@
-{{- if and .Values.istio.enabled (index .Values "preview-router" "enabled") }}
+{{- $previewRouterEnabled := false }}
+{{- if hasKey .Values "preview-router" }}
+  {{- if index .Values "preview-router" "enabled" }}
+    {{- $previewRouterEnabled = true }}
+  {{- end }}
+{{- end }}
+{{- if and .Values.istio.enabled $previewRouterEnabled }}
 ---
 # Certificate for preview subdomain
 apiVersion: cert-manager.io/v1

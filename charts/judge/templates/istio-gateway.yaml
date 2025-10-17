@@ -29,7 +29,13 @@ spec:
         credentialName: {{ .Values.istio.tlsSecretName | default "wildcard-tls" }}
       hosts:
         - "*.{{ .Values.istio.domain }}"
-    {{- if (index .Values "preview-router" "enabled") }}
+    {{- $previewRouterEnabled := false }}
+    {{- if hasKey .Values "preview-router" }}
+      {{- if index .Values "preview-router" "enabled" }}
+        {{- $previewRouterEnabled = true }}
+      {{- end }}
+    {{- end }}
+    {{- if $previewRouterEnabled }}
     # Preview subdomain with its own wildcard certificate
     - port:
         number: 443
