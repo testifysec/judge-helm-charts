@@ -604,7 +604,7 @@ Returns PostgreSQL DSN for dev mode, RDS DSN for production
 */}}
 {{- define "judge.database.endpoint.archivista" -}}
 {{- if .Values.global.dev -}}
-postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/archivista?sslmode=disable
+postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/archivista?sslmode=disable
 {{- else -}}
 postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/archivista?sslmode=require
 {{- end -}}
@@ -612,7 +612,7 @@ postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.data
 
 {{- define "judge.database.endpoint.kratos" -}}
 {{- if .Values.global.dev -}}
-postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/kratos?sslmode=disable
+postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/kratos?sslmode=disable
 {{- else -}}
 postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/kratos?sslmode=require
 {{- end -}}
@@ -620,7 +620,7 @@ postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.data
 
 {{- define "judge.database.endpoint.judgeApi" -}}
 {{- if .Values.global.dev -}}
-postgres://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/judge_api?sslmode=disable
+postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/judge_api?sslmode=disable
 {{- else -}}
 postgres://{{ .Values.global.database.username }}:{{ .Values.global.secrets.database.passwordEncoded }}@{{ .Values.global.database.aws.endpoint }}:{{ .Values.global.database.port }}/judge_api?sslmode=require
 {{- end -}}
