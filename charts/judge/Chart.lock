@@ -7,7 +7,7 @@ dependencies:
   version: 0.1.1
 - name: kratos
   repository: file://../kratos
-  version: 1.6.12
+  version: 1.6.13
 - name: kratos-selfservice-ui-node
   repository: file://../kratos-selfservice-ui-node
   version: 1.6.0
@@ -44,5 +44,8 @@ dependencies:
 - name: postgresql
   repository: file://../postgresql
   version: 0.1.1
-digest: sha256:8950f25005817e0d51d16a8736db590ed52b6fbd6afe006a38f8b3eb835c0f0c
-generated: "2025-10-17T01:01:09.849683-05:00"
+- name: preview-router
+  repository: file://../preview-router
+  version: 0.1.0
+digest: sha256:8b4094b237b806bc4cce7ace6a5478d74ba9190ab045f298a49d6335dd8e1fb5
+generated: "2025-10-17T01:35:03.460856-05:00"
