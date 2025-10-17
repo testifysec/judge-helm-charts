@@ -47,7 +47,7 @@ dependencies:
     repository: file://../archivista
     condition: archivista.enabled
   - name: judge-api
-    version: "1.6.1"
+    version: "1.6.2"
     repository: file://../judge-api
     condition: judge-api.enabled
   - name: dapr

@@ -16,7 +16,7 @@ dependencies:
   version: 1.6.1
 - name: judge-api
   repository: file://../judge-api
-  version: 1.6.1
+  version: 1.6.2
 - name: dapr
   repository: file://../dapr
   version: 1.14.4
@@ -38,5 +38,5 @@ dependencies:
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.0
-digest: sha256:ceee481816a384e2bec181d52ec352671140e67f61a2d80e689b03bdb29437e2
-generated: "2025-10-16T20:47:59.869702-05:00"
+digest: sha256:b1768e64fa110f9d560d86b8513fba94495849828573915c32c235023c599f9e
+generated: "2025-10-16T21:06:59.788901-05:00"

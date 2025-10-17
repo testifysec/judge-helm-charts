@@ -153,9 +153,9 @@ spec:
             - name: JUDGE_API_SQL_STORE_BACKEND
               value: {{ .Values.sqlStore.backend }}
             - name: KRATOS_PUBLIC_URL
-              value: "{{ include "judge.service.kratosPublicUrl" . }}"
+              value: "{{ include "judge.service.kratosPublicUrl" . | trimPrefix "http://" }}"
             - name: KRATOS_ADMIN_URL
-              value: "{{ include "judge.service.kratosAdminUrl" . }}"
+              value: "{{ include "judge.service.kratosAdminUrl" . | trimPrefix "http://" }}"
             {{- range .Values.deployment.env }}
             - name: {{ .name }}
               {{- if .value }}
