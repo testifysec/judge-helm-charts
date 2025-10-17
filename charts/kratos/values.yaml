@@ -81,6 +81,21 @@ secret:
   # -- switch to false to prevent checksum annotations being maintained and propogated to the pods
   hashSumEnabled: true
 
+## -- External OIDC secrets configuration (for staging/dev environments)
+# Allows providing GitHub OAuth credentials via a separate Kubernetes secret
+# while letting Helm auto-generate cookie/cipher secrets
+oidc:
+  github:
+    # -- Name of external secret containing GitHub OAuth client secret
+    # If set, OIDC_GITHUB_CLIENT_SECRET will be read from this secret instead of the main Kratos secret
+    # Leave empty to use the main Kratos secret (default behavior)
+    existingSecret: ""
+    # -- Key within the external secret that contains the GitHub client secret
+    secretKey: "clientSecret"
+    # -- Key within the external secret that contains the GitHub client ID (optional)
+    # If not set, client ID will be read from the main Kratos secret
+    clientIdSecretKey: ""
+
 ## -- Ingress definition
 ingress:
   admin:

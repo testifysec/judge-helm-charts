@@ -95,6 +95,27 @@ spec:
             - name: {{ include "kratos.name" . }}-config-processed
               mountPath: /etc/config/kratos-processed
           env:
+            {{- if .Values.oidc.github.existingSecret }}
+            {{- if .Values.oidc.github.clientIdSecretKey }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.clientIdSecretKey }}
+            {{- else }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            {{- end }}
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.secretKey }}
+            {{- else }}
             - name: OIDC_GITHUB_CLIENT_ID
               valueFrom:
                 secretKeyRef:
@@ -107,6 +128,7 @@ spec:
                   name: {{ include "kratos.secretname" . }}
                   key: oidcGithubClientSecret
                   optional: true
+            {{- end }}
       {{- if .Values.deployment.extraInitContainers  }}
         {{- tpl  .Values.deployment.extraInitContainers . | nindent 8 }}
       {{- end }}
@@ -226,6 +248,27 @@ spec:
                   name: {{ include "kratos.secretname" . }}
                   key: secretsCipher
                   optional: true
+            {{- if .Values.oidc.github.existingSecret }}
+            {{- if .Values.oidc.github.clientIdSecretKey }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.clientIdSecretKey }}
+            {{- else }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            {{- end }}
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.secretKey }}
+            {{- else }}
             - name: OIDC_GITHUB_CLIENT_ID
               valueFrom:
                 secretKeyRef:
@@ -238,6 +281,7 @@ spec:
                   name: {{ include "kratos.secretname" . }}
                   key: oidcGithubClientSecret
                   optional: true
+            {{- end }}
             {{- if and .Values.kratos.config.courier.smtp.connection_uri (ne .Values.kratos.config.courier.smtp.connection_uri "") }}
             - name: COURIER_SMTP_CONNECTION_URI
               valueFrom:
