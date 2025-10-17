@@ -254,6 +254,10 @@ judge-web:
     enabled: false
 dapr:
   enabled: true
+  global:
+    # Dapr expects global.registry to be a string, not an object
+    # Override parent chart's global.registry table with dapr-specific string
+    registry: ghcr.io/dapr
   dapr_operator:
     image:
       name: judge-dapr-operator
