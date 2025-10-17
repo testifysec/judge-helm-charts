@@ -54,14 +54,14 @@ spec:
       {{- end }}
       initContainers:
         - name: {{ .Chart.Name }}-process-config
-          image: alpine:latest
+          image: public.ecr.aws/docker/library/busybox:latest
           imagePullPolicy: IfNotPresent
           command:
-            - sh
+            - /bin/sh
             - -c
             - |
               echo "Processing Kratos config with environment variable substitution..."
-              envsubst '${OIDC_GITHUB_CLIENT_ID} ${OIDC_GITHUB_CLIENT_SECRET}' < /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
+              cat /etc/config/kratos/kratos.yaml | sed "s|\${OIDC_GITHUB_CLIENT_ID}|${OIDC_GITHUB_CLIENT_ID}|g" | sed "s|\${OIDC_GITHUB_CLIENT_SECRET}|${OIDC_GITHUB_CLIENT_SECRET}|g" > /etc/config/kratos-processed/kratos.yaml
               echo "Config processing complete."
           volumeMounts:
             - name: {{ include "kratos.name" . }}-config-volume
