@@ -241,6 +241,12 @@ dapr:
   enabled: true
   # Dapr uses its own registry field to avoid conflicts with parent chart's global.registry
   registry: ghcr.io/dapr
+  # Dapr pubsub configuration for SNS/SQS messaging
+  pubsub:
+    enabled: true
+    region: '{{ include "judge.aws.sns.region" . }}'
+    snsTopicName: '{{ include "judge.aws.sns.topicName" . }}'
+    sqsQueueName: '{{ include "judge.aws.sqs.queueName" . }}'
   dapr_operator:
     image:
       name: judge-dapr-operator

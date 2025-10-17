@@ -340,6 +340,8 @@ Constructs: {prefix}-{service}
 
 {{/*
 AWS SNS/SQS Helpers
+These helpers provide Dapr pubsub configuration for SNS/SQS messaging
+Supports dev mode (LocalStack) and production (AWS) automatically
 */}}
 {{- define "judge.aws.sns.topic" -}}
 {{ include "judge.aws.prefix" . }}-archivista-attestations
@@ -347,6 +349,21 @@ AWS SNS/SQS Helpers
 
 {{- define "judge.aws.sqs.queue" -}}
 {{ include "judge.aws.prefix" . }}-archivista-attestations
+{{- end -}}
+
+{{/*
+Dapr pubsub-compatible aliases (for dapr-pubsub.yaml template)
+*/}}
+{{- define "judge.aws.sns.topicName" -}}
+{{ include "judge.aws.sns.topic" . }}
+{{- end -}}
+
+{{- define "judge.aws.sqs.queueName" -}}
+{{ include "judge.aws.sqs.queue" . }}
+{{- end -}}
+
+{{- define "judge.aws.sns.region" -}}
+{{ include "judge.aws.region" . }}
 {{- end -}}
 
 {{/*
