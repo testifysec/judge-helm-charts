@@ -1,5 +1,10 @@
 # Global configuration - SINGLE SOURCE OF TRUTH
 global:
+  # Default image tag for all Judge platform services (gateway, archivista, judge-api, judge-web)
+  # Recommended: Set to "latest" for customer deployments to always pull newest version
+  # Production deployments should override with specific version tags
+  judgeImageTag: "v1.15.0"
+
   # Domain for all external service URLs (VirtualServices, OIDC redirects, etc.)
   # WARNING: Changing this requires updating istio.domain AND verifying all 22 hardcoded URLs below match
   # See DOMAIN.md for complete documentation and update checklist
@@ -82,7 +87,7 @@ gateway:
   replicas: 1
   nameOverride: "judge-gateway"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   resources:
     limits:
       cpu: 1000m
@@ -163,7 +168,7 @@ kratos:
 archivista:
   nameOverride: "judge-archivista"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
   ingress:
     enabled: false  # Disabled - using Istio VirtualServices
@@ -179,7 +184,7 @@ kratos-selfservice-ui-node:
 judge-api:
   nameOverride: "judge-api"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
   ingress:
     enabled: false  # Disabled - using Istio VirtualServices
@@ -210,7 +215,7 @@ judge-api:
 judge-web:
   nameOverride: "judge-web"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
   ingress:
     enabled: false  # Disabled - using Istio VirtualServices
