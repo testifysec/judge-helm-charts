@@ -160,6 +160,7 @@ spec:
           args:
             - serve
             - all
+            - --sqa-opt-out
             {{- if .Values.kratos.development }}
             - --dev
             {{- end }}
