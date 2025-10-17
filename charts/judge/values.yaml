@@ -73,10 +73,40 @@ global:
 
   # Secrets management via External Secrets Operator (ESO) + Vault
   # These variables are used to construct Vault paths for multi-environment deployments
+  #
+  # VAULT PATH STRUCTURE:
   # Pattern: {env}/kubernetes/{secret-type}/{project}
   # Examples:
-  #   - dev/kubernetes/rds/myproject (development)
-  #   - prod/kubernetes/rds/myproject (production)
+  #   - dev/kubernetes/rds/myproject (development database credentials)
+  #   - prod/kubernetes/app/myproject (production application secrets)
+  #
+  # REQUIRED VAULT SECRETS:
+  #
+  # 1. Database Secrets (path: {env}/kubernetes/rds/{project})
+  #    - judge_api_dsn: "postgres://user:pass@host:5432/judge_api?sslmode=require"
+  #    - archivista_dsn: "postgres://user:pass@host:5432/archivista?sslmode=require"
+  #    - kratos_dsn: "postgres://user:pass@host:5432/kratos?sslmode=require"
+  #
+  # 2. Application Secrets (path: {env}/kubernetes/app/{project})
+  #    - kratos_secrets_cookie: "32-byte-random-string-for-cookie-encryption"
+  #    - kratos_secrets_cipher: "32-byte-random-string-for-data-encryption"
+  #    - oidc_github_client_id: "your-github-oauth-app-client-id"
+  #    - oidc_github_client_secret: "your-github-oauth-app-client-secret"
+  #
+  # SETUP EXAMPLE (using Vault CLI):
+  #   # Database secrets
+  #   vault kv put secret/prod/kubernetes/rds/myproject \
+  #     judge_api_dsn="postgres://..." \
+  #     archivista_dsn="postgres://..." \
+  #     kratos_dsn="postgres://..."
+  #
+  #   # Application secrets
+  #   vault kv put secret/prod/kubernetes/app/myproject \
+  #     kratos_secrets_cookie="$(openssl rand -base64 32)" \
+  #     kratos_secrets_cipher="$(openssl rand -base64 32)" \
+  #     oidc_github_client_id="Iv1.abcd1234" \
+  #     oidc_github_client_secret="ghp_yoursecrethere"
+  #
   secrets:
     provider: "vault"  # Secret backend: vault (External Secrets Operator)
     vault:
