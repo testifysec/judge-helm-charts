@@ -29,4 +29,16 @@ spec:
         credentialName: {{ .Values.istio.tlsSecretName | default "wildcard-tls" }}
       hosts:
         - "*.{{ .Values.istio.domain }}"
+    {{- if (index .Values "preview-router" "enabled") }}
+    # Preview subdomain with its own wildcard certificate
+    - port:
+        number: 443
+        name: https-preview
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: preview-wildcard-tls
+      hosts:
+        - "*.preview.{{ .Values.istio.domain }}"
+    {{- end }}
 {{- end }}

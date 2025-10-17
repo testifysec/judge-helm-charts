@@ -1,0 +1,14 @@
+apiVersion: v2
+name: preview-router
+description: Host-header based router for preview environments with authentication support
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+maintainers:
+  - name: Judge Platform Team
+home: https://github.com/testifysec/judge-helm-charts
+keywords:
+  - preview
+  - router
+  - authentication
+  - kratos

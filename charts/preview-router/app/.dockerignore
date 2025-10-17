@@ -1,0 +1,14 @@
+*.md
+*.yaml
+*.yml
+.git
+.gitignore
+Dockerfile
+.dockerignore
+*_test.go
+vendor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,89 @@
+# Test deployment for local development
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: judge
+---
+# Fake preview backend
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preview-abc1234-web
+  namespace: judge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: preview-abc1234
+  template:
+    metadata:
+      labels:
+        app: preview-abc1234
+    spec:
+      containers:
+      - name: web
+        image: nginxdemos/hello
+        ports:
+        - containerPort: 80
+        env:
+        - name: SERVER_NAME
+          value: "Preview Environment abc1234"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: preview-abc1234-web
+  namespace: judge
+spec:
+  selector:
+    app: preview-abc1234
+  ports:
+  - port: 8077
+    targetPort: 80
+---
+# Preview router
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preview-router
+  namespace: judge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: preview-router
+  template:
+    metadata:
+      labels:
+        app: preview-router
+    spec:
+      containers:
+      - name: router
+        image: preview-router:test
+        imagePullPolicy: Never  # For local testing
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PREVIEW_NAMESPACE
+          value: "judge"
+        - name: SERVICE_NAME_PATTERN
+          value: "preview-%s-web"
+        - name: SERVICE_PORT
+          value: "8077"
+        - name: FALLBACK_URL
+          value: "https://judge.testifysec-demo.xyz/"
+        - name: DOMAIN_SUFFIX
+          value: "preview.testifysec-demo.xyz"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: preview-router
+  namespace: judge
+spec:
+  selector:
+    app: preview-router
+  ports:
+  - port: 8080
+    targetPort: 8080

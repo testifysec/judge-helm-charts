@@ -1,0 +1,44 @@
+# Example preview deployment created by CI/CD
+# Replace {{SHA}} with actual commit SHA
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: preview-{{SHA}}-web
+  namespace: judge
+  labels:
+    app: preview-{{SHA}}
+    preview: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: preview-{{SHA}}
+  template:
+    metadata:
+      labels:
+        app: preview-{{SHA}}
+    spec:
+      containers:
+      - name: judge-web
+        image: 178674732984.dkr.ecr.us-east-1.amazonaws.com/judge-web:{{SHA}}
+        ports:
+        - containerPort: 8077
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "https://{{SHA}}.preview.testifysec-demo.xyz/judge-api"
+        - name: NEXT_PUBLIC_KRATOS_URL
+          value: "https://kratos.testifysec-demo.xyz"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: preview-{{SHA}}-web
+  namespace: judge
+spec:
+  selector:
+    app: preview-{{SHA}}
+  ports:
+  - port: 8077
+    targetPort: 8077
+    protocol: TCP

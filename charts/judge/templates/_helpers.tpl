@@ -494,6 +494,7 @@ log:
 selfservice:
   allowed_return_urls:
   - {{ $loginUrl }}
+  - {{ $loginUrl }}/post-auth
   - {{ $kratosUrl }}
   - {{ $judgeUrl }}
   default_browser_return_url: {{ $judgeUrl }}

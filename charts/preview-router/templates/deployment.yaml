@@ -1,0 +1,52 @@
+{{- if .Values.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "preview-router.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "preview-router.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "preview-router.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "preview-router.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: router
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: PREVIEW_NAMESPACE
+          value: {{ .Values.preview.namespace | quote }}
+        - name: SERVICE_NAME_PATTERN
+          value: {{ .Values.preview.serviceNamePattern | quote }}
+        - name: SERVICE_PORT
+          value: {{ .Values.preview.servicePort | quote }}
+        - name: FALLBACK_URL
+          value: {{ .Values.preview.fallbackUrl | quote }}
+        - name: DOMAIN_SUFFIX
+          value: {{ .Values.preview.domainSuffix | quote }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 3
+          periodSeconds: 5
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+{{- end }}

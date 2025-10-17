@@ -1,0 +1,31 @@
+{{- if and .Values.istio.enabled (index .Values "preview-router" "enabled") }}
+---
+# Certificate for preview subdomain
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: preview-wildcard-tls
+  namespace: istio-system
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+spec:
+  secretName: preview-wildcard-tls
+  issuerRef:
+    name: {{ .Values.istio.tlsIssuer | default "letsencrypt-prod" }}
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.preview.{{ .Values.istio.domain }}"
+  # DNS-01 challenge required for wildcard certificates
+  {{- if .Values.istio.tlsDNS01 }}
+  acme:
+    solvers:
+    - dns01:
+        route53:
+          region: {{ .Values.global.aws.region | default "us-east-1" }}
+          {{- if .Values.istio.hostedZoneID }}
+          hostedZoneID: {{ .Values.istio.hostedZoneID }}
+          {{- end }}
+  {{- end }}
+{{- end }}

@@ -247,6 +247,18 @@ spec:
   gateways:
     - istio-system/main-gateway
   http:
+    {{- if (index .Values "preview-router" "enabled") }}
+    # Post-auth bounce route for preview environments (must be first)
+    - match:
+        - uri:
+            exact: "/post-auth"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name "preview-router" }}
+            port:
+              number: 8080
+    {{- end }}
+    # Default route to Kratos UI
     - match:
         - uri:
             prefix: "/"
@@ -279,5 +291,30 @@ spec:
             host: {{ include "judge.fullname" . }}-minio
             port:
               number: 9000
+{{- end }}
+{{- if (index .Values "preview-router" "enabled") }}
+---
+# Preview Router VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ include "judge.fullname" . }}-preview-vs
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "judge.labels" . | nindent 4 }}
+spec:
+  hosts:
+    - "*.preview.{{ .Values.istio.domain }}"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name "preview-router" }}
+            port:
+              number: 8080
 {{- end }}
 {{- end }}
