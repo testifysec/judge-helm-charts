@@ -65,6 +65,8 @@ service:
 secret:
   # -- switch to false to prevent creating the secret
   enabled: true
+  # -- Use an existing secret instead of creating one (existingSecret takes precedence over nameOverride)
+  existingSecret: ""
   # -- Provide custom name of existing secret, or custom name of secret to be created
   nameOverride: ""
   # nameOverride: "myCustomSecret"
