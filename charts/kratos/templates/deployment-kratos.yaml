@@ -63,9 +63,16 @@ spec:
               echo "Processing Kratos config with environment variable substitution..."
               echo "OIDC_GITHUB_CLIENT_ID=$OIDC_GITHUB_CLIENT_ID"
               echo "OIDC_GITHUB_CLIENT_SECRET=$OIDC_GITHUB_CLIENT_SECRET"
+              # Process kratos.yaml with sed for credential substitution
               sed -e "s/\${OIDC_GITHUB_CLIENT_ID}/${OIDC_GITHUB_CLIENT_ID}/g" \
                   -e "s/\${OIDC_GITHUB_CLIENT_SECRET}/${OIDC_GITHUB_CLIENT_SECRET}/g" \
                   /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
+              # Copy OIDC mapper files (github.jsonnet, gitlab.jsonnet, etc.)
+              for file in /etc/config/kratos/*.jsonnet; do
+                if [ -f "$file" ]; then
+                  cp "$file" /etc/config/kratos-processed/
+                fi
+              done
               echo "Config processing complete."
           volumeMounts:
             - name: {{ include "kratos.name" . }}-config-volume
