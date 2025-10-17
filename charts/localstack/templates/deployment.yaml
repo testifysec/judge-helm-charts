@@ -25,8 +25,7 @@ spec:
         ports:
         - containerPort: 4566
           name: edge
-        - containerPort: 4510-4559
-          name: services
+          protocol: TCP
         env:
         - name: SERVICES
           value: {{ join "," .Values.services | quote }}

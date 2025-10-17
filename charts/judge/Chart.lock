@@ -40,9 +40,9 @@ dependencies:
   version: 0.1.0
 - name: localstack
   repository: file://../localstack
-  version: 0.1.0
+  version: 0.1.1
 - name: postgresql
   repository: file://../postgresql
   version: 0.1.0
-digest: sha256:88f20ea9d729bf7ecaeaa4b013523bbac4f3c146449e6eddeb74e4127fadd7ab
-generated: "2025-10-17T00:15:45.438379-05:00"
+digest: sha256:a6a6c41f83c30897816f009bcc15067fa92d28b9b55dee8bf17d3c9f13072e87
+generated: "2025-10-17T00:22:07.531164-05:00"
