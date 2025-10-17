@@ -4,8 +4,9 @@ metadata:
   name: {{ include "judge-api.fullname" . }}
   labels:
     {{- include "judge-api.labels" . | nindent 4 }}
-  {{- with .Values.deployment.annotations }}
   annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  {{- with .Values.deployment.annotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
