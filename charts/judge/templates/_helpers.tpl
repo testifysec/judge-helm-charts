@@ -735,7 +735,7 @@ false
 
 {{- define "judge.storage.credentialType.dev" -}}
 {{- if .Values.global.dev -}}
-static
+ACCESS_KEY
 {{- else -}}
 {{ .Values.global.storage.aws.credentialType }}
 {{- end -}}
@@ -793,11 +793,11 @@ true
 {{- end -}}
 
 {{/*
-S3 Credential Type - Returns IAM for prod, static for dev
+S3 Credential Type - Returns IAM for prod, ACCESS_KEY for dev
 */}}
 {{- define "judge.s3.credentialType" -}}
 {{- if .Values.global.dev -}}
-static
+ACCESS_KEY
 {{- else -}}
 IAM
 {{- end -}}
