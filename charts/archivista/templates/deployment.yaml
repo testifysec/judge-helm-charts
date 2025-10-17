@@ -72,6 +72,8 @@ spec:
             {{- end }}
             - name: ARCHIVISTA_SQL_STORE_BACKEND
               value: {{ .Values.sqlStore.backend }}
+            - name: ARCHIVISTA_JUDGE_GATEWAY_URL
+              value: {{ include "judge.service.gatewayUrl" . | quote }}
             {{- range .Values.deployment.env }}
             - name: {{ .name }}
               {{- if .value }}
