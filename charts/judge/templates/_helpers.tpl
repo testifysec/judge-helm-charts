@@ -482,13 +482,18 @@ selfservice:
         {{- range .Values.global.oidc.providers }}
         - id: {{ .id }}
           provider: {{ .provider }}
-          {{- if eq .provider "github" }}
+          {{- if eq .provider "github-app" }}
           client_id: ${OIDC_GITHUB_CLIENT_ID}
           client_secret: ${OIDC_GITHUB_CLIENT_SECRET}
+          issuer_url: https://github.com
+          mapper_url: file:///etc/config/kratos/github.jsonnet
+          scope:
+            - user
+            - repo
+            - read:org
           {{- else }}
           client_id: {{ .client_id }}
           client_secret: {{ .client_secret }}
-          {{- end }}
           {{- if .issuer_url }}
           issuer_url: {{ .issuer_url }}
           {{- end }}
@@ -497,6 +502,7 @@ selfservice:
           {{- end }}
           {{- if .scope }}
           scope: {{- toYaml .scope | nindent 10 }}
+          {{- end }}
           {{- end }}
         {{- end }}
     password:
