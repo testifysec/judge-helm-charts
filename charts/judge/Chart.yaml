@@ -16,7 +16,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: "1.7.49"
+version: "1.7.50"
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -27,7 +27,7 @@ appVersion: "1.6.0"
 # Dependencies
 dependencies:
   - name: kratos
-    version: 1.6.19
+    version: 1.6.20
     repository: file://../kratos
     condition: kratos.enabled
   - name: kratos-selfservice-ui-node
@@ -55,11 +55,11 @@ dependencies:
     repository: file://../dex
     condition: dex.enabled
   - name: fulcio
-    version: 2.3.18
+    version: 2.3.19
     repository: file://../fulcio
     condition: fulcio.enabled
   - name: tsa
-    version: 1.6.0
+    version: 1.6.1
     repository: file://../tsa
     condition: tsa.enabled
   - name: judge-ai-proxy
