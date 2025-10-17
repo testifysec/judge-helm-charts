@@ -10,6 +10,11 @@ global:
   # See DOMAIN.md for complete documentation and update checklist
   domain: testifysec-demo.xyz
 
+  # Development Mode - automatically enables LocalStack + PostgreSQL for self-contained deployments
+  # When true: deploys LocalStack (AWS emulator) and PostgreSQL (dev database)
+  # When false (default): uses production AWS services (S3, RDS, SNS/SQS)
+  dev: false
+
   # AWS Configuration (for EKS deployments with IRSA)
   # Required for proper IAM permissions and resource naming
   # See README.md Troubleshooting section for IRSA setup
