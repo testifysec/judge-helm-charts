@@ -89,7 +89,10 @@ validate-database: ## Check database separation
 validate-external-secrets: ## Validate External Secrets configuration
 	@./scripts/validate_external_secrets.sh
 
-validate-all: validate validate-service-urls validate-database validate-external-secrets ## Run all validation checks
+validate-hostnames: ## Validate hostname consistency
+	@./scripts/validate_hostname_consistency.sh
+
+validate-all: validate validate-service-urls validate-database validate-external-secrets validate-hostnames ## Run all validation checks
 	@echo "$(GREEN)✓ All validation checks passed!$(NC)"
 
 test: check-deps validate-all ## Run all tests (dependency freshness + all validations)

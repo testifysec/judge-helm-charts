@@ -244,15 +244,19 @@ Domain URL helpers
 These construct URLs from global.domain configuration
 */}}
 {{- define "judge.url.kratos" -}}
-https://kratos.{{ .Values.global.domain }}
+https://{{ .Values.istio.hosts.kratos | default "kratos" }}.{{ .Values.global.domain }}
 {{- end -}}
 
 {{- define "judge.url.login" -}}
-https://login.{{ .Values.global.domain }}
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}
 {{- end -}}
 
 {{- define "judge.url.judge" -}}
-https://judge.{{ .Values.global.domain }}
+https://{{ .Values.istio.hosts.web | default "judge" }}.{{ .Values.global.domain }}
+{{- end -}}
+
+{{- define "judge.url.dex" -}}
+https://{{ .Values.istio.hosts.dex | default "dex" }}.{{ .Values.global.domain }}
 {{- end -}}
 
 {{- define "judge.url.wildcard" -}}
@@ -410,31 +414,31 @@ eliminating string concatenation in values files
 */}}
 
 {{- define "judge.url.loginError" -}}
-https://login.{{ .Values.global.domain }}/error
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/error
 {{- end -}}
 
 {{- define "judge.url.loginSettings" -}}
-https://login.{{ .Values.global.domain }}/settings
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/settings
 {{- end -}}
 
 {{- define "judge.url.loginRecovery" -}}
-https://login.{{ .Values.global.domain }}/recovery
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/recovery
 {{- end -}}
 
 {{- define "judge.url.loginVerification" -}}
-https://login.{{ .Values.global.domain }}/verification
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/verification
 {{- end -}}
 
 {{- define "judge.url.loginBase" -}}
-https://login.{{ .Values.global.domain }}/
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/
 {{- end -}}
 
 {{- define "judge.url.loginLogin" -}}
-https://login.{{ .Values.global.domain }}/login
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/login
 {{- end -}}
 
 {{- define "judge.url.loginRegistration" -}}
-https://login.{{ .Values.global.domain }}/registration
+https://{{ .Values.istio.hosts.login | default "login" }}.{{ .Values.global.domain }}/registration
 {{- end -}}
 
 {{/*
@@ -454,9 +458,12 @@ Kratos URL Strategy (CRITICAL):
 */}}
 {{- define "judge.kratos.config.complete" -}}
 {{- $domain := .Values.global.domain -}}
-{{- $kratosUrl := printf "https://kratos.%s" $domain -}}
-{{- $loginUrl := printf "https://login.%s" $domain -}}
-{{- $judgeUrl := printf "https://judge.%s" $domain -}}
+{{- $kratosSubdomain := .Values.istio.hosts.kratos | default "kratos" -}}
+{{- $loginSubdomain := .Values.istio.hosts.login | default "login" -}}
+{{- $webSubdomain := .Values.istio.hosts.web | default "judge" -}}
+{{- $kratosUrl := printf "https://%s.%s" $kratosSubdomain $domain -}}
+{{- $loginUrl := printf "https://%s.%s" $loginSubdomain $domain -}}
+{{- $judgeUrl := printf "https://%s.%s" $webSubdomain $domain -}}
 {{- $wildcardUrl := printf "https://*.%s" $domain -}}
 {{- $rootUrl := printf "https://%s" $domain -}}
 cookies:
