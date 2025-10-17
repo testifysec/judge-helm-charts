@@ -63,7 +63,7 @@ spec:
         uri: "/"
       route:
         - destination:
-            host: kratos-public
+            host: {{ printf "%s-%s-public" .Release.Name (default "judge-kratos" .Values.kratos.nameOverride) }}
             port:
               number: 80
     # Archivista routes
@@ -229,7 +229,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: kratos-public
+            host: {{ printf "%s-%s-public" .Release.Name (default "judge-kratos" .Values.kratos.nameOverride) }}
             port:
               number: 80
 ---
