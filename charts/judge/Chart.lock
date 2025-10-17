@@ -26,9 +26,6 @@ dependencies:
 - name: tsa
   repository: file://../tsa
   version: 1.6.0
-- name: ollama
-  repository: file://../ollama
-  version: 0.1.0
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.0
@@ -41,5 +38,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:951d3eb337e49c1d3ce9a132301cfeef9df83266aaff265e3bd39db9133d69bb
-generated: "2025-10-17T10:52:08.051717-05:00"
+digest: sha256:a36980e9c5cfcd43d3eb587d4e5f5b57b88e5ef2820bcc0b1cf65526fc728ac9
+generated: "2025-10-17T11:17:53.29169-05:00"

@@ -393,8 +393,6 @@ tsa:
         - secretName: tsa-ingress-tls
           hosts:
             - tsa.testifysec-demo.xyz
-ollama:
-  enabled: false
 
 judge-ai-proxy:
   nameOverride: "judge-ai-proxy"  # ECR repo name

@@ -53,9 +53,6 @@ The Judge platform consists of the following components:
 
 ### Infrastructure
 - **dapr** - Distributed application runtime for workflows and messaging
-- **mysql** - Database (optional, use external RDS/CloudSQL in production)
-- **minio** - S3-compatible object storage (optional, use S3/GCS in production)
-- **ollama** - Local LLM service (optional)
 
 ## Repository Structure
 
@@ -80,10 +77,7 @@ charts/
 ├── dex/                          # Dex OIDC provider subchart
 ├── fulcio/                       # Fulcio subchart
 ├── tsa/                          # TSA subchart
-├── dapr/                         # Dapr runtime subchart
-├── mysql/                        # MySQL subchart
-├── minio/                        # MinIO subchart
-└── ollama/                       # Ollama LLM subchart
+└── dapr/                         # Dapr runtime subchart
 ```
 
 ## Quick Start
