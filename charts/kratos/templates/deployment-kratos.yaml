@@ -54,7 +54,7 @@ spec:
       {{- end }}
       initContainers:
         - name: {{ .Chart.Name }}-process-config
-          image: busybox:latest
+          image: alpine:latest
           imagePullPolicy: IfNotPresent
           command:
             - sh
