@@ -1,0 +1,128 @@
+suite: Global Image Tag Propagation
+templates:
+  - charts/archivista/templates/deployment.yaml
+  - charts/judge-api/templates/deployment.yaml
+  - templates/gateway/deployment.yaml
+  - charts/judge-web/templates/deployment.yaml
+tests:
+  # ==============================================================================
+  # PASSING TESTS - Images that currently use global.judgeImageTag
+  # ==============================================================================
+  # These 4 services currently respect global.judgeImageTag and will update
+  # their image tags when the global value changes.
+  # ==============================================================================
+
+  # Test 1: Judge API uses global.judgeImageTag
+  - it: should use global.judgeImageTag for judge-api (v1.15.0)
+    template: charts/judge-api/templates/deployment.yaml
+    set:
+      global.judgeImageTag: v1.15.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-api:v1\\.15\\.0$"
+
+  # Test 2: Archivista uses global.judgeImageTag
+  - it: should use global.judgeImageTag for archivista (v1.15.0)
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.judgeImageTag: v1.15.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-archivista:v1\\.15\\.0$"
+
+  # Test 3: Gateway uses global.judgeImageTag
+  - it: should use global.judgeImageTag for gateway (v1.15.0)
+    template: templates/gateway/deployment.yaml
+    set:
+      global.judgeImageTag: v1.15.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-gateway:v1\\.15\\.0$"
+
+  # Test 4: Web UI uses global.judgeImageTag
+  - it: should use global.judgeImageTag for web (v1.15.0)
+    template: charts/judge-web/templates/deployment.yaml
+    set:
+      global.judgeImageTag: v1.15.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-web:v1\\.15\\.0$"
+
+  # ==============================================================================
+  # VERSION CHANGE TESTS - Verify tag changes propagate
+  # ==============================================================================
+
+  # Test 5: Image tag changes propagate to judge-api
+  - it: should update judge-api when global.judgeImageTag changes to v2.0.0
+    template: charts/judge-api/templates/deployment.yaml
+    set:
+      global.judgeImageTag: v2.0.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-api:v2\\.0\\.0$"
+
+  # Test 6: Image tag changes propagate to archivista
+  - it: should update archivista when global.judgeImageTag changes to v2.0.0
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.judgeImageTag: v2.0.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-archivista:v2\\.0\\.0$"
+
+  # Test 7: Image tag changes propagate to gateway
+  - it: should update gateway when global.judgeImageTag changes to v2.0.0
+    template: templates/gateway/deployment.yaml
+    set:
+      global.judgeImageTag: v2.0.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-gateway:v2\\.0\\.0$"
+
+  # Test 8: Image tag changes propagate to web
+  - it: should update web when global.judgeImageTag changes to v2.0.0
+    template: charts/judge-web/templates/deployment.yaml
+    set:
+      global.judgeImageTag: v2.0.0
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-web:v2\\.0\\.0$"
+
+  # ==============================================================================
+  # DOCUMENTATION - Charts that SHOULD use global.judgeImageTag but don't yet
+  # ==============================================================================
+  # The following services currently use hardcoded versions but should be
+  # updated to respect global.judgeImageTag:
+  #
+  # - dex (currently: v2.43.1)
+  # - fulcio (currently: v1.4.5)
+  # - kratos (currently: v1.0.0-token-update)
+  # - kratos-selfservice-ui-node (currently: v1.6.0)
+  # - tsa (currently: v1.6.0)
+  #
+  # TODO: Update these charts to use global.judgeImageTag and add tests here
+  # ==============================================================================

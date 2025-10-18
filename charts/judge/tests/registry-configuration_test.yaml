@@ -1,0 +1,133 @@
+suite: Registry Configuration
+templates:
+  - templates/gateway/deployment.yaml
+tests:
+  # Test 1: Default GCP Artifact Registry configuration
+  - it: should use GCP Artifact Registry when awsMarketplace=false
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^us-east4-docker.pkg.dev/judge-395516/judge-image-registry/judge-gateway:v1.15.0$"
+
+  # Test 2: AWS Marketplace ECR overrides standard registry
+  - it: should use AWS Marketplace ECR when awsMarketplace=true
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.url: us-east4-docker.pkg.dev  # Should be ignored
+      global.registry.repository: judge-395516/judge-image-registry  # Should be ignored
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/judge-gateway:v1.15.0$"
+
+  # Test 3: AWS Marketplace uses no repository path
+  - it: should use direct format for AWS Marketplace (no repository path)
+    set:
+      global.registry.awsMarketplace: true
+      gateway.image.tag: v2.0.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/judge-gateway:v2.0.0$"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ".*/.*/.*/.*"  # Should NOT have multiple path segments
+
+  # Test 4: GCP Artifact Registry with repository path
+  - it: should include repository path for GCP Artifact Registry
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: my-project/my-repo
+      gateway.image.tag: latest
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^us-east4-docker.pkg.dev/my-project/my-repo/judge-gateway:latest$"
+
+  # Test 5: Custom ECR registry (non-marketplace)
+  - it: should support custom ECR registry
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: 178674732984.dkr.ecr.us-east-1.amazonaws.com
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "178674732984.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 6: Empty repository path (direct registry)
+  - it: should handle empty repository path
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: ghcr.io/testifysec
+      global.registry.repository: ""
+      gateway.image.tag: main
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testifysec/judge-gateway:main"
+
+  # Test 7: Multi-region AWS Marketplace support
+  - it: should use us-east-1 for AWS Marketplace regardless of deployment region
+    set:
+      global.registry.awsMarketplace: true
+      global.aws.region: us-west-2  # Different region
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/.*"  # Always us-east-1
+
+  # Test 8: Production version tags
+  - it: should support production semantic versioning
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ":v1\\.15\\.0$"
+
+  # Test 9: Development tags with commit SHA
+  - it: should support development tags
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      gateway.image.tag: main-abc1234
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ":main-abc1234$"
+
+  # Test 10: Registry switching doesn't affect image name
+  - it: should preserve image name when switching registries
+    set:
+      global.registry.awsMarketplace: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/judge-gateway:"  # Image name consistent
+
+  # Test 11: Docker Hub format (for testing)
+  - it: should support Docker Hub format
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: docker.io
+      global.registry.repository: testifysec
+      gateway.image.tag: latest
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "docker.io/testifysec/judge-gateway:latest"

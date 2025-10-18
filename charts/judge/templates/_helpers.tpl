@@ -190,10 +190,12 @@ If release name contains chart name it will be used as a full name.
 {{- define "judge.gateway.image" -}}
   {{- $gatewayName := default "judge-gateway" .Values.gateway.nameOverride -}}
   {{- $tag := tpl (.Values.gateway.image.tag | default (include "judge.image.defaultTag" .) | toString) . -}}
-  {{- if .Values.global.registry.repository -}}
-    {{- printf "%s/%s/%s:%s" .Values.global.registry.url .Values.global.registry.repository $gatewayName $tag -}}
+  {{- $registryUrl := include "judge.registry.url" . -}}
+  {{- $repository := include "judge.registry.repository" . -}}
+  {{- if $repository -}}
+    {{- printf "%s/%s/%s:%s" $registryUrl $repository $gatewayName $tag -}}
   {{- else -}}
-    {{- printf "%s/%s:%s" .Values.global.registry.url $gatewayName $tag -}}
+    {{- printf "%s/%s:%s" $registryUrl $gatewayName $tag -}}
   {{- end -}}
 {{- end -}}
 
