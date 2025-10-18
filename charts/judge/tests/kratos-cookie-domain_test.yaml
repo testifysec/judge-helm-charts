@@ -1,0 +1,65 @@
+suite: Kratos Cookie Domain Configuration
+templates:
+  - kratos-config.yaml
+tests:
+  - it: should use environment-specific cookie domain for production
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "judge"
+      istio.hosts.login: "login"
+      istio.hosts.kratos: "kratos"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: judge\\.testifysec-demo\\.xyz"
+
+  - it: should use environment-specific cookie domain for staging
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "staging-judge"
+      istio.hosts.login: "staging-login"
+      istio.hosts.kratos: "staging-kratos"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: staging-judge\\.testifysec-demo\\.xyz"
+
+  - it: should use environment-specific cookie domain for dev
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "dev-judge"
+      istio.hosts.login: "dev-login"
+      istio.hosts.kratos: "dev-kratos"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: dev-judge\\.testifysec-demo\\.xyz"
+
+  - it: should NOT use shared root domain for cookies
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "judge"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - notMatchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: testifysec-demo\\.xyz$"
