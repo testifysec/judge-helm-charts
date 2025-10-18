@@ -75,6 +75,34 @@ spec:
             fi
           }
 
+          # Function to check with retries (for async resources like ExternalSecrets)
+          check_with_retry() {
+            local name="$1"
+            local cmd="$2"
+            local error_msg="$3"
+            local max_attempts="${4:-10}"
+            local retry_delay="${5:-10}"
+
+            echo -n "Checking $name... "
+            for attempt in $(seq 1 $max_attempts); do
+              if eval "$cmd" > /dev/null 2>&1; then
+                echo -e "${GREEN}✓${NC}"
+                return 0
+              fi
+              if [ $attempt -lt $max_attempts ]; then
+                echo -n "."
+                sleep $retry_delay
+              fi
+            done
+
+            echo -e "${RED}✗${NC}"
+            echo -e "${RED}ERROR: $error_msg${NC}"
+            echo -e "${YELLOW}Waited ${max_attempts} attempts with ${retry_delay}s delay between retries${NC}"
+            echo ""
+            ERRORS=$((ERRORS + 1))
+            return 1
+          }
+
           {{- if not .Values.global.dev }}
           # Check External Secrets Operator (production only)
           echo "=== External Secrets Operator ==="
@@ -196,9 +224,11 @@ spec:
           echo "=== ExternalSecrets Status ==="
           {{- $expectedSecrets := list (printf "%s-judge-api-database" .Release.Name) (printf "%s-judge-archivista-database" .Release.Name) (printf "%s-kratos" .Release.Name) }}
           {{- range $expectedSecrets }}
-          check "ExternalSecret '{{ . }}' is synced" \
+          check_with_retry "ExternalSecret '{{ . }}' is synced" \
             "kubectl get externalsecret {{ . }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep -q 'True'" \
-            "ExternalSecret '{{ . }}' is not synced. Check Vault connectivity and SecretStore configuration."
+            "ExternalSecret '{{ . }}' is not synced. Check Vault connectivity and SecretStore configuration." \
+            10 \
+            10
 
           check "Secret '{{ . }}' created by ESO" \
             "kubectl get secret {{ . }} -n {{ $.Release.Namespace }}" \
