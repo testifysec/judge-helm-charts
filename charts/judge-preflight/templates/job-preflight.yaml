@@ -224,7 +224,7 @@ spec:
           # Note: We check for Secret existence rather than ExternalSecret sync status
           # because ExternalSecrets may already be synced from previous deployments
           echo "=== Vault-Managed Secrets ==="
-          {{- $expectedSecrets := list (printf "%s-judge-api-database" .Release.Name) (printf "%s-judge-archivista-database" .Release.Name) (printf "%s-kratos" .Release.Name) }}
+          {{- $expectedSecrets := list (printf "%s-judge-api-database" .Release.Name) (printf "%s-judge-archivista-database" .Release.Name) (printf "%s-judge-kratos" .Release.Name) }}
           {{- range $expectedSecrets }}
           check "Secret '{{ . }}' exists" \
             "kubectl get secret {{ . }} -n {{ $.Release.Namespace }}" \
