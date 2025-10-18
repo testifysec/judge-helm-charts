@@ -7,8 +7,11 @@ metadata:
     app.kubernetes.io/name: judge-preflight
     app.kubernetes.io/instance: {{ .Release.Name }}
   annotations:
-    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "-1"
 spec:
+  ttlSecondsAfterFinished: 300  # Auto-delete 5 minutes after completion
   backoffLimit: 3
   template:
     metadata:
