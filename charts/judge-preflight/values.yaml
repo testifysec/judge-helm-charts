@@ -6,6 +6,19 @@
 # The values below are defaults for standalone testing/linting only.
 # In production, these will be overridden by the parent chart's global values.
 
+# Container image for preflight job
+image:
+  # Use amazon/aws-cli for AWS checks with kubectl installed at runtime
+  repository: amazon/aws-cli
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# ServiceAccount configuration
+serviceAccount:
+  # Annotations for IRSA (IAM Roles for Service Accounts)
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME
+
 # Global configuration (matches parent chart structure)
 global:
   # Development mode flag
@@ -16,6 +29,7 @@ global:
     enabled: false
     region: us-east-1
     prefix: demo-judge
+    accountId: ""
 
   # Secrets management
   secrets:

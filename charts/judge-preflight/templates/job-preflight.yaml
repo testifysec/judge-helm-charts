@@ -20,12 +20,26 @@ spec:
       serviceAccountName: {{ .Release.Name }}-preflight
       containers:
       - name: preflight
-        image: bitnami/kubectl:latest
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
         command:
         - bash
         - -c
         - |
           set -euo pipefail
+
+          # Install kubectl for Kubernetes checks
+          echo "Installing kubectl..."
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
+
+          # Verify AWS credentials are available via IRSA
+          {{- if and .Values.global.aws.enabled (not .Values.global.dev) }}
+          if [ -z "${AWS_REGION:-}" ]; then
+            export AWS_REGION={{ .Values.global.aws.region }}
+          fi
+          {{- end }}
 
           # Color codes for output
           RED='\033[0;31m'
@@ -253,6 +267,12 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
   annotations:
     argocd.argoproj.io/sync-wave: "-1"
+    {{- if and .Values.global.aws.enabled .Values.global.aws.accountId (not .Values.global.dev) }}
+    eks.amazonaws.com/role-arn: arn:aws:iam::{{ .Values.global.aws.accountId }}:role/{{ .Values.global.aws.prefix }}-preflight
+    {{- end }}
+    {{- with .Values.serviceAccount.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
