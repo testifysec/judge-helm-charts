@@ -7,7 +7,7 @@ metadata:
     app.kubernetes.io/name: judge-preflight
     app.kubernetes.io/instance: {{ .Release.Name }}
   annotations:
-    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-wave: "5"
 spec:
   backoffLimit: 3
   template:
@@ -227,7 +227,7 @@ spec:
           check_with_retry "ExternalSecret '{{ . }}' is synced" \
             "kubectl get externalsecret {{ . }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep -q 'True'" \
             "ExternalSecret '{{ . }}' is not synced. Check Vault connectivity and SecretStore configuration." \
-            10 \
+            20 \
             10
 
           check "Secret '{{ . }}' created by ESO" \
