@@ -9,7 +9,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
 spec:
-  backoffLimit: 0
+  backoffLimit: 3
   template:
     metadata:
       labels:
