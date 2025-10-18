@@ -249,18 +249,18 @@ spec:
             "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }}" \
             "Kratos secret '{{ $kratosSecretName }}' not found. Check ExternalSecret configuration."
 
-          check "Kratos secret has 'oidc_github_client_id'" \
-            "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_id}' | grep -q '.'" \
-            "Kratos secret is missing 'oidc_github_client_id'. Check Vault path: {{ .Values.global.secrets.vault.env }}/kubernetes/app/{{ .Values.global.secrets.vault.project }}"
+          check "Kratos secret has 'oidcGithubClientId'" \
+            "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidcGithubClientId}' | grep -q '.'" \
+            "Kratos secret is missing 'oidcGithubClientId'. Check Vault path: {{ .Values.global.secrets.vault.env }}/kubernetes/app/{{ .Values.global.secrets.vault.project }}"
 
-          check "Kratos secret has 'oidc_github_client_secret'" \
-            "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_secret}' | grep -q '.'" \
-            "Kratos secret is missing 'oidc_github_client_secret'. Check Vault path: {{ .Values.global.secrets.vault.env }}/kubernetes/app/{{ .Values.global.secrets.vault.project }}"
+          check "Kratos secret has 'oidcGithubClientSecret'" \
+            "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidcGithubClientSecret}' | grep -q '.'" \
+            "Kratos secret is missing 'oidcGithubClientSecret'. Check Vault path: {{ .Values.global.secrets.vault.env }}/kubernetes/app/{{ .Values.global.secrets.vault.project }}"
 
           # Validate GitHub OAuth credentials work
           echo -n "Validating GitHub OAuth credentials... "
-          GITHUB_CLIENT_ID=$(kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_id}' | base64 -d)
-          GITHUB_CLIENT_SECRET=$(kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_secret}' | base64 -d)
+          GITHUB_CLIENT_ID=$(kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidcGithubClientId}' | base64 -d)
+          GITHUB_CLIENT_SECRET=$(kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidcGithubClientSecret}' | base64 -d)
 
           if [ -z "$GITHUB_CLIENT_ID" ] || [ -z "$GITHUB_CLIENT_SECRET" ]; then
             echo -e "${RED}✗${NC}"
