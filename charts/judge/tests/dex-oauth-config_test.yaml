@@ -1,0 +1,96 @@
+suite: Dex OAuth Configuration
+templates:
+  - istio-virtualservices.yaml
+tests:
+  - it: should use production-specific Dex domain
+    documentIndex: 4  # Dex VirtualService (0: gateway, 1: web, 2: api, 3: fulcio, 4: dex)
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.dex: "dex"
+      istio.hosts.fulcio: "fulcio"
+      istio.hosts.tsa: "tsa"
+      dex.enabled: true
+    asserts:
+      - isKind:
+          of: VirtualService
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-judge-dex-vs
+      - equal:
+          path: spec.hosts[0]
+          value: "dex.testifysec-demo.xyz"
+
+  - it: should use staging-specific Dex domain
+    documentIndex: 4
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.dex: "staging-dex"
+      istio.hosts.fulcio: "staging-fulcio"
+      istio.hosts.tsa: "staging-tsa"
+      dex.enabled: true
+    asserts:
+      - isKind:
+          of: VirtualService
+      - equal:
+          path: spec.hosts[0]
+          value: "staging-dex.testifysec-demo.xyz"
+
+  - it: should use dev-specific Dex domain
+    documentIndex: 4
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.dex: "dev-dex"
+      istio.hosts.fulcio: "dev-fulcio"
+      istio.hosts.tsa: "dev-tsa"
+      dex.enabled: true
+    asserts:
+      - isKind:
+          of: VirtualService
+      - equal:
+          path: spec.hosts[0]
+          value: "dev-dex.testifysec-demo.xyz"
+
+  - it: should use custom Dex subdomain
+    documentIndex: 4
+    set:
+      global.domain: custom-domain.io
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: custom-domain.io
+      istio.hosts.dex: "oauth"
+      istio.hosts.fulcio: "ca"
+      istio.hosts.tsa: "timestamp"
+      dex.enabled: true
+    asserts:
+      - isKind:
+          of: VirtualService
+      - equal:
+          path: spec.hosts[0]
+          value: "oauth.custom-domain.io"
+
+  - it: should propagate domain changes to Dex VirtualService
+    documentIndex: 4
+    set:
+      global.domain: production.example.com
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: production.example.com
+      istio.hosts.dex: "auth"
+      istio.hosts.fulcio: "fulcio"
+      istio.hosts.tsa: "tsa"
+      dex.enabled: true
+    asserts:
+      - isKind:
+          of: VirtualService
+      - equal:
+          path: spec.hosts[0]
+          value: "auth.production.example.com"
