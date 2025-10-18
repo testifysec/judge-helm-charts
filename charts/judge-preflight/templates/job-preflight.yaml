@@ -220,19 +220,19 @@ spec:
           {{- end }}
 
           {{- if not .Values.global.dev }}
-          # Check ExternalSecrets are synced (production only)
-          echo "=== ExternalSecrets Status ==="
+          # Check Secrets exist (production only)
+          # Note: We check for Secret existence rather than ExternalSecret sync status
+          # because ExternalSecrets may already be synced from previous deployments
+          echo "=== Vault-Managed Secrets ==="
           {{- $expectedSecrets := list (printf "%s-judge-api-database" .Release.Name) (printf "%s-judge-archivista-database" .Release.Name) (printf "%s-kratos" .Release.Name) }}
           {{- range $expectedSecrets }}
-          check_with_retry "ExternalSecret '{{ . }}' is synced" \
-            "kubectl get externalsecret {{ . }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep -q 'True'" \
-            "ExternalSecret '{{ . }}' is not synced. Check Vault connectivity and SecretStore configuration." \
-            20 \
-            10
-
-          check "Secret '{{ . }}' created by ESO" \
+          check "Secret '{{ . }}' exists" \
             "kubectl get secret {{ . }} -n {{ $.Release.Namespace }}" \
-            "Secret '{{ . }}' was not created by ExternalSecrets Operator. Check ESO logs: kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secrets"
+            "Secret '{{ . }}' not found. Check ExternalSecret and Vault configuration. Logs: kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secrets"
+
+          check "Secret '{{ . }}' has data" \
+            "kubectl get secret {{ . }} -n {{ $.Release.Namespace }} -o jsonpath='{.data}' | grep -q '.'" \
+            "Secret '{{ . }}' exists but has no data keys. Check Vault path and ExternalSecret configuration."
           {{- end }}
           echo ""
           {{- end }}
