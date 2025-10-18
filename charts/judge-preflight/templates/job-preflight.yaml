@@ -88,18 +88,17 @@ spec:
           {{- end }}
 
           {{- if and (eq .Values.global.secrets.provider "vault") (not .Values.global.dev) }}
-          # Check Vault connectivity (production only)
-          echo "=== Vault Connectivity ==="
+          # Check Vault connectivity via SecretStores (production only)
+          echo "=== Vault Connectivity & Authentication ==="
           check "Vault server reachable" \
             "curl -k --max-time 5 {{ .Values.global.secrets.vault.server }}/v1/sys/health" \
             "Cannot reach Vault server at {{ .Values.global.secrets.vault.server }}. Check network connectivity and Vault installation."
 
-          {{- $vaultRoles := list "judge-api" "archivista" "kratos" }}
-          {{- range $vaultRoles }}
-          check "Vault role '{{ . }}' exists" \
-            "kubectl exec -n external-secrets-system deploy/external-secrets -c external-secrets -- \
-             sh -c 'curl -k --max-time 5 {{ $.Values.global.secrets.vault.server }}/v1/auth/{{ $.Values.global.secrets.vault.authMountPath }}/role/{{ . }}' | grep -q 'bound_service_account_names'" \
-            "Vault Kubernetes auth role '{{ . }}' not found or not configured properly."
+          {{- $secretStores := list "vault-judge-api" "vault-archivista" "vault-kratos" }}
+          {{- range $secretStores }}
+          check "SecretStore '{{ . }}' is ready" \
+            "kubectl get secretstore {{ . }} -n {{ $.Release.Namespace }} -o jsonpath='{.status.conditions[?(@.type==\"Ready\")].status}' | grep -q 'True'" \
+            "SecretStore '{{ . }}' is not ready. This validates Vault connectivity and Kubernetes auth role configuration. Check ESO logs: kubectl logs -n external-secrets-system -l app.kubernetes.io/name=external-secrets"
           {{- end }}
           echo ""
           {{- end }}
@@ -273,6 +272,9 @@ rules:
   verbs: ["get", "list"]
 - apiGroups: ["cert-manager.io"]
   resources: ["clusterissuers", "issuers"]
+  verbs: ["get", "list"]
+- apiGroups: ["external-secrets.io"]
+  resources: ["secretstores", "externalsecrets"]
   verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
