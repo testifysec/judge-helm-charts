@@ -237,6 +237,65 @@ spec:
           echo ""
           {{- end }}
 
+          {{- if and .Values.global.oidc .Values.global.oidc.enabled (not .Values.global.dev) }}
+          # Check GitHub OAuth Credentials (production only)
+          echo "=== GitHub OAuth Credentials ==="
+          {{- $kratosSecretName := printf "%s-judge-kratos" .Release.Name }}
+
+          check "Kratos secret '{{ $kratosSecretName }}' exists" \
+            "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }}" \
+            "Kratos secret '{{ $kratosSecretName }}' not found. Check ExternalSecret configuration."
+
+          check "Kratos secret has 'oidc_github_client_id'" \
+            "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_id}' | grep -q '.'" \
+            "Kratos secret is missing 'oidc_github_client_id'. Check Vault path: {{ .Values.global.secrets.vault.env }}/kubernetes/app/{{ .Values.global.secrets.vault.project }}"
+
+          check "Kratos secret has 'oidc_github_client_secret'" \
+            "kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_secret}' | grep -q '.'" \
+            "Kratos secret is missing 'oidc_github_client_secret'. Check Vault path: {{ .Values.global.secrets.vault.env }}/kubernetes/app/{{ .Values.global.secrets.vault.project }}"
+
+          # Validate GitHub OAuth credentials work
+          echo -n "Validating GitHub OAuth credentials... "
+          GITHUB_CLIENT_ID=$(kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_id}' | base64 -d)
+          GITHUB_CLIENT_SECRET=$(kubectl get secret {{ $kratosSecretName }} -n {{ $.Release.Namespace }} -o jsonpath='{.data.oidc_github_client_secret}' | base64 -d)
+
+          if [ -z "$GITHUB_CLIENT_ID" ] || [ -z "$GITHUB_CLIENT_SECRET" ]; then
+            echo -e "${RED}✗${NC}"
+            echo -e "${RED}ERROR: Could not decode GitHub OAuth credentials${NC}"
+            echo ""
+            ERRORS=$((ERRORS + 1))
+          else
+            # Test credentials by calling GitHub API
+            RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+              -u "$GITHUB_CLIENT_ID:$GITHUB_CLIENT_SECRET" \
+              "https://api.github.com/applications/$GITHUB_CLIENT_ID/token" \
+              -d '{"access_token":"invalid_token_for_validation"}')
+
+            HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+            BODY=$(echo "$RESPONSE" | head -n-1)
+
+            # 404 with specific error means credentials are valid but token doesn't exist (expected)
+            # 401 means credentials are invalid
+            if [ "$HTTP_CODE" = "404" ]; then
+              echo -e "${GREEN}✓${NC}"
+              echo "GitHub OAuth credentials are valid"
+            elif [ "$HTTP_CODE" = "401" ]; then
+              echo -e "${RED}✗${NC}"
+              echo -e "${RED}ERROR: GitHub OAuth credentials are INVALID${NC}"
+              echo "Response: $BODY"
+              echo ""
+              ERRORS=$((ERRORS + 1))
+            else
+              echo -e "${YELLOW}⚠${NC}"
+              echo -e "${YELLOW}WARNING: Unexpected response from GitHub API (HTTP $HTTP_CODE)${NC}"
+              echo "Response: $BODY"
+              echo "Credentials may still work, proceeding with deployment..."
+              echo ""
+            fi
+          fi
+          echo ""
+          {{- end }}
+
           {{- if .Values.global.dev }}
           # Check PostgreSQL (dev/staging only)
           echo "=== PostgreSQL Service ==="
