@@ -9,8 +9,9 @@ revisionHistoryLimit: 5
 ## -- Deployment image settings
 image:
   # SELFSERVICE image
-  registry: us-east4-docker.pkg.dev 
-  repository: judge-395516/judge-image-registry
+  registry: us-east4-docker.pkg.dev
+  # Set to empty string to enable global.registry.repository override (for marketplace deployments)
+  repository: ""
   pullPolicy: IfNotPresent
   tag: "v1.6.0"
   pullSecrets:

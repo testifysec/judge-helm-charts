@@ -17,7 +17,8 @@ server:
     production: false
   image:
     registry: gcr.io
-    repository: projectsigstore/fulcio
+    # Set to empty string to enable global.registry.repository override (for marketplace deployments)
+    repository: ""
     pullPolicy: IfNotPresent
     # crane digest gcr.io/projectsigstore/fulcio:v1.4.4
     # -- v1.4.4
