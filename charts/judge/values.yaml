@@ -343,7 +343,7 @@ dex:
           clientSecret: your-gitlab-client-secret
           redirectURI: https://dex.testifysec-demo.xyz/callback
 fulcio:
-  nameOverride: "judge-fulcio"  # ECR repo name
+  nameOverride: "fulcio"
   enabled: true
   image:
     tag: v1.4.5
@@ -366,7 +366,7 @@ fulcio:
           },
       }
 tsa:
-  nameOverride: "judge-timestamp-server"  # ECR repo name
+  nameOverride: "tsa"
   enabled: true
   image:
     tag: v1.6.0
