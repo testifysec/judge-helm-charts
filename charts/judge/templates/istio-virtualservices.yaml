@@ -160,7 +160,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: {{ printf "%s-%s-server" .Release.Name (default "fulcio" .Values.fulcio.nameOverride) }}
+            host: {{ printf "%s-judge-fulcio-server" .Release.Name }}
             port:
               number: 80
 ---
@@ -206,7 +206,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: {{ printf "%s-%s-server" .Release.Name (default "tsa" .Values.tsa.nameOverride) }}
+            host: {{ printf "%s-judge-timestamp-server" .Release.Name }}
             port:
               number: 80
 ---
