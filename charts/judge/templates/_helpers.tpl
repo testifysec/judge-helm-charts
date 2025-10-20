@@ -66,12 +66,13 @@ AWS Marketplace ECR: Static account 709825985650 (requires active subscription)
 
 {{/*
 Registry Repository Helper
-AWS Marketplace uses direct format (no repository path)
+AWS Marketplace uses seller namespace path (e.g., testifysec)
 Other registries may have repository paths
 */}}
 {{- define "judge.registry.repository" -}}
 {{- if .Values.global.registry.awsMarketplace -}}
-{{- /* Marketplace uses direct format: 709825985650.dkr.ecr.us-east-1.amazonaws.com/image-name */ -}}
+{{- /* Marketplace includes seller namespace: 709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-dex */ -}}
+{{ .Values.global.registry.repository }}
 {{- else -}}
 {{ .Values.global.registry.repository }}
 {{- end -}}

@@ -14,30 +14,31 @@ tests:
           path: spec.template.spec.containers[0].image
           pattern: "^us-east4-docker.pkg.dev/judge-395516/judge-image-registry/judge-gateway:v1.15.0$"
 
-  # Test 2: AWS Marketplace ECR overrides standard registry
-  - it: should use AWS Marketplace ECR when awsMarketplace=true
+  # Test 2: AWS Marketplace ECR with seller namespace
+  - it: should use AWS Marketplace ECR with seller namespace
     set:
       global.registry.awsMarketplace: true
-      global.registry.url: us-east4-docker.pkg.dev  # Should be ignored
-      global.registry.repository: judge-395516/judge-image-registry  # Should be ignored
+      global.registry.url: us-east4-docker.pkg.dev  # Should be overridden
+      global.registry.repository: testifysec  # Marketplace seller namespace
       gateway.image.tag: v1.15.0
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/judge-gateway:v1.15.0$"
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v1.15.0$"
 
-  # Test 3: AWS Marketplace uses no repository path
-  - it: should use direct format for AWS Marketplace (no repository path)
+  # Test 3: AWS Marketplace with repository namespace
+  - it: should include seller namespace for AWS Marketplace ECR
     set:
       global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
       gateway.image.tag: v2.0.0
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/judge-gateway:v2.0.0$"
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v2.0.0$"
       - notMatchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: ".*/.*/.*/.*"  # Should NOT have multiple path segments
+          pattern: ".*/.*/.*/.*"  # Should NOT have more than 3 segments (registry/namespace/image:tag)
 
   # Test 4: GCP Artifact Registry with repository path
   - it: should include repository path for GCP Artifact Registry
