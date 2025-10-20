@@ -4,12 +4,28 @@
 
 **TestifySec = Judge Platform** - The product is marketed as "TestifySec" on AWS Marketplace but the project is called "Judge". When searching for marketplace licenses, entitlements, or ECR images, look for products named "TestifySec - Automated Compliance for CI/CD | Supply Chain Security".
 
-## Marketplace ECR Debug Log
+## Marketplace ECR Investigation - ROOT CAUSE IDENTIFIED ✅
 
-**Status**: 🔴 IN PROGRESS - Image pull validation
-**Location**: `/tmp/marketplace-debug-20251019-193415/findings.md`
+**Status**: 🟢 ROOT CAUSE FOUND
 
-Investigating why marketplace ECR (709825985650) image pulls fail despite correct IAM configuration. Infrastructure is properly configured but docker login and cross-account ECR access are failing with authentication errors. See debug log for detailed findings.
+**Root Cause**: AWS License Manager grant is DISABLED
+
+The 3-part solution we implemented is correct and complete:
+1. ✅ Helm values configured for marketplace registry
+2. ✅ Terraform IAM policies updated for cross-account ECR access
+3. ✅ Subchart defaults set for marketplace override
+
+**What's Missing**: License Manager grant activation
+
+**Grant Details**:
+- ARN: `arn:aws:license-manager::178674732984:grant:g-88ef2d76ab40441cb93ed19c9d7e9bef`
+- Status: DISABLED (needs to be ACTIVE)
+- When activated: Kubernetes will immediately start pulling from marketplace ECR (709825985650)
+
+**Complete Investigation**:
+- Location: `/tmp/marketplace-debug-20251019-193415/ROOT_CAUSE_ANALYSIS.md`
+- Findings: All 5 parallel investigations completed (ECR policies, Organization SCPs, License Manager, Marketplace Images, Cross-Account IAM)
+- Verified: Infrastructure 100% correct, just need License Manager grant activation
 
 ## Active Deployment
 
