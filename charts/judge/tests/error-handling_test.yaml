@@ -1,0 +1,238 @@
+suite: Error Handling & Validation
+templates:
+  - templates/gateway/deployment.yaml
+
+tests:
+  # Test 1: Empty registry URL falls back gracefully
+  - it: should handle empty registry URL
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: ""
+      global.registry.repository: testorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "/testorg/judge-gateway:v1.15.0"
+
+  # Test 2: Empty repository doesn't break image path
+  - it: should handle empty repository path
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: registry.io
+      global.registry.repository: ""
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "registry.io/judge-gateway:v1.15.0"
+
+  # Test 3: Image with default tag from values
+  - it: should handle default image tag
+    set:
+      global.registry.url: ghcr.io
+      global.registry.repository: testorg
+      gateway.image.tag: latest
+    asserts:
+      # Should use the provided tag
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testorg/judge-gateway:latest"
+
+  # Test 4: Special characters in repository name
+  - it: should handle special characters in repository
+    set:
+      global.registry.url: registry.io
+      global.registry.repository: test-org_v1.0
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "registry.io/test-org_v1.0/judge-gateway:v1.15.0"
+
+  # Test 5: Null marketplace flag defaults correctly
+  - it: should handle null marketplace flag
+    set:
+      global.registry.awsMarketplace: null
+      global.registry.url: ghcr.io
+      global.registry.repository: testorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should treat null as false (not marketplace)
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testorg/judge-gateway:v1.15.0"
+
+  # Test 6: Whitespace in registry URL is handled
+  - it: should handle whitespace in registry configuration
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: "ghcr.io"
+      global.registry.repository: "testorg"
+      gateway.image.tag: "v1.15.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testorg/judge-gateway:v1.15.0"
+
+  # Test 7: Long repository path doesn't break formatting
+  - it: should handle long multi-segment repository paths
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: my-project/my-repo/images/production
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "us-east4-docker.pkg.dev/my-project/my-repo/images/production/judge-gateway:v1.15.0"
+
+  # Test 8: Complex registry paths work correctly
+  - it: should handle registries with complex paths
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: registry.company.com:5000
+      global.registry.repository: team/prod
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Registry with port and multi-segment path
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "registry.company.com:5000/team/prod/judge-gateway:v1.15.0"
+
+  # Test 9: Numeric-only tags are valid
+  - it: should handle numeric-only version tags
+    set:
+      global.registry.url: ghcr.io
+      global.registry.repository: testorg
+      gateway.image.tag: "1234567890"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testorg/judge-gateway:1234567890"
+
+  # Test 10: Very long tag names
+  - it: should handle very long tag names
+    set:
+      global.registry.url: registry.io
+      global.registry.repository: org
+      gateway.image.tag: "v1.2.3-alpha.beta.gamma.delta.epsilon.zeta.eta.theta.iota-build123456789"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "registry.io/org/judge-gateway:v1.2.3-alpha.beta.gamma.delta.epsilon.zeta.eta.theta.iota-build123456789"
+
+  # Test 11: Image format with proper tag separator
+  - it: should format image with tag separator
+    set:
+      global.registry.url: ghcr.io
+      global.registry.repository: testorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Verify registry/repo/image:tag format with one colon before tag
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^ghcr\\.io/testorg/judge-gateway:v1\\.15\\.0$"
+
+  # Test 12: Marketplace still works even if URL is set (URL should be ignored)
+  - it: should prioritize marketplace ECR over URL setting
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.url: ghcr.io
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should use marketplace account, not the URL
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 13: Repository with slashes for multi-level paths
+  - it: should handle multi-level repository paths with slashes
+    set:
+      global.registry.url: docker.io
+      global.registry.repository: org/team/project
+      gateway.image.tag: latest
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "docker.io/org/team/project/judge-gateway:latest"
+
+  # Test 14: Numeric registry account IDs
+  - it: should handle numeric registry account IDs
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: 123456789012.dkr.ecr.us-east-1.amazonaws.com
+      global.registry.repository: myrepo
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "123456789012.dkr.ecr.us-east-1.amazonaws.com/myrepo/judge-gateway:v1.15.0"
+
+  # Test 15: Registry with port number
+  - it: should handle registries with port numbers
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: "localhost:5000"
+      global.registry.repository: local
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "localhost:5000/local/judge-gateway:v1.15.0"
+
+  # Test 16: Case sensitivity in image names (should be lowercase)
+  - it: should preserve case in configuration values
+    set:
+      global.registry.url: registry.io
+      global.registry.repository: MyOrg
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "registry.io/MyOrg/judge-gateway:v1.15.0"
+
+  # Test 17: Marketplace with non-standard repository (should still use marketplace account)
+  - it: should enforce marketplace account regardless of repository
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: nonstandard-repo
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Still uses marketplace account ID
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650"
+
+  # Test 18: Image name never changes regardless of config
+  - it: should preserve image name consistently
+    set:
+      global.registry.url: any-registry.io
+      global.registry.repository: any-org
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/judge-gateway:"
+
+  # Test 19: Multiple hyphens in various config fields
+  - it: should handle multiple hyphens in configuration
+    set:
+      global.registry.url: my-registry-service.io
+      global.registry.repository: my-org-name
+      gateway.image.tag: v1-15-0-release
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "my-registry-service.io/my-org-name/judge-gateway:v1-15-0-release"
+
+  # Test 20: Underscores in configuration values
+  - it: should handle underscores in configuration
+    set:
+      global.registry.url: my_registry.io
+      global.registry.repository: my_org_name
+      gateway.image.tag: v1_15_0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "my_registry.io/my_org_name/judge-gateway:v1_15_0"
