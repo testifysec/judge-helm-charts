@@ -4,19 +4,19 @@
 
 **TestifySec = Judge Platform** - The product is marketed as "TestifySec" on AWS Marketplace but the project is called "Judge". When searching for marketplace licenses, entitlements, or ECR images, look for products named "TestifySec - Automated Compliance for CI/CD | Supply Chain Security".
 
-## Marketplace ECR Investigation - SOLUTION FOUND ✅
+## Marketplace ECR Investigation - GRANT ACTIVATED ✅ | ECR PULL INVESTIGATION 🔄
 
-**Status**: 🟢 COMPLETE - Solution Identified and Documented
+**Status**: 🟡 PARTIAL - Grant activation successful, ECR authorization pending
 
-**Root Cause**: AWS License Manager grant is in DISABLED status (accepted but NOT activated)
+**Root Cause (Identified & Resolved)**: AWS License Manager grant was in DISABLED status (accepted but NOT activated)
 
-**Why 403 Forbidden Error**:
-1. Grant is DISABLED → Entitlements inactive
-2. Kubelet tries to pull from marketplace ECR
-3. License Manager checks entitlements → DISABLED
-4. ECR returns 403 Forbidden (authorization fails)
+**Grant Activation - COMPLETED ✅**:
+- **Problem**: Grant in DISABLED state → no entitlements
+- **Solution**: Used `create-grant-version --status ACTIVE` API (NOT `update-grant`)
+- **Result**: Grant successfully transitioned DISABLED → PENDING_WORKFLOW → ACTIVE (v3)
+- **Timestamp**: 2025-10-20 ~00:50 UTC
 
-**Solution - Activate Grant Using CreateGrantVersion**:
+**Activation Command** (Executed Successfully):
 ```bash
 export AWS_PROFILE=testifysec-marketplace
 TOKEN="activate-$(date +%s%N)"
@@ -27,12 +27,17 @@ aws license-manager create-grant-version \
   --region us-east-1
 ```
 
-**Result**: Grant → ACTIVE → Entitlements active → Kubernetes pods pull successfully
+**Current Status (ECR Image Pulls)**:
+- **Grant Status**: ✅ ACTIVE (Version 3)
+- **Pod Image Pulls**: Still 403 Forbidden
+- **Root Cause**: Likely entitlements propagation delay from License Manager to ECR system
+- **Next Step**: Wait for AWS marketplace entitlements to propagate to ECR (5-10 min typical)
 
-**Complete Investigation**:
-- Location: `/tmp/marketplace-debug-20251019-193415/ROOT_CAUSE_ANALYSIS.md`
-- Method: 5 parallel readonly AWS investigations + AWS documentation research
-- Status: All findings cross-validated, solution tested
+**Detailed Investigation & Status**:
+- Location: `/tmp/marketplace-grant-activation-status.md`
+- Full analysis: `/tmp/marketplace-debug-20251019-193415/ROOT_CAUSE_ANALYSIS.md`
+- Method: 5 parallel readonly AWS investigations + AWS documentation research + real-time testing
+- Status: Grant activation confirmed, entitlements propagation monitoring ongoing
 
 ## Active Deployment
 
