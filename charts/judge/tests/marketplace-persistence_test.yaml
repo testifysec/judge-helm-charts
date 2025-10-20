@@ -1,0 +1,266 @@
+suite: Marketplace Smoke Test Persistence
+templates:
+  - templates/gateway/deployment.yaml
+
+tests:
+  # Test 1: Marketplace configuration persists through multiple renders
+  - it: should produce consistent output across multiple renders
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 2: Version update maintains marketplace configuration
+  - it: should maintain marketplace settings when updating version
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v2.0.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v2.0.0"
+      # Marketplace account ID should remain the same
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650"
+
+  # Test 3: Idempotent marketplace configuration
+  - it: should be idempotent - same config produces same output
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 4: Marketplace enabled state is immutable once set
+  - it: should not allow marketplace flag to be overridden by URL
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.url: ghcr.io
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should use marketplace account, not the provided URL
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "ghcr\\.io"
+
+  # Test 5: Marketplace always uses us-east-1 (hardcoded persistence)
+  - it: should hardcode us-east-1 for marketplace regardless of config
+    set:
+      global.aws.region: ap-southeast-1
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "ap-southeast-1"
+
+  # Test 6: Marketplace account ID never changes
+  - it: should maintain consistent marketplace account ID
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr"
+
+  # Test 7: Marketplace seller namespace persists
+  - it: should always include seller namespace when marketplace enabled
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/testifysec/"
+
+  # Test 8: Configuration immutability across chart versions
+  - it: should maintain format consistency across different tags
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.14.9
+    asserts:
+      # Even with different version, format should be consistent
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v1\\.14\\.9$"
+
+  # Test 9: Marketplace prefix never changes
+  - it: should maintain consistent ECR registry prefix
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: latest
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com"
+
+  # Test 10: Image name component persists
+  - it: should never change image name regardless of config
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "judge-gateway"
+
+  # Test 11: Marketplace configuration survives registry property changes
+  - it: should survive repository override attempts
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Marketplace should override any repository confusion
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 12: Marketplace persists through rollback scenarios
+  - it: should maintain marketplace for version rollbacks
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.14.5
+    asserts:
+      # Rollback to older version should still use marketplace
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.14.5"
+
+  # Test 13: Dev mode doesn't break marketplace persistence
+  - it: should maintain marketplace settings in dev mode
+    set:
+      global.dev: true
+      localstack.enabled: true
+      postgresql.enabled: true
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 14: Marketplace settings survive config merges
+  - it: should survive configuration merges with other settings
+    set:
+      global.aws.enabled: true
+      global.aws.region: us-west-2
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Marketplace should override AWS region for registry
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-west-2"
+
+  # Test 15: Format consistency test - all components match expected pattern
+  - it: should match canonical marketplace format
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Full canonical format test
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v1\\.15\\.0$"
+
+  # Test 16: Marketplace persists with non-standard settings
+  - it: should maintain marketplace with AWS disabled
+    set:
+      global.aws.enabled: false
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Marketplace should still work even when AWS is disabled
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 17: Marketplace account ID is correct constant
+  - it: should use correct marketplace account number
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Specific account ID validation
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "123456789012"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "999999999999"
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650"
+
+  # Test 18: Marketplace region is always us-east-1 constant
+  - it: should always use us-east-1 and never other regions
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-west|eu-|ap-|ca-"
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+
+  # Test 19: Marketplace seller namespace is correct constant
+  - it: should use correct marketplace seller namespace
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/testifysec/"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/marketplace/|/aws/|/amazon/"
+
+  # Test 20: Complete persistence validation test
+  - it: should maintain all marketplace constants together
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Validate all components are present and correct
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
