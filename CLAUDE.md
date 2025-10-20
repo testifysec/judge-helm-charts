@@ -1,5 +1,9 @@
 # Judge Helm Charts Project
 
+## ⚠️ IMPORTANT NAMING CLARIFICATION
+
+**TestifySec = Judge Platform** - The product is marketed as "TestifySec" on AWS Marketplace but the project is called "Judge". When searching for marketplace licenses, entitlements, or ECR images, look for products named "TestifySec - Automated Compliance for CI/CD | Supply Chain Security".
+
 ## Active Deployment
 
 **Status**: Judge Platform v1.15.0 fully operational on EKS
