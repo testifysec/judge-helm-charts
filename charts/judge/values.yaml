@@ -56,14 +56,62 @@ global:
       sqsQueue: "{{ .Values.global.aws.prefix }}-archivista-attestations"
       region: "{{ .Values.global.aws.region }}"
 
-  # Container registry
+  # Container registry configuration
   registry:
-    # AWS Marketplace ECR (static account 709825985650, requires active subscription)
-    # Set to true to use AWS Marketplace official images
-    # When true: overrides provider/url/repository settings
-    awsMarketplace: false
+    # ========================================================================
+    # NEW FORMAT (Recommended): Consolidated Marketplace Configuration
+    # ========================================================================
+    # Use this for AWS Marketplace ECR deployments (official TestifySec images)
+    # Automatically configures account, region, and seller namespace
+    #
+    # Example for AWS Marketplace:
+    #   marketplace:
+    #     enabled: true
+    #
+    # Example for non-marketplace (disable explicitly):
+    #   marketplace:
+    #     enabled: false
+    #
+    # When enabled, auto-configures:
+    #   - Account: 709825985650 (AWS Marketplace account - hardcoded)
+    #   - Region: us-east-1 (hardcoded)
+    #   - Seller namespace: testifysec (hardcoded)
+    #   - No need to set provider, url, or repository
+    #
+    # Optional: Version overrides for specific services
+    #   marketplace:
+    #     enabled: true
+    #     versions:
+    #       dex: v2.43.1
+    #       fulcio: v1.4.5
+    #       tsa: v1.6.0
+    #       kratosUI: v1.6.0
+    #
+    marketplace:
+      enabled: false
+      # versions: {}  # Optional: override specific service versions
 
-    # Standard registry configuration (used when awsMarketplace=false)
+    # ========================================================================
+    # DEPRECATED FORMAT (Legacy): Use marketplace.enabled instead
+    # ========================================================================
+    # MIGRATION GUIDE: From old format to new format
+    #
+    # Old format (still works for backward compatibility):
+    #   awsMarketplace: true
+    #   repository: testifysec
+    #
+    # New format (recommended):
+    #   marketplace:
+    #     enabled: true
+    #
+    # The new format is simpler:
+    # - Account (709825985650) and region (us-east-1) are hardcoded constants
+    # - Seller namespace (testifysec) is hardcoded - not user-configurable
+    # - Reduces configuration complexity and potential for errors
+    #
+    awsMarketplace: false  # DEPRECATED: Use marketplace.enabled instead
+
+    # Standard registry configuration (used when marketplace is disabled)
     provider: gcp-artifact
     url: us-east4-docker.pkg.dev
     repository: judge-395516/judge-image-registry

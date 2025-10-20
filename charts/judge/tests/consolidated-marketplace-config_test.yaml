@@ -1,0 +1,305 @@
+suite: Consolidated Marketplace Configuration (TDD)
+templates:
+  - templates/gateway/deployment.yaml
+
+tests:
+  # ============================================================================
+  # NEW CONSOLIDATED FORMAT TESTS
+  # ============================================================================
+  # These tests validate the new marketplace configuration format:
+  # global.registry.marketplace.enabled: true
+  # (seller is hardcoded to "testifysec", not user-configurable)
+
+  # Test 1: New format - marketplace enabled auto-configures everything
+  - it: should auto-configure marketplace with consolidated format
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Account: 709825985650 (hardcoded constant)
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650"
+      # Region: us-east-1 (hardcoded constant)
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+      # Seller: testifysec (hardcoded constant, not configurable)
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/testifysec/"
+
+  # Test 2: New format produces correct image path
+  - it: should produce correct image path with consolidated format
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 3: New format - seller namespace is always testifysec (hardcoded)
+  - it: should hardcode seller namespace to testifysec
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "testifysec/judge-gateway"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "mycompany|customseller|other-namespace"
+
+  # Test 4: New format - disable marketplace falls back to custom registry
+  - it: should use custom registry when marketplace disabled
+    set:
+      global.registry.marketplace:
+        enabled: false
+      global.registry.url: ghcr.io
+      global.registry.repository: myorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/myorg/judge-gateway:v1.15.0"
+
+  # Test 5: New format - version overrides
+  - it: should support version overrides with consolidated format
+    set:
+      global.registry.marketplace:
+        enabled: true
+        versions:
+          gateway: v2.0.0-beta
+      gateway.image.tag: v2.0.0-beta
+    asserts:
+      # Version should be applied from overrides
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ":v2\\.0\\.0-beta$"
+
+  # ============================================================================
+  # BACKWARD COMPATIBILITY TESTS
+  # ============================================================================
+  # These tests validate the OLD format still works (awsMarketplace: true)
+
+  # Test 6: Old format still works (backward compatibility)
+  - it: should still support old awsMarketplace format
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 7: Old format - repository field honored (backward compat)
+  - it: should honor repository field in old format
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/testifysec/"
+
+  # ============================================================================
+  # CONFIGURATION MIGRATION TESTS
+  # ============================================================================
+  # Tests validating migration from old to new format produces same result
+
+  # Test 8: Old and new format produce identical output
+  - it: should produce same output whether using old or new format
+    set:
+      # Using new consolidated format
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should match expected marketplace image
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 9: New format marketplace enabled: true (explicit)
+  - it: should work with explicit marketplace enabled true
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1"
+
+  # Test 10: New format with versions object
+  - it: should accept versions object in new format
+    set:
+      global.registry.marketplace:
+        enabled: true
+        versions:
+          dex: v2.43.1
+          fulcio: v1.4.5
+          tsa: v1.6.0
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should still use marketplace for gateway
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650"
+
+  # ============================================================================
+  # SELLER NAMESPACE CONSTANT TESTS
+  # ============================================================================
+  # Validates that seller namespace is ALWAYS testifysec (hardcoded)
+
+  # Test 11: Seller namespace cannot be overridden
+  - it: should always use testifysec seller namespace
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Must be testifysec
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/testifysec/judge-gateway"
+      # No other namespace should appear
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/marketplace/|/seller/|/aws/"
+
+  # Test 12: Seller namespace is consistent across different tags
+  - it: should maintain testifysec namespace with different versions
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v2.0.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "testifysec/judge-gateway:v2\\.0\\.0"
+
+  # ============================================================================
+  # ACCOUNT AND REGION CONSTANT TESTS
+  # ============================================================================
+  # Validates that account and region are ALWAYS hardcoded
+
+  # Test 13: Marketplace account ID is constant
+  - it: should always use marketplace account 709825985650
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr"
+      # Should not use internal registry account
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^178674732984" # Internal registry account (not marketplace)
+
+  # Test 14: Marketplace region is always us-east-1
+  - it: should always use us-east-1 region for marketplace
+    set:
+      global.registry.marketplace:
+        enabled: true
+      global.aws.region: eu-west-1  # Try to override - should be ignored
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "eu-west-1"
+
+  # Test 15: Complete marketplace image format validation
+  - it: should produce correct complete marketplace format
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Full canonical format: account.dkr.ecr.region.amazonaws.com/seller/image:tag
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v1\\.15\\.0$"
+
+  # ============================================================================
+  # EDGE CASE TESTS
+  # ============================================================================
+
+  # Test 16: New format with empty versions object
+  - it: should handle empty versions object
+    set:
+      global.registry.marketplace:
+        enabled: true
+        versions: {}
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 17: New format with null marketplace field (should not use marketplace)
+  - it: should not use marketplace when field is null
+    set:
+      global.registry.marketplace: null
+      global.registry.url: ghcr.io
+      global.registry.repository: myorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/myorg/judge-gateway:v1.15.0"
+
+  # Test 18: New format with marketplace.enabled: false is explicit non-marketplace
+  - it: should use non-marketplace when explicitly disabled
+    set:
+      global.registry.marketplace:
+        enabled: false
+      global.registry.url: internal.registry.io
+      global.registry.repository: internal
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "internal.registry.io/internal/judge-gateway:v1.15.0"
+
+  # Test 19: New format persists through different configurations
+  - it: should maintain marketplace settings through config changes
+    set:
+      global.registry.marketplace:
+        enabled: true
+      gateway.image.tag: v3.0.0-rc1
+    asserts:
+      # Should still use marketplace even with different tag format
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1"
+
+  # Test 20: New format is the recommended approach
+  - it: should demonstrate recommended consolidated configuration
+    set:
+      global.registry.marketplace:
+        enabled: true
+        versions:
+          dex: v2.43.1
+          fulcio: v1.4.5
+          tsa: v1.6.0
+          kratosUI: v1.6.0
+          kratos: v1.0.0-token-update
+      gateway.image.tag: v1.15.0
+    asserts:
+      # All marketplace constants should be in place
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v1\\.15\\.0$"

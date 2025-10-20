@@ -1,0 +1,62 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-judge-gateway
+  labels:
+    
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+    component: gateway
+    app.kubernetes.io/component: gateway
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: judge
+      app.kubernetes.io/instance: RELEASE-NAME
+      component: gateway
+  template:
+    metadata:
+      annotations:
+      labels:
+        
+        helm.sh/chart: judge-chart-1.7.89
+        app.kubernetes.io/name: judge
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/version: "1.6.0"
+        app.kubernetes.io/managed-by: Helm
+        component: gateway
+        app.kubernetes.io/component: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: unified-registry.io/unified/judge-gateway:v1.15.0
+          args: ["node", "index.js"]
+          ports:
+            - containerPort: 4000
+          env:
+            - name: AUTH_TOKEN
+              value: "my-super-secret-auth-token"
+            - name: JUDGE_LOGIN_URL
+              value: https://login.testifysec-demo.xyz/login
+            - name: KRATOS_PUBLIC_URL
+              value: http://RELEASE-NAME-judge-kratos-public.NAMESPACE.svc.cluster.local
+            - name: ARCHIVISTA_URL
+              value: http://RELEASE-NAME-judge-archivista.NAMESPACE.svc.cluster.local:8082
+            - name: JUDGE_API_URL
+              value: http://RELEASE-NAME-judge-api.NAMESPACE.svc.cluster.local:8080
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 512Mi
+      imagePullSecrets:
+        - name: regcred

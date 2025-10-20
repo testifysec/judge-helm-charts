@@ -52,12 +52,31 @@ Users can override subdomains via istio.hosts.* in values.yaml
 {{- end -}}
 
 {{/*
+Check if Marketplace ECR is enabled
+Supports both old format (awsMarketplace: true) and new format (marketplace.enabled: true)
+*/}}
+{{- define "judge.registry.marketplaceEnabled" -}}
+{{- if and .Values.global.registry.marketplace .Values.global.registry.marketplace.enabled -}}
+{{- true -}}
+{{- else if .Values.global.registry.awsMarketplace -}}
+{{- true -}}
+{{- else -}}
+{{- false -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Registry URL Helper
 Returns AWS Marketplace ECR if enabled, otherwise uses configured registry
 AWS Marketplace ECR: Static account 709825985650 (requires active subscription)
+
+Supports:
+- Old format: global.registry.awsMarketplace: true
+- New format: global.registry.marketplace.enabled: true
 */}}
 {{- define "judge.registry.url" -}}
-{{- if .Values.global.registry.awsMarketplace -}}
+{{- $marketplaceEnabled := include "judge.registry.marketplaceEnabled" . -}}
+{{- if eq $marketplaceEnabled "true" -}}
 709825985650.dkr.ecr.us-east-1.amazonaws.com
 {{- else -}}
 {{ .Values.global.registry.url }}
@@ -66,14 +85,19 @@ AWS Marketplace ECR: Static account 709825985650 (requires active subscription)
 
 {{/*
 Registry Repository Helper
-AWS Marketplace uses seller namespace path (e.g., testifysec)
-Other registries may have repository paths
+Returns the marketplace seller namespace (hardcoded to "testifysec") or custom repository
+
+Supports:
+- Old format: global.registry.repository: testifysec
+- New format: global.registry.marketplace.enabled: true (seller is always "testifysec")
 */}}
 {{- define "judge.registry.repository" -}}
-{{- if .Values.global.registry.awsMarketplace -}}
-{{- /* Marketplace includes seller namespace: 709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-dex */ -}}
-{{ .Values.global.registry.repository }}
+{{- $marketplaceEnabled := include "judge.registry.marketplaceEnabled" . -}}
+{{- if eq $marketplaceEnabled "true" -}}
+{{- /* Marketplace seller namespace is hardcoded constant: testifysec */ -}}
+testifysec
 {{- else -}}
+{{- /* Non-marketplace uses configured repository */ -}}
 {{ .Values.global.registry.repository }}
 {{- end -}}
 {{- end -}}
