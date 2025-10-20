@@ -1,0 +1,141 @@
+suite: Dev Mode + Marketplace Integration
+templates:
+  - templates/gateway/deployment.yaml
+
+tests:
+  # Test 1: Dev mode with non-marketplace registry works correctly
+  - it: should use configured registry when awsMarketplace=false in dev mode
+    set:
+      global.dev: true
+      localstack.enabled: true
+      postgresql.enabled: true
+      global.registry.awsMarketplace: false
+      global.registry.url: ghcr.io
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Verify gateway image uses configured registry
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testifysec/judge-gateway:v1.15.0"
+
+  # Test 2: Dev mode + Marketplace ECR generates correct image paths
+  - it: should use Marketplace ECR in dev mode
+    set:
+      global.dev: true
+      localstack.enabled: true
+      postgresql.enabled: true
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 3: Dev mode disables IRSA (AWS service account annotations)
+  - it: should disable IRSA annotations in dev mode
+    set:
+      global.dev: true
+      global.aws.irsa.enabled: false
+      global.registry.awsMarketplace: false
+      global.registry.url: ghcr.io
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - isNull:
+          path: spec.template.spec.serviceAccountName
+
+  # Test 4: Dev mode disables AWS configuration but marketplace ECR still works
+  - it: should work with Marketplace ECR even when AWS is disabled
+    set:
+      global.dev: true
+      global.aws.enabled: false
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Gateway image should still be from marketplace ECR
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 5: Marketplace repository namespace is included with dev mode
+  - it: should include marketplace seller namespace in dev mode
+    set:
+      global.dev: true
+      localstack.enabled: true
+      postgresql.enabled: true
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Verify path contains /testifysec/ (seller namespace)
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ".*/testifysec/.*"
+
+  # Test 6: Dev mode with Marketplace preserves image tag precision
+  - it: should preserve specific image tags in dev marketplace mode
+    set:
+      global.dev: true
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v2.0.0-rc1
+    asserts:
+      # Exact tag match ensures specific versions are preserved
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v2.0.0-rc1"
+
+  # Test 7: Marketplace ECR always uses us-east-1 in dev mode
+  - it: should always use us-east-1 for Marketplace ECR regardless of region
+    set:
+      global.dev: true
+      global.aws.region: us-west-2
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should always be us-east-1 for marketplace
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ".*us-east-1.*"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ".*us-west-2.*"
+
+  # Test 8: Dev mode allows no marketplace registry specified (fallback behavior)
+  - it: should fallback to non-marketplace ECR when marketplace not enabled in dev mode
+    set:
+      global.dev: true
+      localstack.enabled: true
+      postgresql.enabled: true
+      global.registry.awsMarketplace: false
+      global.registry.url: 123456789012.dkr.ecr.us-west-2.amazonaws.com
+      global.registry.repository: judge-internal
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should use the configured ECR, not marketplace
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "123456789012.dkr.ecr.us-west-2.amazonaws.com/judge-internal/judge-gateway:v1.15.0"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650"
+
+  # Test 9: Development + Marketplace mode complete integration test
+  - it: should maintain full dev marketplace configuration
+    set:
+      global.dev: true
+      localstack.enabled: true
+      postgresql.enabled: true
+      global.aws.enabled: false
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Gateway image should reflect complete marketplace + dev configuration
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
