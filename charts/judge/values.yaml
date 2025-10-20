@@ -39,6 +39,13 @@ global:
   # Kept for backward compatibility, will be removed in v2.0.0
   dev: false
 
+  # Dev Mode Database Configuration
+  # Used when mode=dev for local PostgreSQL deployment
+  # These defaults ensure database endpoint helpers work correctly in all contexts
+  devDatabase:
+    username: "judge"
+    password: "dev-preview-password"
+
   # AWS Configuration (for EKS deployments with IRSA)
   # Required for proper IAM permissions and resource naming
   # See README.md Troubleshooting section for IRSA setup
