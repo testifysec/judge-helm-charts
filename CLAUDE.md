@@ -4,40 +4,89 @@
 
 **TestifySec = Judge Platform** - The product is marketed as "TestifySec" on AWS Marketplace but the project is called "Judge". When searching for marketplace licenses, entitlements, or ECR images, look for products named "TestifySec - Automated Compliance for CI/CD | Supply Chain Security".
 
-## Marketplace ECR Investigation - GRANT ACTIVATED ✅ | ECR PULL INVESTIGATION 🔄
+## Marketplace ECR Investigation - ROOT CAUSE FOUND & FIXED ✅
 
-**Status**: 🟡 PARTIAL - Grant activation successful, ECR authorization pending
+**Status**: 🟢 FIXED - Helm template bug in marketplace image path construction
 
-**Root Cause (Identified & Resolved)**: AWS License Manager grant was in DISABLED status (accepted but NOT activated)
+### Root Cause Analysis
 
-**Grant Activation - COMPLETED ✅**:
-- **Problem**: Grant in DISABLED state → no entitlements
-- **Solution**: Used `create-grant-version --status ACTIVE` API (NOT `update-grant`)
-- **Result**: Grant successfully transitioned DISABLED → PENDING_WORKFLOW → ACTIVE (v3)
-- **Timestamp**: 2025-10-20 ~00:50 UTC
+**Problem**: Pods stuck in `ImagePullBackOff` with **403 Forbidden** after 24+ minutes despite:
+- ✅ AWS License Manager grant ACTIVE (v3)
+- ✅ Marketplace license AVAILABLE in deployment account
+- ✅ Node IAM role has cross-account ECR permissions
+- ❌ Images still pulling from WRONG paths
 
-**Activation Command** (Executed Successfully):
-```bash
-export AWS_PROFILE=testifysec-marketplace
-TOKEN="activate-$(date +%s%N)"
-aws license-manager create-grant-version \
-  --client-token "$TOKEN" \
-  --grant-arn "arn:aws:license-manager::178674732984:grant:g-88ef2d76ab40441cb93ed19c9d7e9bef" \
-  --status ACTIVE \
-  --region us-east-1
+**Root Cause (Found)**: Helm `judge.registry.repository` helper returned **empty string** for marketplace ECR
+- **File**: `charts/judge/templates/_helpers.tpl` (lines 72-78)
+- **Bug**: When `global.registry.awsMarketplace=true`, helper returned empty string instead of repository namespace
+- **Impact**: Image paths lost the marketplace seller namespace (`testifysec`)
+
+**Broken Image Paths** (403 Forbidden):
+```
+❌ 709825985650.dkr.ecr.us-east-1.amazonaws.com/judge-dex:v2.43.1
+❌ 709825985650.dkr.ecr.us-east-1.amazonaws.com/judge-fulcio:v1.4.5
+❌ 709825985650.dkr.ecr.us-east-1.amazonaws.com/judge-timestamp-server:v1.6.0
 ```
 
-**Current Status (ECR Image Pulls)**:
-- **Grant Status**: ✅ ACTIVE (Version 3)
-- **Pod Image Pulls**: Still 403 Forbidden
-- **Root Cause**: Likely entitlements propagation delay from License Manager to ECR system
-- **Next Step**: Wait for AWS marketplace entitlements to propagate to ECR (5-10 min typical)
+**Correct Image Paths** (Fixed):
+```
+✅ 709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-dex:v2.43.1
+✅ 709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-fulcio:v1.4.5
+✅ 709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-timestamp-server:v1.6.0
+```
 
-**Detailed Investigation & Status**:
-- Location: `/tmp/marketplace-grant-activation-status.md`
-- Full analysis: `/tmp/marketplace-debug-20251019-193415/ROOT_CAUSE_ANALYSIS.md`
-- Method: 5 parallel readonly AWS investigations + AWS documentation research + real-time testing
-- Status: Grant activation confirmed, entitlements propagation monitoring ongoing
+### Fix Applied
+
+**Commit**: `1ae8013` - Fix marketplace seller namespace in ECR image paths
+- **File**: `charts/judge/templates/_helpers.tpl` (lines 72-78)
+- **Change**: Removed condition that returned empty string for marketplace ECR
+- **Result**: Helper now correctly includes `global.registry.repository` (`testifysec`) for all registry types
+- **Tests Updated**: Updated unit tests to reflect correct marketplace behavior
+- **Version Bump**: 1.7.88 → 1.7.89
+- **Status**: ✅ All 72 unit tests pass
+
+**Investigation Timeline**:
+1. Discovered pods in `ImagePullBackOff` for 24+ minutes with 403 Forbidden
+2. Verified grant activation and license availability ✅
+3. Checked actual image pull attempts from pod events
+4. Found image paths missing marketplace namespace (`testifysec`)
+5. Located and fixed Helm template bug
+6. Updated unit tests to validate fix
+7. Committed and pushed to upstream
+
+### Smoke Test Results - SUCCESS ✅
+
+**Deployment Status**: All 6 pods running successfully with marketplace images
+
+**Pod Status**:
+```
+judge-platform-staging-marketplace-judge-dex-6996fb7d7b-8xzms          1/1 Running
+judge-platform-staging-marketplace-judge-fulcio-server-544lqxdw        1/1 Running
+judge-platform-staging-marketplace-judge-kratos-self-serviwbnrt        1/1 Running
+judge-platform-staging-marketplace-judge-timestamp-server-rj5lh        1/1 Running
+judge-platform-staging-marketplace-judge-web-7cf7ddc89d-8qqlq          1/1 Running
+judge-platform-staging-marketplace-judge-fulcio-createcertt97q4        0/1 Completed (job)
+```
+
+**Image Pull Verification**:
+- ✅ All marketplace ECR images include correct seller namespace (`testifysec`)
+- ✅ No 403 Forbidden errors
+- ✅ Pods successfully pulled from `709825985650.dkr.ecr.us-east-1.amazonaws.com`
+- ✅ Cross-account access working correctly with License Manager grant ACTIVE
+
+**Key Findings**:
+1. **Root cause**: Helm template bug, not infrastructure issue
+2. **Fix location**: Single file change in `_helpers.tpl` (4 lines)
+3. **Impact**: Enables complete marketplace ECR support for customers
+4. **Timeline**: Issue identified → Root cause found → Fixed → Verified → All pods running in ~1 hour
+
+### Previous Grant Activation (Still Relevant)
+
+**AWS License Manager Grant Status**:
+- **Grant Status**: ✅ ACTIVE (Version 3)
+- **Activation Command**: Used `create-grant-version --status ACTIVE` API
+- **Activation Timestamp**: 2025-10-20 ~00:50 UTC
+- **Lesson**: Grants don't always activate automatically - explicit API call required
 
 ## Active Deployment
 
