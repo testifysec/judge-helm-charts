@@ -1,0 +1,281 @@
+suite: Marketplace Registry Consolidation
+templates:
+  - templates/gateway/deployment.yaml
+
+tests:
+  # Test 1: Current marketplace ECR configuration
+  - it: should support current explicit marketplace configuration
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 2: Marketplace flag takes precedence over URL
+  - it: should prioritize marketplace flag over registry URL
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.url: custom.registry.io
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Marketplace should win
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 3: Consolidation - marketplace auto-configures ECR account
+  - it: should auto-configure ECR account when marketplace enabled
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Marketplace account should be hardcoded
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650"
+
+  # Test 4: Consolidation - marketplace auto-sets region
+  - it: should auto-configure us-east-1 when marketplace enabled
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Region should be us-east-1
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+
+  # Test 5: Consolidation prevents regional override
+  - it: should prevent region override when marketplace enabled
+    set:
+      global.aws.region: eu-west-1
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should still use us-east-1, not eu-west-1
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "eu-west-1"
+
+  # Test 6: Consolidation - repository becomes seller namespace
+  - it: should treat repository as seller namespace in marketplace mode
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Repository should appear as namespace
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/"
+
+  # Test 7: Consolidation - simplified boolean flag model
+  - it: should work with simplified marketplace flag
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Single flag should configure everything
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 8: Consolidation - false flag disables marketplace
+  - it: should disable marketplace when flag is false
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: ghcr.io
+      global.registry.repository: myorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Should use custom registry
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/myorg/judge-gateway:v1.15.0"
+
+  # Test 9: Consolidation - migration path from old to simplified config
+  - it: should migrate from explicit ECR to simplified flag
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # New simplified approach should produce same result
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 10: Consolidation - all services use same flag
+  - it: should apply marketplace flag consistently across services
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+      judge-api.image.tag: v1.15.0
+      archivista.image.tag: v1.15.0
+      judge-web.image.tag: v1.15.0
+    asserts:
+      # Gateway should use marketplace
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 11: Consolidation - account ID never changes
+  - it: should maintain consistent account ID in consolidated model
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Account ID should be constant marketplace account
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr"
+      # Should not use any different account (internal custom ECR as example)
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^178674732984"
+
+  # Test 12: Consolidation - region is hardcoded constant
+  - it: should hardcode region in consolidated marketplace model
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Region must be us-east-1
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "\\.us-east-1\\.amazonaws"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-west|eu-west|ap-"
+
+  # Test 13: Consolidation - seller namespace is consolidated value
+  - it: should use repository as seller namespace in consolidation
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Repository becomes the namespace
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/testifysec/judge-gateway"
+
+  # Test 14: Consolidation - backward compatible with existing configs
+  - it: should remain backward compatible with current configuration
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.14.9
+    asserts:
+      # Should work with any version
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway"
+
+  # Test 15: Consolidation - simplified overrides take precedence
+  - it: should prioritize marketplace consolidation over other settings
+    set:
+      global.aws.region: ap-southeast-1
+      global.registry.awsMarketplace: true
+      global.registry.url: internal-registry.io
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Marketplace consolidation should override everything
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 16: Consolidation - single source of truth for marketplace config
+  - it: should consolidate all marketplace settings into flag
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Flag should fully configure marketplace
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 17: Consolidation - marketplace config is complete and minimal
+  - it: should provide complete marketplace config with minimal values
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Marketplace should be fully configured
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v1\\.15\\.0$"
+
+  # Test 18: Consolidation - non-marketplace uses separate config
+  - it: should separate marketplace and non-marketplace configurations
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: ghcr.io
+      global.registry.repository: testorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Non-marketplace should use different settings
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testorg/judge-gateway:v1.15.0"
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650"
+
+  # Test 19: Consolidation - values file simplification
+  - it: should simplify values file for marketplace deployment
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Single flag + repository should be sufficient
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+
+  # Test 20: Consolidation - complete model validation
+  - it: should validate complete marketplace consolidation model
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      # Full validation of consolidated model
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+      # Account ID constant
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650"
+      # Region constant
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+      # Seller namespace
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "testifysec"
+      # Image name
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "judge-gateway"
