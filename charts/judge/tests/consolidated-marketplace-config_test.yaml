@@ -83,38 +83,10 @@ tests:
           pattern: ":v2\\.0\\.0-beta$"
 
   # ============================================================================
-  # BACKWARD COMPATIBILITY TESTS
+  # CONFIGURATION VALIDATION TESTS
   # ============================================================================
-  # These tests validate the OLD format still works (awsMarketplace: true)
 
-  # Test 6: Old format still works (backward compatibility)
-  - it: should still support old awsMarketplace format
-    set:
-      global.registry.awsMarketplace: true
-      global.registry.repository: testifysec
-      gateway.image.tag: v1.15.0
-    asserts:
-      - equal:
-          path: spec.template.spec.containers[0].image
-          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
-
-  # Test 7: Old format - repository field honored (backward compat)
-  - it: should honor repository field in old format
-    set:
-      global.registry.awsMarketplace: true
-      global.registry.repository: testifysec
-      gateway.image.tag: v1.15.0
-    asserts:
-      - matchRegex:
-          path: spec.template.spec.containers[0].image
-          pattern: "/testifysec/"
-
-  # ============================================================================
-  # CONFIGURATION MIGRATION TESTS
-  # ============================================================================
-  # Tests validating migration from old to new format produces same result
-
-  # Test 8: Old and new format produce identical output
+  # Test 6: Marketplace format consistency
   - it: should produce same output whether using old or new format
     set:
       # Using new consolidated format

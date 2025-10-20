@@ -52,13 +52,11 @@ Users can override subdomains via istio.hosts.* in values.yaml
 {{- end -}}
 
 {{/*
-Check if Marketplace ECR is enabled
-Supports both old format (awsMarketplace: true) and new format (marketplace.enabled: true)
+Check if Marketplace ECR is enabled (consolidated format only)
+Use: global.registry.marketplace.enabled: true
 */}}
 {{- define "judge.registry.marketplaceEnabled" -}}
 {{- if and .Values.global.registry.marketplace .Values.global.registry.marketplace.enabled -}}
-{{- true -}}
-{{- else if .Values.global.registry.awsMarketplace -}}
 {{- true -}}
 {{- else -}}
 {{- false -}}
@@ -70,9 +68,7 @@ Registry URL Helper
 Returns AWS Marketplace ECR if enabled, otherwise uses configured registry
 AWS Marketplace ECR: Static account 709825985650 (requires active subscription)
 
-Supports:
-- Old format: global.registry.awsMarketplace: true
-- New format: global.registry.marketplace.enabled: true
+When marketplace is enabled, account (709825985650) and region (us-east-1) are hardcoded.
 */}}
 {{- define "judge.registry.url" -}}
 {{- $marketplaceEnabled := include "judge.registry.marketplaceEnabled" . -}}
