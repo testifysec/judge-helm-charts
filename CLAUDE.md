@@ -4,6 +4,13 @@
 
 **TestifySec = Judge Platform** - The product is marketed as "TestifySec" on AWS Marketplace but the project is called "Judge". When searching for marketplace licenses, entitlements, or ECR images, look for products named "TestifySec - Automated Compliance for CI/CD | Supply Chain Security".
 
+## Marketplace ECR Debug Log
+
+**Status**: 🔴 IN PROGRESS - Image pull validation
+**Location**: `/tmp/marketplace-debug-20251019-193415/findings.md`
+
+Investigating why marketplace ECR (709825985650) image pulls fail despite correct IAM configuration. Infrastructure is properly configured but docker login and cross-account ECR access are failing with authentication errors. See debug log for detailed findings.
+
 ## Active Deployment
 
 **Status**: Judge Platform v1.15.0 fully operational on EKS
