@@ -1,0 +1,214 @@
+suite: Cross-Registry Switching Scenarios
+templates:
+  - templates/gateway/deployment.yaml
+
+tests:
+  # Test 1: Switch from Marketplace to Custom ECR
+  - it: should switch from marketplace to custom ECR
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: 178674732984.dkr.ecr.us-east-1.amazonaws.com
+      global.registry.repository: judge-internal
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "178674732984.dkr.ecr.us-east-1.amazonaws.com/judge-internal/judge-gateway:v1.15.0"
+      # Verify no marketplace account ID in image
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650"
+
+  # Test 2: Switch from Marketplace to GCP Artifact Registry
+  - it: should switch from marketplace to GCP Artifact Registry
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "us-east4-docker.pkg.dev/judge-395516/judge-image-registry/judge-gateway:v1.15.0"
+      # Verify no AWS account ID in image
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "[0-9]{12}\\.dkr\\.ecr"
+
+  # Test 3: Switch from GCP back to Marketplace
+  - it: should switch from GCP back to Marketplace
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+      # Verify us-east-1 is used for marketplace
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "us-east-1"
+
+  # Test 4: Switch between different ECR accounts
+  - it: should switch between different ECR accounts
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: 123456789012.dkr.ecr.eu-west-1.amazonaws.com
+      global.registry.repository: team-a-registry
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "123456789012.dkr.ecr.eu-west-1.amazonaws.com/team-a-registry/judge-gateway:v1.15.0"
+      # Can use different regions for non-marketplace
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "eu-west-1"
+
+  # Test 5: Switch from Marketplace to Docker Hub
+  - it: should switch from Marketplace to Docker Hub
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: docker.io
+      global.registry.repository: testifysec
+      gateway.image.tag: latest
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "docker.io/testifysec/judge-gateway:latest"
+      # Verify no AWS account references
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "dkr\\.ecr"
+
+  # Test 6: Switch from Docker Hub to GHCR (GitHub Container Registry)
+  - it: should switch to GHCR
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: ghcr.io
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/testifysec/judge-gateway:v1.15.0"
+
+  # Test 7: Verify image name consistent across all registry switches
+  - it: should preserve image name across registry switches
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: quay.io
+      global.registry.repository: myorg
+      gateway.image.tag: v1.15.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "/judge-gateway:"
+
+  # Test 8: Switching registries with version tag preservation
+  - it: should preserve version tags when switching registries
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: internal-registry.company.com
+      global.registry.repository: platform
+      gateway.image.tag: v2.0.0-beta.1
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "internal-registry.company.com/platform/judge-gateway:v2.0.0-beta.1"
+
+  # Test 9: Switching from multi-segment path (GCP) to simple (Docker Hub)
+  - it: should handle path complexity differences when switching
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: registry.example.com
+      global.registry.repository: ""
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "registry.example.com/judge-gateway:v1.15.0"
+
+  # Test 10: Verify no marketplace configuration leakage after disabling
+  - it: should remove marketplace config when disabled
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: custom.ecr.io
+      global.registry.repository: myteam
+      gateway.image.tag: v1.15.0
+    asserts:
+      # No marketplace account ID
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650"
+      # No enforced us-east-1
+      - notMatchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: ".*us-east-1.*"
+
+  # Test 11: Complete registry migration scenario
+  - it: should support complete registry migration path
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: new-production-ecr.company.com
+      global.registry.repository: judge-prod
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "new-production-ecr.company.com/judge-prod/judge-gateway:v1.15.0"
+
+  # Test 12: Switch back to marketplace maintains correct format
+  - it: should maintain marketplace format when re-enabling
+    set:
+      global.registry.awsMarketplace: true
+      global.registry.repository: testifysec
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "709825985650.dkr.ecr.us-east-1.amazonaws.com/testifysec/judge-gateway:v1.15.0"
+      # Verify proper marketplace formatting
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-gateway:v1\\.15\\.0$"
+
+  # Test 13: Cross-cloud switching (AWS to GCP and back)
+  - it: should support cross-cloud registry switching
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: asia-south1-docker.pkg.dev
+      global.registry.repository: gcp-project/judge-registry
+      gateway.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "asia-south1-docker.pkg.dev/gcp-project/judge-registry/judge-gateway:v1.15.0"
+
+  # Test 14: Registry switch with commit SHA tag (dev scenario)
+  - it: should preserve commit SHA tags during registry switches
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: staging-ecr.company.com
+      global.registry.repository: staging
+      gateway.image.tag: main-abc1234def5678
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "staging-ecr.company.com/staging/judge-gateway:main-abc1234def5678"
+
+  # Test 15: Registry switch affecting all services consistently
+  - it: should apply registry changes consistently across configuration
+    set:
+      global.registry.awsMarketplace: false
+      global.registry.url: unified-registry.io
+      global.registry.repository: unified
+      gateway.image.tag: v1.15.0
+      judge-api.image.tag: v1.15.0
+      archivista.image.tag: v1.15.0
+      judge-web.image.tag: v1.15.0
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "unified-registry.io/unified/judge-gateway:v1.15.0"
