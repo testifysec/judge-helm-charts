@@ -713,7 +713,7 @@ Database Endpoint Helpers
 Returns PostgreSQL DSN for dev mode, RDS DSN for production
 */}}
 {{- define "judge.database.endpoint.archivista" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/archivista?sslmode=disable
 {{- else -}}
 {{- $username := "archivista" -}}
@@ -735,7 +735,7 @@ postgres://{{ $username }}:{{ $password }}@{{ $endpoint }}:{{ $port }}/archivist
 {{- end -}}
 
 {{- define "judge.database.endpoint.kratos" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/kratos?sslmode=disable
 {{- else -}}
 {{- $username := "kratos" -}}
@@ -757,7 +757,7 @@ postgres://{{ $username }}:{{ $password }}@{{ $endpoint }}:{{ $port }}/kratos?ss
 {{- end -}}
 
 {{- define "judge.database.endpoint.judgeApi" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 postgres://{{ .Values.global.devDatabase.username | default "judge" }}:{{ .Values.global.devDatabase.password | default "dev-preview-password" }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/judge_api?sslmode=disable
 {{- else -}}
 {{- $username := "judge" -}}
@@ -783,7 +783,7 @@ Storage Endpoint Helpers
 Returns LocalStack endpoint for dev mode, S3 endpoint for production
 */}}
 {{- define "judge.storage.endpoint.dev" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 http://{{ .Release.Name }}-localstack.{{ .Release.Namespace }}.svc.cluster.local:4566
 {{- else -}}
 {{ .Values.global.storage.aws.endpoint }}
@@ -791,7 +791,7 @@ http://{{ .Release.Name }}-localstack.{{ .Release.Namespace }}.svc.cluster.local
 {{- end -}}
 
 {{- define "judge.storage.useTLS.dev" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 false
 {{- else -}}
 {{ .Values.global.storage.aws.useTLS }}
@@ -799,7 +799,7 @@ false
 {{- end -}}
 
 {{- define "judge.storage.credentialType.dev" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 ACCESS_KEY
 {{- else -}}
 {{ .Values.global.storage.aws.credentialType }}
@@ -811,7 +811,7 @@ Messaging Endpoint Helpers
 Returns LocalStack SNS/SQS configuration for dev mode, AWS for production
 */}}
 {{- define "judge.messaging.endpoint.dev" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 http://{{ .Release.Name }}-localstack.{{ .Release.Namespace }}.svc.cluster.local:4566
 {{- else -}}
 https://sns.{{ include "judge.messaging.region" . }}.amazonaws.com
@@ -819,7 +819,7 @@ https://sns.{{ include "judge.messaging.region" . }}.amazonaws.com
 {{- end -}}
 
 {{- define "judge.messaging.region.dev" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 us-east-1
 {{- else -}}
 {{ .Values.global.messaging.aws.region }}
@@ -839,7 +839,7 @@ Usage in subchart deployment templates:
 S3 Endpoint - Returns s3.amazonaws.com for prod, LocalStack for dev
 */}}
 {{- define "judge.s3.endpoint" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 {{ .Release.Name }}-localstack.{{ .Release.Namespace }}.svc.cluster.local:4566
 {{- else -}}
 s3.amazonaws.com
@@ -850,7 +850,7 @@ s3.amazonaws.com
 S3 Use TLS - Returns "true" for prod, "false" for dev (LocalStack)
 */}}
 {{- define "judge.s3.useTLS" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 false
 {{- else -}}
 true
@@ -861,7 +861,7 @@ true
 S3 Credential Type - Returns IAM for prod, ACCESS_KEY for dev
 */}}
 {{- define "judge.s3.credentialType" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 ACCESS_KEY
 {{- else -}}
 IAM
@@ -880,7 +880,7 @@ Archivista-specific S3 helpers
 These use ARCHIVISTA_ prefixed env var names
 */}}
 {{- define "judge.s3.archivista.bucketName" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 archivista
 {{- else -}}
 {{ include "judge.aws.s3.archivistaBucket" . }}
@@ -888,7 +888,7 @@ archivista
 {{- end -}}
 
 {{- define "judge.s3.archivista.storageBackend" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 BLOB
 {{- else -}}
 BLOB
@@ -900,9 +900,147 @@ Judge API-specific S3 helpers
 These use BLOB_STORE_ prefixed env var names
 */}}
 {{- define "judge.s3.judgeApi.bucketName" -}}
-{{- if .Values.global.dev -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
 judge
 {{- else -}}
 {{ include "judge.aws.s3.judgeApiBucket" . }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+================================================================================
+GLOBAL VALUES REFACTOR HELPERS
+These helpers support the new global values structure with mode, versions, auth, and istio
+================================================================================
+*/}}
+
+{{/*
+Get deployment mode (aws or dev)
+Supports both new global.mode and old global.dev for backward compatibility
+*/}}
+{{- define "judge.mode" -}}
+{{- if .Values.global.mode -}}
+{{- .Values.global.mode -}}
+{{- else if .Values.global.dev -}}
+dev
+{{- else -}}
+aws
+{{- end -}}
+{{- end -}}
+
+{{/*
+Check if in development mode
+Returns true if mode=dev or global.dev=true
+*/}}
+{{- define "judge.isDevelopmentMode" -}}
+{{- if eq (include "judge.mode" .) "dev" -}}
+true
+{{- else -}}
+false
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get image tag for a service from the new versions structure
+Usage: {{ include "judge.imageTag" (dict "service" "api" "context" .) }}
+Falls back to global.judgeImageTag for backward compatibility
+*/}}
+{{- define "judge.imageTag" -}}
+{{- $service := .service -}}
+{{- $context := .context -}}
+{{- if $context.Values.global.versions -}}
+  {{- if hasKey $context.Values.global.versions $service -}}
+    {{- if index $context.Values.global.versions $service -}}
+      {{- index $context.Values.global.versions $service -}}
+    {{- else if $context.Values.global.versions.platform -}}
+      {{- $context.Values.global.versions.platform -}}
+    {{- else -}}
+      {{- $context.Values.global.judgeImageTag | default "latest" -}}
+    {{- end -}}
+  {{- else if $context.Values.global.versions.platform -}}
+    {{- $context.Values.global.versions.platform -}}
+  {{- else -}}
+    {{- $context.Values.global.judgeImageTag | default "latest" -}}
+  {{- end -}}
+{{- else -}}
+  {{- $context.Values.global.judgeImageTag | default "latest" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get single domain source
+Always uses global.domain, ignores istio.domain
+*/}}
+{{- define "judge.domain" -}}
+{{- .Values.global.domain -}}
+{{- end -}}
+
+{{/*
+Get GitHub OAuth client ID from new location
+Supports both global.auth.github and old location for backward compatibility
+*/}}
+{{- define "judge.auth.github.clientId" -}}
+{{- if .Values.global.auth -}}
+  {{- if .Values.global.auth.github -}}
+    {{- .Values.global.auth.github.clientId -}}
+  {{- else if .Values.global.oidc -}}
+    {{- range .Values.global.oidc.providers -}}
+      {{- if eq .id "github" -}}
+        {{- .clientId -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- else if .Values.global.oidc -}}
+  {{- range .Values.global.oidc.providers -}}
+    {{- if eq .id "github" -}}
+      {{- .clientId -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get GitHub OAuth client secret from new location
+Supports both global.auth.github and old location for backward compatibility
+*/}}
+{{- define "judge.auth.github.clientSecret" -}}
+{{- if .Values.global.auth -}}
+  {{- if .Values.global.auth.github -}}
+    {{- .Values.global.auth.github.clientSecret -}}
+  {{- else if .Values.global.oidc -}}
+    {{- range .Values.global.oidc.providers -}}
+      {{- if eq .id "github" -}}
+        {{- .clientSecret -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- else if .Values.global.oidc -}}
+  {{- range .Values.global.oidc.providers -}}
+    {{- if eq .id "github" -}}
+      {{- .clientSecret -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Get Istio host for a service
+Usage: {{ include "judge.istio.host" (dict "service" "web" "context" .) }}
+*/}}
+{{- define "judge.istio.host" -}}
+{{- $service := .service -}}
+{{- $context := .context -}}
+{{- if $context.Values.global.istio -}}
+  {{- if $context.Values.global.istio.hosts -}}
+    {{- if hasKey $context.Values.global.istio.hosts $service -}}
+      {{- index $context.Values.global.istio.hosts $service -}}.{{ $context.Values.global.domain }}
+    {{- else -}}
+      {{- $service -}}.{{ $context.Values.global.domain }}
+    {{- end -}}
+  {{- else -}}
+    {{- $service -}}.{{ $context.Values.global.domain }}
+  {{- end -}}
+{{- else -}}
+  {{- $service -}}.{{ $context.Values.global.domain }}
 {{- end -}}
 {{- end -}}

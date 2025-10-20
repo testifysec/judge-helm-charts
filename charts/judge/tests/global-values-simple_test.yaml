@@ -1,0 +1,41 @@
+suite: Global Values Refactor - Core Functionality
+templates:
+  - templates/secretstores.yaml
+
+tests:
+  # ============================================================================
+  # MODE FIELD TESTS - SecretStore Creation
+  # ============================================================================
+
+  - it: should disable Vault SecretStores when mode=dev
+    template: templates/secretstores.yaml
+    set:
+      global.mode: dev
+      global.devDatabase.username: postgres
+      global.devDatabase.password: postgres
+      global.secrets.provider: vault
+      global.secrets.vault.server: https://vault.example.com
+    asserts:
+      - hasDocuments:
+          count: 0  # No SecretStores in dev mode
+
+  - it: should enable Vault SecretStores when mode=aws
+    template: templates/secretstores.yaml
+    set:
+      global.mode: aws
+      global.secrets.provider: vault
+      global.secrets.vault.server: https://vault.example.com
+    asserts:
+      - hasDocuments:
+          count: 3  # Three SecretStores in AWS mode
+
+  - it: should use new mode field over deprecated dev flag
+    template: templates/secretstores.yaml
+    set:
+      global.dev: true  # Old deprecated flag
+      global.mode: aws  # New mode field takes precedence
+      global.secrets.provider: vault
+      global.secrets.vault.server: https://vault.example.com
+    asserts:
+      - hasDocuments:
+          count: 3  # Should create SecretStores based on mode=aws, not dev=true

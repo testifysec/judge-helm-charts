@@ -1,18 +1,42 @@
 # Global configuration - SINGLE SOURCE OF TRUTH
 global:
-  # Default image tag for all Judge platform services (gateway, archivista, judge-api, judge-web)
-  # Recommended: Set to "latest" for customer deployments to always pull newest version
-  # Production deployments should override with specific version tags
+  # Default image tag for all Judge platform services (DEPRECATED - use versions.platform)
+  # Kept for backward compatibility, will be removed in v2.0.0
   judgeImageTag: "v1.15.0"
+
+  # Version Management (NEW - single source of truth for all service versions)
+  versions:
+    # Core Judge platform services default version
+    platform: "v1.15.0"  # Used for api, archivista, gateway, web if not overridden
+
+    # Individual service version overrides (optional - leave empty to use platform version)
+    api: ""         # Judge API service
+    archivista: ""  # Attestation storage service
+    gateway: ""     # Gateway service
+    web: ""         # Web UI service
+
+    # Supporting services (always explicit versions)
+    dex: "v2.43.1"                # OIDC provider
+    fulcio: "v1.4.5"              # Code signing CA
+    tsa: "v1.6.0"                 # Timestamp authority
+    kratos: "v1.0.0-token-update" # Identity service
+    kratosUI: "v1.6.0"            # Login UI
+    dapr: "1.14.1"                # Dapr runtime
+    preflight: "v1.6.0"           # Preflight checks
 
   # Domain for all external service URLs (VirtualServices, OIDC redirects, etc.)
   # WARNING: Changing this requires updating istio.domain AND verifying all 22 hardcoded URLs below match
   # See DOMAIN.md for complete documentation and update checklist
   domain: testifysec-demo.xyz
 
-  # Development Mode - automatically enables LocalStack + PostgreSQL for self-contained deployments
-  # When true: deploys LocalStack (AWS emulator) and PostgreSQL (dev database)
-  # When false (default): uses production AWS services (S3, RDS, SNS/SQS)
+  # Deployment Mode (NEW - replaces dev flag)
+  # Options: aws | dev
+  # - aws: Production AWS services (S3, RDS, SNS/SQS)
+  # - dev: LocalStack + PostgreSQL for self-contained deployments
+  mode: aws
+
+  # Development Mode (DEPRECATED - use mode instead)
+  # Kept for backward compatibility, will be removed in v2.0.0
   dev: false
 
   # AWS Configuration (for EKS deployments with IRSA)
@@ -135,6 +159,29 @@ global:
       authMountPath: "kubernetes"  # Kubernetes auth backend mount path
       env: "dev"      # Environment identifier: dev, staging, prod (override per environment)
       project: "myproject"  # Project identifier for path construction (override with your project)
+
+  # Authentication Configuration (NEW - more accessible OIDC config)
+  auth:
+    github:
+      clientId: ""         # GitHub OAuth App client ID
+      clientSecret: ""     # GitHub OAuth App client secret
+
+  # Istio/Networking Configuration (NEW - consolidated under global)
+  istio:
+    enabled: true
+    tlsSecretName: wildcard-tls
+    ingressGatewaySelector:
+      istio: ingress
+    # Subdomain prefixes (combined with global.domain)
+    hosts:
+      gateway: "gateway"   # Gateway service API (gateway.domain)
+      web: "judge"         # Main Judge web UI (judge.domain)
+      api: "api"           # Judge API (api.domain)
+      fulcio: "fulcio"     # Fulcio code signing CA (fulcio.domain)
+      dex: "dex"           # Dex OIDC provider (dex.domain)
+      tsa: "tsa"           # Timestamp Authority (tsa.domain)
+      kratos: "kratos"     # Kratos identity service (kratos.domain)
+      login: "login"       # Login UI (login.domain)
 
 # Istio service mesh configuration
 istio:
