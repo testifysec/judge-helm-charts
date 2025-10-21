@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-judge-archivista
+  labels:
+    helm.sh/chart: archivista-1.6.11
+    app.kubernetes.io/name: judge-archivista
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "0.1.1"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: judge-archivista
+      app.kubernetes.io/instance: RELEASE-NAME
+  template:
+    metadata:
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "archivista"
+        # Exclude Dapr ports from Istio sidecar to prevent traffic interception conflicts
+        traffic.sidecar.istio.io/excludeInboundPorts: "50001,50002,9090"
+        traffic.sidecar.istio.io/excludeOutboundPorts: "50001,50005,50006,9090"
+      labels:
+        app.kubernetes.io/name: judge-archivista
+        app.kubernetes.io/instance: RELEASE-NAME
+    spec:
+      securityContext:
+        {}
+      serviceAccountName: RELEASE-NAME-judge-archivista
+      containers:
+        - name: archivista
+          securityContext:
+            {}
+          image: us-east4-docker.pkg.dev/judge-395516/judge-image-registry/judge-archivista:v2.0.0
+          # args:
+            # - "--sql-connection=$(ARCHIVISTA_SQL_STORE_CONNECTION_STRING)"
+            # - "--sql-backend=psql"
+            # - "--listen=tcp://0.0.0.0:8080"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ARCHIVISTA_SQL_STORE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: RELEASE-NAME-judge-archivista-database
+                  key: connectionString
+            - name: ARCHIVISTA_SQL_STORE_BACKEND
+              value: psql
+            - name: ARCHIVISTA_JUDGE_GATEWAY_URL
+              value: "http://RELEASE-NAME-judge-gateway.NAMESPACE.svc.cluster.local:4000"
+            - name: ARCHIVISTA_LISTEN_ON
+              value: "tcp://0.0.0.0:8082"
+            - name: ARCHIVISTA_STORAGE_BACKEND
+              value: "BLOB"
+            - name: ARCHIVISTA_BLOB_STORE_ENDPOINT
+              value: "s3.amazonaws.com"
+            - name: ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE
+              value: "IAM"
+            - name: ARCHIVISTA_BLOB_STORE_USE_TLS
+              value: "true"
+            - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+              value: "demo-judge-archivista"
+            - name: ARCHIVISTA_BLOB_STORE_REGION
+              value: "us-east-1"
+          ports:
+            - name: graphql
+              containerPort: 8082
+              protocol: TCP
+          resources:
+            {}
+
+      imagePullSecrets:
+        - name: regcred

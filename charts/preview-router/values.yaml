@@ -1,0 +1,32 @@
+# Default values for preview-router
+
+# Enable or disable the preview router
+enabled: false
+
+# Number of replicas
+replicaCount: 2
+
+image:
+  repository: 178674732984.dkr.ecr.us-east-1.amazonaws.com/preview-router
+  tag: "v0.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# Preview deployment configuration
+preview:
+  namespace: judge
+  serviceNamePattern: "preview-%s-web"
+  servicePort: "8077"
+  fallbackUrl: "https://judge.testifysec-demo.xyz/"
+  domainSuffix: "preview.testifysec-demo.xyz"

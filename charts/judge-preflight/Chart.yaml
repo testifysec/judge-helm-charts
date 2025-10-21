@@ -1,0 +1,6 @@
+apiVersion: v2
+name: judge-preflight
+description: Pre-flight validation checks for Judge platform deployment
+type: application
+version: "0.1.16"
+appVersion: "1.0"

@@ -1,0 +1,80 @@
+name: Deploy Preview
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::178674732984:role/github-actions
+          aws-region: us-east-1
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          registry-type: private
+
+      - name: Get short SHA
+        id: sha
+        run: echo "sha=$(git rev-parse --short=12 HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build and push image
+        run: |
+          docker build -t 178674732984.dkr.ecr.us-east-1.amazonaws.com/judge-web:${{ steps.sha.outputs.sha }} .
+          docker push 178674732984.dkr.ecr.us-east-1.amazonaws.com/judge-web:${{ steps.sha.outputs.sha }}
+
+      - name: Deploy preview
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+        run: |
+          # Replace {{SHA}} with actual SHA in deployment yaml
+          sed "s/{{SHA}}/$SHA/g" preview-deployment.yaml | kubectl apply -f -
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = '${{ steps.sha.outputs.sha }}';
+            const previewUrl = `https://${sha}.preview.testifysec-demo.xyz/`;
+            const postAuthUrl = `https://login.testifysec-demo.xyz/post-auth?next=${encodeURIComponent(previewUrl)}`;
+            const authUrl = `https://kratos.testifysec-demo.xyz/self-service/login/browser?return_to=${encodeURIComponent(postAuthUrl)}`;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.name,
+              body: `## 🚀 Preview Environment Ready!
+
+              **Preview URL**: ${previewUrl}
+              **Login URL**: [Click to authenticate](${authUrl})
+
+              After authenticating, you'll be redirected to your preview environment.`
+            });
+
+---
+# Cleanup workflow
+name: Cleanup Preview
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get short SHA
+        id: sha
+        run: echo "sha=$(git rev-parse --short=12 HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Delete preview deployment
+        run: |
+          kubectl delete deployment preview-${{ steps.sha.outputs.sha }}-web -n judge --ignore-not-found
+          kubectl delete service preview-${{ steps.sha.outputs.sha }}-web -n judge --ignore-not-found

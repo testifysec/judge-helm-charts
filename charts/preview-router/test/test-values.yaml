@@ -1,0 +1,82 @@
+# Minimal values for testing preview-router
+global:
+  domain: testifysec-demo.xyz
+  registry:
+    url: 178674732984.dkr.ecr.us-east-1.amazonaws.com
+    repository: ""
+  version: v1.15.0
+  database:
+    username: judge
+    port: 5432
+    aws:
+      endpoint: demo-judge-postgres.cenw4a6wen6f.us-east-1.rds.amazonaws.com
+  secrets:
+    database:
+      passwordEncoded: "test-password"
+  cloud:
+    aws:
+      accountId: "178674732984"
+      region: us-east-1
+      iamRoles:
+        judgeApi: demo-judge-judge-api
+        archivista: demo-judge-archivista
+  storage:
+    aws:
+      endpoint: "https://s3.amazonaws.com"
+      credentialType: "iam"
+      useTLS: true
+    buckets:
+      judgeApi: demo-judge-judge
+      archivista: demo-judge-archivista
+  messaging:
+    aws:
+      region: us-east-1
+      snsTopicName: demo-judge-archivista-attestations
+      sqsQueueName: demo-judge-archivista-attestations
+    topics:
+      archivistaAttestations: demo-judge-archivista-attestations
+  oidc:
+    enabled: true
+    providers:
+      - id: github
+        provider: github-app
+
+istio:
+  enabled: true
+  domain: testifysec-demo.xyz
+
+# Enable preview router for testing
+preview-router:
+  enabled: true
+
+# Disable other services for testing
+mysql:
+  enabled: false
+minio:
+  enabled: false
+kratos:
+  enabled: false
+kratos-selfservice-ui-node:
+  enabled: false
+archivista:
+  enabled: false
+judge-api:
+  enabled: false
+dapr:
+  enabled: false
+web:
+  enabled: false
+dex:
+  enabled: false
+fulcio:
+  enabled: false
+tsa:
+  enabled: false
+ollama:
+  enabled: false
+judge-ai-proxy:
+  enabled: false
+localstack:
+  enabled: false
+postgresql:
+  enabled: false

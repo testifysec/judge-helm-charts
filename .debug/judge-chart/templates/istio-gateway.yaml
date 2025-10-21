@@ -1,0 +1,34 @@
+
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: RELEASE-NAME-judge-gateway
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  selector:
+    istio: ingress
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*.custom-domain.io"
+      # HTTP to HTTPS redirect
+      tls:
+        httpsRedirect: true
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      tls:
+        mode: SIMPLE
+        credentialName: wildcard-tls
+      hosts:
+        - "*.custom-domain.io"

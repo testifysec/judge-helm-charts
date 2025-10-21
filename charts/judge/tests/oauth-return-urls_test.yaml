@@ -1,0 +1,94 @@
+suite: OAuth Return URLs Configuration
+templates:
+  - kratos-config.yaml
+tests:
+  - it: should use environment-specific allowed_return_urls for production
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "judge"
+      istio.hosts.login: "login"
+      istio.hosts.kratos: "kratos"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://login\\.testifysec-demo\\.xyz"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://login\\.testifysec-demo\\.xyz/post-auth"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://kratos\\.testifysec-demo\\.xyz"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://judge\\.testifysec-demo\\.xyz"
+
+  - it: should use environment-specific allowed_return_urls for staging
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "staging-judge"
+      istio.hosts.login: "staging-login"
+      istio.hosts.kratos: "staging-kratos"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://staging-login\\.testifysec-demo\\.xyz"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://staging-login\\.testifysec-demo\\.xyz/post-auth"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://staging-kratos\\.testifysec-demo\\.xyz"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://staging-judge\\.testifysec-demo\\.xyz"
+
+  - it: should use environment-specific allowed_return_urls for dev
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "dev-judge"
+      istio.hosts.login: "dev-login"
+      istio.hosts.kratos: "dev-kratos"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://dev-login\\.testifysec-demo\\.xyz"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://dev-login\\.testifysec-demo\\.xyz/post-auth"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://dev-kratos\\.testifysec-demo\\.xyz"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://dev-judge\\.testifysec-demo\\.xyz"
+
+  - it: should NOT use localhost domains in production
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "judge"
+      istio.hosts.login: "login"
+      istio.hosts.kratos: "kratos"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - notMatchRegex:
+          path: data["kratos.yaml"]
+          pattern: "testifysec\\.localhost"

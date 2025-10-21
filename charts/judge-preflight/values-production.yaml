@@ -1,0 +1,69 @@
+# Production Preflight Configuration
+
+environment: production
+
+global:
+  dev: false
+
+externalSecrets:
+  enabled: true
+  namespace: external-secrets-system
+  requiredPods: 3
+  validateSync: true  # Verify ExternalSecrets are synced to Kubernetes secrets
+  expectedSecrets:
+    - judge-platform-judge-api-database
+    - judge-platform-judge-archivista-database
+    - judge-platform-judge-kratos
+
+vault:
+  enabled: true
+  server: "https://vault.testifysec-demo.xyz"
+  authPath: "kubernetes"
+  roles:
+    - judge-api
+    - archivista
+    - kratos
+
+database:
+  enabled: true
+  host: "demo-judge-postgres.cenw4a6wen6f.us-east-1.rds.amazonaws.com"
+  port: 5432
+  databases:
+    - judge_api
+    - archivista
+    - kratos
+
+aws:
+  enabled: true
+  region: us-east-1
+  s3Buckets:
+    - demo-judge-judge
+    - demo-judge-archivista
+  snsTopics:
+    - demo-judge-archivista-attestations
+  sqsQueues:
+    - demo-judge-archivista-attestations
+
+secrets:
+  fulcio:
+    enabled: true
+    name: fulcio-server-secret
+    requiredKeys:
+      - cert
+      - private
+      - public
+      - password
+
+  githubOAuth:
+    enabled: false
+
+services:
+  certManager:
+    enabled: true
+    namespace: cert-manager
+
+  postgresql:
+    enabled: false
+
+  localstack:
+    enabled: false

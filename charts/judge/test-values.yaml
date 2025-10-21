@@ -1,0 +1,51 @@
+# Minimal values for linting and testing
+global:
+  database:
+    host: postgres.example.com
+    username: postgres
+    password: testpassword
+    port: 5432
+    aws:
+      endpoint: postgres.example.com
+
+  secrets:
+    database:
+      passwordEncoded: dGVzdHBhc3N3b3Jk  # base64 of 'testpassword'
+
+  domain: example.com
+
+  oidc:
+    enabled: false
+
+  storage:
+    buckets:
+      judgeApi: test-judge-api
+      archivista: test-archivista
+
+kratos:
+  enabled: true
+
+judge-api:
+  enabled: true
+  deployment:
+    env:
+      - name: BLOB_STORE_BUCKET_NAME
+        value: "test-judge-api"
+      - name: BLOB_STORE_ENDPOINT
+        value: "s3.amazonaws.com"
+      - name: BLOB_STORE_CREDENTIAL_TYPE
+        value: "IAM"
+
+archivista:
+  enabled: true
+  deployment:
+    env:
+      - name: BLOB_STORE_BUCKET_NAME
+        value: "test-archivista"
+
+istio:
+  domain: example.com
+
+dapr:
+  pubsub:
+    enabled: false

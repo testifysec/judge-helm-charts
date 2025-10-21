@@ -10,7 +10,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "gateway.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.gateway" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -33,7 +33,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "judge.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.web" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -52,7 +52,7 @@ spec:
         uri: "/"
       route:
         - destination:
-            host: kratos-selfservice-ui-node
+            host: {{ printf "%s-%s" .Release.Name (default "judge-kratos-self-service" (index .Values "kratos-selfservice-ui-node" "nameOverride")) }}
             port:
               number: 80
     # Kratos public routes
@@ -63,7 +63,7 @@ spec:
         uri: "/"
       route:
         - destination:
-            host: kratos-public
+            host: {{ printf "%s-%s-public" .Release.Name (default "judge-kratos" .Values.kratos.nameOverride) }}
             port:
               number: 80
     # Archivista routes
@@ -72,6 +72,15 @@ spec:
             prefix: "/archivista/"
       rewrite:
         uri: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
+            port:
+              number: 8082
+    # Upload endpoint (proxies to Archivista with auth/tenancy logic)
+    - match:
+        - uri:
+            prefix: "/upload"
       route:
         - destination:
             host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
@@ -119,7 +128,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "api.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.api" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -132,29 +141,6 @@ spec:
             port:
               number: 8080
 ---
-# Archivista VirtualService
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: {{ include "judge.fullname" . }}-archivista-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - "archivista.{{ .Values.istio.domain }}"
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: {{ printf "%s-%s" .Release.Name (default "judge-archivista" .Values.archivista.nameOverride) }}
-            port:
-              number: 8082
----
 # Fulcio HTTP VirtualService
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
@@ -165,7 +151,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "fulcio.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.fulcio" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -174,7 +160,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: {{ printf "%s-%s-server" .Release.Name (default "judge-fulcio" .Values.fulcio.nameOverride) }}
+            host: {{ printf "%s-judge-fulcio-server" .Release.Name }}
             port:
               number: 80
 ---
@@ -188,7 +174,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "dex.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.dex" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -211,7 +197,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "tsa.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.tsa" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -220,7 +206,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: {{ printf "%s-%s-server" .Release.Name (default "judge-timestamp-server" .Values.tsa.nameOverride) }}
+            host: {{ printf "%s-judge-timestamp-server" .Release.Name }}
             port:
               number: 80
 ---
@@ -234,7 +220,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "kratos.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.kratos" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
@@ -243,30 +229,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: kratos-public
-            port:
-              number: 80
----
-# Kratos Admin VirtualService
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: kratos-admin-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - "kratos-admin.{{ .Values.istio.domain }}"
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: kratos-admin
+            host: {{ printf "%s-%s-public" .Release.Name (default "judge-kratos" .Values.kratos.nameOverride) }}
             port:
               number: 80
 ---
@@ -280,54 +243,55 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "login.{{ .Values.istio.domain }}"
+    - {{ include "judge.ingress.host.login" . | quote }}
   gateways:
     - istio-system/main-gateway
   http:
+    {{- $previewRouterEnabled := false }}
+    {{- if hasKey .Values "preview-router" }}
+      {{- if index .Values "preview-router" "enabled" }}
+        {{- $previewRouterEnabled = true }}
+      {{- end }}
+    {{- end }}
+    {{- if $previewRouterEnabled }}
+    # Post-auth bounce route for preview environments (must be first)
     - match:
         - uri:
-            prefix: "/"
+            exact: "/post-auth"
       route:
         - destination:
-            host: kratos-selfservice-ui-node
-            port:
-              number: 80
----
-# AI Proxy VirtualService
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: {{ include "judge.fullname" . }}-ai-proxy-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - "ai-proxy.{{ .Values.istio.domain }}"
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: {{ printf "%s-%s" .Release.Name (default "judge-ai-proxy" (index .Values "judge-ai-proxy" "nameOverride")) }}
+            host: {{ printf "%s-%s" .Release.Name "preview-router" }}
             port:
               number: 8080
-{{- if .Values.minio.enabled }}
+    {{- end }}
+    # Default route to Kratos UI
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: {{ printf "%s-%s" .Release.Name (default "judge-kratos-self-service" (index .Values "kratos-selfservice-ui-node" "nameOverride")) }}
+            port:
+              number: 80
+{{- $previewRouterEnabled := false }}
+{{- if hasKey .Values "preview-router" }}
+  {{- if index .Values "preview-router" "enabled" }}
+    {{- $previewRouterEnabled = true }}
+  {{- end }}
+{{- end }}
+{{- if $previewRouterEnabled }}
 ---
-# MinIO VirtualService (dev/testing only)
+# Preview Router VirtualService
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: {{ include "judge.fullname" . }}-minio-vs
+  name: {{ include "judge.fullname" . }}-preview-vs
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "minio.{{ .Values.istio.domain }}"
+    - "*.preview.{{ .Values.istio.domain }}"
   gateways:
     - istio-system/main-gateway
   http:
@@ -336,8 +300,8 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: {{ include "judge.fullname" . }}-minio
+            host: {{ printf "%s-%s" .Release.Name "preview-router" }}
             port:
-              number: 9000
+              number: 8080
 {{- end }}
 {{- end }}

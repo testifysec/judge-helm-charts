@@ -4,10 +4,12 @@ Render the imageRepository with the global and chart specific values.
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
-{{- if eq .Values.image.repository "" }}
-{{- printf "%s/%s" .Values.image.registry $chartName | trimSuffix "/" -}}
+{{- $registryUrl := coalesce ((.Values.image).registry) ((.Values.global).registry.url | default "") "ghcr.io" }}
+{{- $repository := coalesce ((.Values.image).repository) ((.Values.global).registry.repository | default "") }}
+{{- if eq $repository "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.image.registry .Values.image.repository $chartName | trimSuffix "/" -}}
+{{- printf "%s/%s/%s" $registryUrl $repository $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 

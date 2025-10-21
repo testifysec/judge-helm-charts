@@ -1,0 +1,104 @@
+suite: IRSA ServiceAccount Annotations
+templates:
+  - charts/judge-api/templates/serviceaccount.yaml
+  - charts/archivista/templates/serviceaccount.yaml
+tests:
+  # Test 1: IRSA annotations present when enabled for judge-api
+  - it: should add IRSA annotation to judge-api ServiceAccount when enabled
+    template: charts/judge-api/templates/serviceaccount.yaml
+    set:
+      global.aws.accountId: "831646886084"
+      global.aws.region: us-east-1
+      global.aws.prefix: demo-judge
+      global.aws.irsa.enabled: true
+      judge-api.serviceAccount.create: true
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: "arn:aws:iam::831646886084:role/demo-judge-judge-api"
+
+  # Test 2: IRSA annotations present when enabled for archivista
+  - it: should add IRSA annotation to archivista ServiceAccount when enabled
+    template: charts/archivista/templates/serviceaccount.yaml
+    set:
+      global.aws.accountId: "831646886084"
+      global.aws.region: us-east-1
+      global.aws.prefix: demo-judge
+      global.aws.irsa.enabled: true
+      archivista.serviceAccount.create: true
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: "arn:aws:iam::831646886084:role/demo-judge-archivista"
+
+  # Test 3: IRSA annotations NOT present when disabled for judge-api
+  - it: should NOT add IRSA annotation to judge-api ServiceAccount when disabled
+    template: charts/judge-api/templates/serviceaccount.yaml
+    set:
+      global.aws.accountId: "831646886084"
+      global.aws.prefix: demo-judge
+      global.aws.irsa.enabled: false
+      judge-api.serviceAccount.create: true
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - notExists:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+
+  # Test 4: IRSA annotations NOT present when disabled for archivista
+  - it: should NOT add IRSA annotation to archivista ServiceAccount when disabled
+    template: charts/archivista/templates/serviceaccount.yaml
+    set:
+      global.aws.accountId: "831646886084"
+      global.aws.prefix: demo-judge
+      global.aws.irsa.enabled: false
+      archivista.serviceAccount.create: true
+    asserts:
+      - isKind:
+          of: ServiceAccount
+      - notExists:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+
+  # Test 5: Staging environment uses correct IAM role prefix
+  - it: should use staging-specific IAM role prefix for judge-api
+    template: charts/judge-api/templates/serviceaccount.yaml
+    set:
+      global.aws.accountId: "831646886084"
+      global.aws.prefix: staging-judge
+      global.aws.irsa.enabled: true
+      judge-api.serviceAccount.create: true
+    asserts:
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: "arn:aws:iam::831646886084:role/staging-judge-judge-api"
+
+  # Test 6: Multi-account support with different AWS account ID
+  - it: should use custom AWS account ID for archivista
+    template: charts/archivista/templates/serviceaccount.yaml
+    set:
+      global.aws.accountId: "123456789012"
+      global.aws.prefix: customer-judge
+      global.aws.irsa.enabled: true
+      archivista.serviceAccount.create: true
+    asserts:
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: "arn:aws:iam::123456789012:role/customer-judge-archivista"
+
+  # Test 7: Production environment uses correct prefix
+  - it: should use production-specific IAM role prefix for archivista
+    template: charts/archivista/templates/serviceaccount.yaml
+    set:
+      global.aws.accountId: "831646886084"
+      global.aws.prefix: prod-judge
+      global.aws.irsa.enabled: true
+      archivista.serviceAccount.create: true
+    asserts:
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: "arn:aws:iam::831646886084:role/prod-judge-archivista"
+

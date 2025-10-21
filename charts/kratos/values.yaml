@@ -65,6 +65,8 @@ service:
 secret:
   # -- switch to false to prevent creating the secret
   enabled: true
+  # -- Use an existing secret instead of creating one (existingSecret takes precedence over nameOverride)
+  existingSecret: ""
   # -- Provide custom name of existing secret, or custom name of secret to be created
   nameOverride: ""
   # nameOverride: "myCustomSecret"
@@ -78,6 +80,21 @@ secret:
     helm.sh/resource-policy: "keep"
   # -- switch to false to prevent checksum annotations being maintained and propogated to the pods
   hashSumEnabled: true
+
+## -- External OIDC secrets configuration (for staging/dev environments)
+# Allows providing GitHub OAuth credentials via a separate Kubernetes secret
+# while letting Helm auto-generate cookie/cipher secrets
+oidc:
+  github:
+    # -- Name of external secret containing GitHub OAuth client secret
+    # If set, OIDC_GITHUB_CLIENT_SECRET will be read from this secret instead of the main Kratos secret
+    # Leave empty to use the main Kratos secret (default behavior)
+    existingSecret: ""
+    # -- Key within the external secret that contains the GitHub client secret
+    secretKey: "clientSecret"
+    # -- Key within the external secret that contains the GitHub client ID (optional)
+    # If not set, client ID will be read from the main Kratos secret
+    clientIdSecretKey: ""
 
 ## -- Ingress definition
 ingress:
@@ -208,9 +225,9 @@ kratos:
             - Content-Type
             - Set-Cookie
     log:
-      level: debug
+      level: info
       format: json
-      leak_sensitive_values: true
+      leak_sensitive_values: false
     selfservice:
       flows:
         error:
@@ -264,16 +281,16 @@ kratos:
             providers:
               - id: github
                 provider: github
-                client_id: YOUR_GITHUB_CLIENT_ID
-                client_secret: YOUR_GITHUB_CLIENT_SECRET
+                client_id: ${OIDC_GITHUB_CLIENT_ID}
+                client_secret: ${OIDC_GITHUB_CLIENT_SECRET}
                 issuer_url: https://github.com
                 scope:
                   - user
                 mapper_url: file:///etc/config/kratos/github.jsonnet
               - id: gitlab
                 provider: gitlab
-                client_id: YOUR_GITLAB_CLIENT_ID
-                client_secret: YOUR_GITLAB_CLIENT_SECRET
+                client_id: ${OIDC_GITLAB_CLIENT_ID}
+                client_secret: ${OIDC_GITLAB_CLIENT_SECRET}
                 issuer_url: https://gitlab.com
                 scope:
                   - openid
@@ -570,7 +587,7 @@ statefulSet:
 
   log:
     format: json
-    level: trace
+    level: info
 
     # -- Specify pod metadata, this metadata is added directly to the pod, and not higher objects
   podMetadata:

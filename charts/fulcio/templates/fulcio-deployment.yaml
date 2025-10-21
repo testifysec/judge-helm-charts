@@ -23,13 +23,13 @@ spec:
       serviceAccountName: {{ template "fulcio.serviceAccountName" . }}
       # This doesn't actually use Kubernetes credentials, so don't mount them in.
       automountServiceAccountToken: {{ .Values.server.serviceAccount.mountToken }}
-      {{- with default .Values.imagePullSecrets .Values.global.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-{{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ template "fulcio.fullname" . }}
-          image: {{ include "judge.image.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          image: {{ include "judge.image.repository" . }}:{{ ((.Values.image).tag) | default .Chart.AppVersion }}
           imagePullPolicy: "{{ .Values.server.image.pullPolicy }}"
           ports:
 {{- include "fulcio.containerPorts" .Values.server.service.ports | indent 12 }}

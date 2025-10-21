@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-judge-web
+  labels:
+    helm.sh/chart: judge-web-1.6.2
+    app.kubernetes.io/name: judge-web
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.16.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: judge-web
+      app.kubernetes.io/instance: RELEASE-NAME
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: judge-web-1.6.2
+        app.kubernetes.io/name: judge-web
+        app.kubernetes.io/instance: RELEASE-NAME
+        app.kubernetes.io/version: "1.16.0"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: RELEASE-NAME-judge-web
+      securityContext:
+        {}
+      containers:
+        - name: judge-web
+          securityContext:
+            {}
+          image: us-east4-docker.pkg.dev/judge-395516/judge-image-registry/judge-web:v2.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ENABLE_REVERSE_PROXIES
+              value: "false"
+          ports:
+            - name: http
+              containerPort: 8077
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
+
+      imagePullSecrets:
+        - name: regcred

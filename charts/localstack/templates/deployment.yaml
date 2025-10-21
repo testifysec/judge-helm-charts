@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-localstack
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    app: localstack
+    release: {{ .Release.Name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: localstack
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: localstack
+        release: {{ .Release.Name }}
+    spec:
+      initContainers:
+      - name: copy-init-scripts
+        image: busybox:latest
+        command:
+        - sh
+        - -c
+        - |
+          cp /tmp/init-scripts-src/init.sh /tmp/init-scripts-dest/init.sh
+          chmod +x /tmp/init-scripts-dest/init.sh
+          echo "Init script copied with executable permissions"
+        volumeMounts:
+        - name: init-scripts-src
+          mountPath: /tmp/init-scripts-src
+        - name: init-scripts-dest
+          mountPath: /tmp/init-scripts-dest
+      containers:
+      - name: localstack
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 4566
+          name: edge
+          protocol: TCP
+        env:
+        - name: SERVICES
+          value: {{ join "," .Values.services | quote }}
+        - name: DEBUG
+          value: "1"
+        - name: DATA_DIR
+          value: "/tmp/localstack/data"
+        - name: DOCKER_HOST
+          value: "unix:///var/run/docker.sock"
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              # Check LocalStack is responding
+              awslocal s3 ls > /dev/null 2>&1 || exit 1
+              # Check init script has completed
+              [ -f /tmp/localstack-init-complete ] || exit 1
+              exit 0
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 12
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: init-scripts-dest
+          mountPath: /etc/localstack/init/ready.d
+      volumes:
+      - name: init-scripts-src
+        configMap:
+          name: {{ .Release.Name }}-localstack-init
+      - name: init-scripts-dest
+        emptyDir: {}

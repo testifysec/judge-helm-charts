@@ -1,20 +1,194 @@
 # Global configuration - SINGLE SOURCE OF TRUTH
 global:
+  # Default image tag for all Judge platform services (DEPRECATED - use versions.platform)
+  # Kept for backward compatibility, will be removed in v2.0.0
+  judgeImageTag: "v1.15.0"
+
+  # Version Management (NEW - single source of truth for all service versions)
+  versions:
+    # Core Judge platform services default version
+    platform: "v1.15.0"  # Used for api, archivista, gateway, web if not overridden
+
+    # Individual service version overrides (optional - leave empty to use platform version)
+    api: ""         # Judge API service
+    archivista: ""  # Attestation storage service
+    gateway: ""     # Gateway service
+    web: ""         # Web UI service
+
+    # Supporting services (always explicit versions)
+    dex: "v2.43.1"                # OIDC provider
+    fulcio: "v1.4.5"              # Code signing CA
+    tsa: "v1.6.0"                 # Timestamp authority
+    kratos: "v1.0.0-token-update" # Identity service
+    kratosUI: "v1.6.0"            # Login UI
+    dapr: "1.14.1"                # Dapr runtime
+    preflight: "v1.6.0"           # Preflight checks
+
   # Domain for all external service URLs (VirtualServices, OIDC redirects, etc.)
   # WARNING: Changing this requires updating istio.domain AND verifying all 22 hardcoded URLs below match
   # See DOMAIN.md for complete documentation and update checklist
   domain: testifysec-demo.xyz
 
-  # Container registry
+  # Deployment Mode (NEW - replaces dev flag)
+  # Options: aws | dev
+  # - aws: Production AWS services (S3, RDS, SNS/SQS)
+  # - dev: LocalStack + PostgreSQL for self-contained deployments
+  mode: aws
+
+  # Development Mode (DEPRECATED - use mode instead)
+  # Kept for backward compatibility, will be removed in v2.0.0
+  dev: false
+
+  # Dev Mode Database Configuration
+  # Used when mode=dev for local PostgreSQL deployment
+  # These defaults ensure database endpoint helpers work correctly in all contexts
+  devDatabase:
+    username: "judge"
+    password: "dev-preview-password"
+
+  # AWS Configuration (for EKS deployments with IRSA)
+  # Required for proper IAM permissions and resource naming
+  # See README.md Troubleshooting section for IRSA setup
+  aws:
+    # AWS Account and Region
+    enabled: false  # Set to true for AWS deployments
+    accountId: ""  # Your AWS account ID (required for IRSA)
+    region: "us-east-1"  # AWS region
+
+    # Resource Naming Prefix / Deployment Identifier
+    # Used to construct AWS resource names AND identify the deployment/cluster
+    # This should match your EKS cluster name to prevent resource collisions
+    # Examples:
+    #   prefix: "demo-judge"  → S3: demo-judge-judge, IAM: demo-judge-judge-api, Cluster: demo-judge
+    #   prefix: "prod-judge"  → S3: prod-judge-judge, IAM: prod-judge-judge-api, Cluster: prod-judge
+    #   prefix: "staging-judge" → S3: staging-judge-judge, IAM: staging-judge-judge-api, Cluster: staging-judge
+    prefix: "demo-judge"
+
+    # IRSA (IAM Roles for Service Accounts)
+    irsa:
+      enabled: false  # Set to true to enable IRSA annotations on ServiceAccounts
+      # IAM Role ARNs will be constructed as: arn:aws:iam::{accountId}:role/{prefix}-{service}
+      # Example: arn:aws:iam::123456789012:role/demo-judge-judge-api
+
+    # S3 Storage Configuration
+    s3:
+      enabled: true
+      judge:
+        bucket: "{{ .Values.global.aws.prefix }}-judge"  # Judge API artifacts
+        region: "{{ .Values.global.aws.region }}"
+      archivista:
+        bucket: "{{ .Values.global.aws.prefix }}-archivista"  # Archivista attestations
+        region: "{{ .Values.global.aws.region }}"
+
+    # SNS/SQS Messaging Configuration (for Dapr pubsub)
+    messaging:
+      enabled: true
+      snsTopic: "{{ .Values.global.aws.prefix }}-archivista-attestations"
+      sqsQueue: "{{ .Values.global.aws.prefix }}-archivista-attestations"
+      region: "{{ .Values.global.aws.region }}"
+
+  # Container registry configuration
   registry:
+    # AWS Marketplace ECR Configuration (Consolidated Format)
+    # ============================================================
+    # Single source of truth for AWS Marketplace deployments.
+    # Automatically configures:
+    # - Account: 709825985650 (AWS Marketplace - hardcoded)
+    # - Region: us-east-1 (hardcoded)
+    # - Seller namespace: testifysec (hardcoded)
+    #
+    # Example for AWS Marketplace:
+    #   marketplace:
+    #     enabled: true
+    #     versions:
+    #       dex: v2.43.1
+    #       fulcio: v1.4.5
+    #       tsa: v1.6.0
+    #
+    # Example for non-marketplace:
+    #   marketplace:
+    #     enabled: false
+    #
+    marketplace:
+      enabled: false
+      # versions: {}  # Optional: override specific service versions
+
+    # Standard registry configuration (used when marketplace is disabled)
     provider: gcp-artifact
     url: us-east4-docker.pkg.dev
     repository: judge-395516/judge-image-registry
 
   imagePullSecrets: []  # ECR auth via node IAM role, not K8s secret
   storageClass: ""
-  ## Compatibility adaptations for Kubernetes platforms
-  ##
+
+  # Secrets management via External Secrets Operator (ESO) + Vault
+  # These variables are used to construct Vault paths for multi-environment deployments
+  #
+  # VAULT PATH STRUCTURE:
+  # Pattern: {env}/kubernetes/{secret-type}/{project}
+  # Examples:
+  #   - dev/kubernetes/rds/myproject (development database credentials)
+  #   - prod/kubernetes/app/myproject (production application secrets)
+  #
+  # REQUIRED VAULT SECRETS:
+  #
+  # 1. Database Secrets (path: {env}/kubernetes/rds/{project})
+  #    - judge_api_dsn: "postgres://user:pass@host:5432/judge_api?sslmode=require"
+  #    - archivista_dsn: "postgres://user:pass@host:5432/archivista?sslmode=require"
+  #    - kratos_dsn: "postgres://user:pass@host:5432/kratos?sslmode=require"
+  #
+  # 2. Application Secrets (path: {env}/kubernetes/app/{project})
+  #    - kratos_secrets_cookie: "32-byte-random-string-for-cookie-encryption"
+  #    - kratos_secrets_cipher: "32-byte-random-string-for-data-encryption"
+  #    - oidc_github_client_id: "your-github-oauth-app-client-id"
+  #    - oidc_github_client_secret: "your-github-oauth-app-client-secret"
+  #
+  # SETUP EXAMPLE (using Vault CLI):
+  #   # Database secrets
+  #   vault kv put secret/prod/kubernetes/rds/myproject \
+  #     judge_api_dsn="postgres://..." \
+  #     archivista_dsn="postgres://..." \
+  #     kratos_dsn="postgres://..."
+  #
+  #   # Application secrets
+  #   vault kv put secret/prod/kubernetes/app/myproject \
+  #     kratos_secrets_cookie="$(openssl rand -base64 32)" \
+  #     kratos_secrets_cipher="$(openssl rand -base64 32)" \
+  #     oidc_github_client_id="Iv1.abcd1234" \
+  #     oidc_github_client_secret="ghp_yoursecrethere"
+  #
+  secrets:
+    provider: "vault"  # Secret backend: vault (External Secrets Operator)
+    vault:
+      server: "https://vault.example.com"  # Vault server address (override in environment-specific values)
+      path: "secret"  # KV v2 mount path
+      version: "v2"   # KV version (v1 or v2)
+      authMountPath: "kubernetes"  # Kubernetes auth backend mount path
+      env: "dev"      # Environment identifier: dev, staging, prod (override per environment)
+      project: "myproject"  # Project identifier for path construction (override with your project)
+
+  # Authentication Configuration (NEW - more accessible OIDC config)
+  auth:
+    github:
+      clientId: ""         # GitHub OAuth App client ID
+      clientSecret: ""     # GitHub OAuth App client secret
+
+  # Istio/Networking Configuration (NEW - consolidated under global)
+  istio:
+    enabled: true
+    tlsSecretName: wildcard-tls
+    ingressGatewaySelector:
+      istio: ingress
+    # Subdomain prefixes (combined with global.domain)
+    hosts:
+      gateway: "gateway"   # Gateway service API (gateway.domain)
+      web: "judge"         # Main Judge web UI (judge.domain)
+      api: "api"           # Judge API (api.domain)
+      fulcio: "fulcio"     # Fulcio code signing CA (fulcio.domain)
+      dex: "dex"           # Dex OIDC provider (dex.domain)
+      tsa: "tsa"           # Timestamp Authority (tsa.domain)
+      kratos: "kratos"     # Kratos identity service (kratos.domain)
+      login: "login"       # Login UI (login.domain)
 
 # Istio service mesh configuration
 istio:
@@ -25,13 +199,26 @@ istio:
   # Selector for Istio ingress gateway (must match the label on the ingress gateway pod)
   ingressGatewaySelector:
     istio: ingress
+
+  # Public ingress hostnames (subdomains only - will be appended to istio.domain)
+  # Override these in your values file to customize public-facing URLs
+  # Example: hosts.web: "attestation" becomes attestation.yourdomain.com
+  hosts:
+    gateway: "gateway"      # Gateway service API (gateway.domain)
+    web: "judge"            # Main Judge web UI (judge.domain)
+    api: "api"              # Judge API (api.domain)
+    fulcio: "fulcio"        # Fulcio code signing CA (fulcio.domain)
+    dex: "dex"              # Dex OIDC provider (dex.domain)
+    tsa: "tsa"              # Timestamp Authority (tsa.domain)
+    kratos: "kratos"        # Kratos identity service (kratos.domain)
+    login: "login"          # Login UI (login.domain)
 nameOverride: "judge"
 gateway:
   enabled: true
   replicas: 1
   nameOverride: "judge-gateway"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   resources:
     limits:
       cpu: 1000m
@@ -39,21 +226,6 @@ gateway:
     requests:
       cpu: 100m
       memory: 512Mi
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
-    className: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: tls-ca-issuer
-      kubernetes.io/ssl-redirect: "true"
-    hosts:
-      - host: gateway.testifysec-demo.xyz
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: gateway-tls-secret
-        hosts:
-          - gateway.testifysec-demo.xyz
   archivista:
     url: "http://judge-archivista.judge.svc.cluster.local:8082"
   judgeapi:
@@ -62,18 +234,21 @@ gateway:
     url: "https://login.testifysec-demo.xyz/login"
 kratos:
   nameOverride: "judge-kratos"  # ECR repo name
+  fullnameOverride: ""  # Remove fullnameOverride to ensure consistent {release}-{nameOverride} naming
   image:
     tag: v1.0.0-token-update
   enabled: true
-  ingress:
-    public:
-      enabled: false  # Disabled - using Istio VirtualServices
-    admin:
-      enabled: false  # Disabled - using Istio VirtualServices
+  deployment:
+    serviceAccount:
+      create: true  # Required for SecretStore ServiceAccount ref to work correctly
   courier:
     enabled: false
   kratos:
     config:
+      cookies:
+        domain: ""  # Empty = use host-only cookies (no cross-subdomain sharing, more secure)
+        path: /
+        same_site: Lax  # Good balance - "Strict" breaks OAuth, "None" less secure
       selfservice:
         allowed_return_urls:
           - https://login.testifysec-demo.xyz
@@ -112,26 +287,45 @@ kratos:
 archivista:
   nameOverride: "judge-archivista"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
+  serviceAccount:
+    create: true  # Required for SecretStore ServiceAccount ref to work correctly
   workflows:
     endpoint: http://localstack.localstack.svc.cluster.local:4566
+  deployment:
+    env:
+      - name: ARCHIVISTA_LISTEN_ON
+        value: tcp://0.0.0.0:8082
+      - name: ARCHIVISTA_STORAGE_BACKEND
+        value: '{{ include "judge.s3.archivista.storageBackend" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_ENDPOINT
+        value: '{{ include "judge.s3.endpoint" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE
+        value: '{{ include "judge.s3.credentialType" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_USE_TLS
+        value: '{{ include "judge.s3.useTLS" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+        value: '{{ include "judge.s3.archivista.bucketName" . }}'
+      - name: ARCHIVISTA_BLOB_STORE_REGION
+        value: '{{ include "judge.s3.region" . }}'
 kratos-selfservice-ui-node:
   nameOverride: "judge-kratos-self-service"  # ECR repo name
+  fullnameOverride: ""  # Remove fullnameOverride to ensure consistent {release}-{nameOverride} naming
   image:
     tag: v1.6.0
   enabled: true
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
+  # Kratos URLs derived from istio.hosts.kratos + global.domain
+  # Override only if you need non-standard URLs
+  kratosPublicUrl: '{{ include "judge.url.kratos" . }}'
+  kratosBrowserUrl: '{{ include "judge.url.kratos" . }}'
 judge-api:
   nameOverride: "judge-api"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
+  serviceAccount:
+    create: true  # Required for SecretStore ServiceAccount ref to work correctly
   deployment:
     env:
       - name: ARCHIVISTA_PUBSUB_TOPIC
@@ -139,13 +333,13 @@ judge-api:
       - name: ARCHIVISTA_PUBSUB_NAME
         value: "judge-judge-api-archivista-subscription"
       - name: BLOB_STORE_USE_TLS
-        value: "true"
+        value: '{{ include "judge.s3.useTLS" . }}'
       - name: BLOB_STORE_BUCKET_NAME
-        value: "{{JUDGE_BUCKET_NAME}}"
+        value: '{{ include "judge.s3.judgeApi.bucketName" . }}'
       - name: BLOB_STORE_ENDPOINT
-        value: s3.amazonaws.com
+        value: '{{ include "judge.s3.endpoint" . }}'
       - name: BLOB_STORE_CREDENTIAL_TYPE
-        value: IAM
+        value: '{{ include "judge.s3.credentialType" . }}'
       - name: "__TESTIFY_SKIP_LICENSE_CHECK__"
         value: "true"
       - name: JUDGE_URL
@@ -159,17 +353,21 @@ judge-api:
 judge-web:
   nameOverride: "judge-web"  # ECR repo name
   image:
-    tag: a8d96cf
+    tag: "{{ .Values.global.judgeImageTag }}"
   enabled: true
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
   nginxReverseProxy:
-    enabled: true
+    enabled: false  # Disabled by default - hardcoded service names cause issues with release prefixes
     clientMaxBodySize: "100M"
-  redirectIngress:
-    enabled: false
 dapr:
   enabled: true
+  # Dapr uses its own registry field to avoid conflicts with parent chart's global.registry
+  registry: ghcr.io/dapr
+  # Dapr pubsub configuration for SNS/SQS messaging
+  pubsub:
+    enabled: true
+    region: '{{ include "judge.aws.sns.region" . }}'
+    snsTopicName: '{{ include "judge.aws.sns.topicName" . }}'
+    sqsQueueName: '{{ include "judge.aws.sqs.queueName" . }}'
   dapr_operator:
     image:
       name: judge-dapr-operator
@@ -194,22 +392,6 @@ dex:
   enabled: true
   image:
     tag: v2.43.1
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
-    className: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: tls-ca-issuer
-      kubernetes.io/ssl-redirect: "true"
-      nginx.ingress.kubernetes.io/rewrite-target: /
-    hosts:
-      - host: dex.testifysec-demo.xyz
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - secretName: dex-tls-secret
-        hosts:
-          - dex.testifysec-demo.xyz
   config:
     issuer: https://dex.testifysec-demo.xyz
     storage:
@@ -241,46 +423,8 @@ fulcio:
   server:
     args:
       disable_ct_log: true
-    ingress:
-      http:
-        enabled: false  # Disabled - using Istio VirtualServices
-        className: "nginx"
-        annotations:
-          cert-manager.io/cluster-issuer: tls-ca-issuer
-          kubernetes.io/ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/rewrite-target: /
-        hosts:
-          - path: /
-            host: "fulcio.testifysec-demo.xyz"
-      tls:
-        - secretName: fulcio-tls-secret
-          hosts:
-            - fulcio.testifysec-demo.xyz
-      grpc:
-        enabled: false  # Disabled - using Istio VirtualServices
-        className: "nginx"
-        annotations:
-          cert-manager.io/cluster-issuer: tls-ca-issuer
-          kubernetes.io/ssl-redirect: "true"
-          nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
-        hosts:
-          - host: fulcio.testifysec-demo.xyz
-            path: /dev.sigstore.fulcio.v2.CA
-        tls:
-          - secretName: fulcio-grpc-ingress-tls
-            hosts:
-              - fulcio.testifysec-demo.xyz
-    volumes:
-      - name: tls-ca
-        secret:
-          secretName: fulcio-tls-secret
-          items:
-            - key: ca.crt
-              path: testifysec-ca.pem
-    volumeMounts:
-      - name: tls-ca
-        mountPath: /etc/ssl/certs/testifysec-ca.pem
-        subPath: testifysec-ca.pem
+    # volumes and volumeMounts removed - only needed when using ingress with cert-manager
+    # For Istio deployments, TLS is handled by the ingress gateway
   config:
     contents:
       {
@@ -303,35 +447,10 @@ tsa:
   server:
     args:
       signer: memory
-    ingress:
-      http:
-        enabled: false  # Disabled - using Istio VirtualServices
-        className: "nginx"
-        annotations:
-          cert-manager.io/cluster-issuer: tls-ca-issuer
-          kubernetes.io/ssl-redirect: "true"
-        hosts:
-          - path: /
-            host: tsa.testifysec-demo.xyz
-      tls:
-        - secretName: tsa-ingress-tls
-          hosts:
-            - tsa.testifysec-demo.xyz
-mysql:
-  enabled: true
-minio:
-  enabled: true
-  image:
-    tag: RELEASE.2025-05-24T17-08-30Z
-  mc:
-    image:
-      tag: RELEASE.2025-05-21T01-59-54Z
-ollama:
-  enabled: false
 
 judge-ai-proxy:
   nameOverride: "judge-ai-proxy"  # ECR repo name
-  enabled: true
+  enabled: false  # Disabled - image not yet available in ECR
   image:
     repository: judge-ai-proxy
     tag: latest
@@ -343,26 +462,6 @@ judge-ai-proxy:
     apiEndpoint: "https://api.anthropic.com/v1/messages"
     systemPrompt: "You are Claude, an AI assistant by Anthropic. When evaluating policies against attestation data, provide direct responses without conversational preambles. For policy evaluation, always format your response with a clear 'Status: PASS' or 'Status: FAIL' line followed by a 'Reason:' section that explains the evaluation result concisely with supporting evidence from the attestation data."
     defaultModel: "claude-3-5-haiku-latest"
-  ingress:
-    enabled: false  # Disabled - using Istio VirtualServices
-    className: "nginx"
-    annotations:
-      cert-manager.io/cluster-issuer: tls-ca-issuer
-      kubernetes.io/ssl-redirect: "true"
-    hosts:
-      - host: ai-proxy.testifysec-demo.xyz
-        paths:
-          - path: /
-            pathType: ImplementationSpecific
-    tls:
-      - secretName: ai-proxy-tls-secret
-        hosts:
-          - ai-proxy.testifysec-demo.xyz
-
-ingress:
-  httpproxy:
-    enabled: false
-    annotations: {}
 
 # SSP Generation Configuration
 # Note: SSP functionality is implemented via dagger sidecar in judge-api
@@ -381,3 +480,10 @@ ssp:
   agentflowModel: "claude-sonnet-4-20250514"
   # Dagger engine socket path
   daggerHost: "unix:///var/run/dagger/engine.sock"
+
+# Pre-flight Validation Configuration
+# Runs before deployment to validate all prerequisites
+# NOTE: Preflight chart reads configuration directly from .Values.global.*
+# No need to pass values through - it has access to parent chart's global values
+judge-preflight:
+  enabled: true

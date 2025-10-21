@@ -71,7 +71,7 @@ global:
     providers:
       - id: github
         provider: github
-        client_id: Ov23li04k0W901Hp85AJ
+        client_id: YOUR_GITHUB_OAUTH_CLIENT_ID
         # client_secret configured in demo-secrets.yaml (not committed)
         issuer_url: https://github.com
         mapper_url: file:///etc/config/kratos/github.jsonnet
@@ -90,8 +90,12 @@ archivista:
     enabled: true
   sqlStore:
     backend: psql
-    # connectionString built by judge.rds.archivistaDsn helper
-    createSecret: true
+    createSecret: false  # Using External Secrets Operator with Vault
+    secretName: judge-judge-archivista-database
+    secretKey: connectionString
+  vault:
+    enabled: false  # Using ESO instead of Vault Agent injection
+    role: archivista
   serviceAccount:
     create: true
     name: archivista
@@ -167,6 +171,15 @@ kratos:
       argocd.argoproj.io/sync-wave: "-1"
   configmap:
     hashSumEnabled: false  # Disabled because ConfigMap is overridden by parent chart
+  vault:
+    enabled: false  # Using ESO instead of Vault Agent injection
+    role: kratos
+  courier:
+    enabled: false  # Disable email courier (no SMTP configured)
+  config:
+    courier:
+      smtp:
+        connection_uri: ""  # Override subchart default to prevent SMTP env var rendering
   deployment:
     annotations:
       # Checksum ensures deployment restarts when ConfigMap changes
@@ -226,8 +239,12 @@ judge-api:
     tag: ""  # Empty string triggers default function to use judge.image.defaultTag helper (global.version)
   sqlStore:
     backend: psql
-    # connectionString built by judge.rds.judgeApiDsn helper
-    createSecret: true
+    createSecret: false  # Using External Secrets Operator with Vault
+    secretName: judge-judge-api-database
+    secretKey: connectionString
+  vault:
+    enabled: false  # Using ESO instead of Vault Agent injection
+    role: judge-api
   serviceAccount:
     create: true
     name: judge-api
@@ -250,14 +267,6 @@ judge-api:
         value: '{{ include "judge.storage.credentialType" . }}'
       - name: BLOB_STORE_USE_TLS
         value: '{{ include "judge.storage.useTLS" . }}'
-
-# Disable MinIO
-minio:
-  enabled: false
-
-# Disable MySQL (using RDS)
-mysql:
-  enabled: false
 
 # Configure Dapr pubsub for AWS SNS/SQS
 dapr:

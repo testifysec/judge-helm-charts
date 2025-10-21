@@ -16,7 +16,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: "1.6.1"
+version: "1.8.2"
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -26,55 +26,59 @@ appVersion: "1.6.0"
 
 # Dependencies
 dependencies:
-  - name: mysql
-    version: 1.6.0
-    repository: file://../mysql
-    condition: mysql.enabled
-  - name: minio
-    version: 0.1.1
-    repository: file://../minio
-    condition: minio.enabled
+  - name: judge-preflight
+    version: 0.1.16
+    repository: file://../judge-preflight
+    condition: judge-preflight.enabled
   - name: kratos
-    version: 1.6.0
+    version: 1.6.22
     repository: file://../kratos
     condition: kratos.enabled
   - name: kratos-selfservice-ui-node
-    version: 1.6.0
+    version: 1.6.3
     repository: file://../kratos-selfservice-ui-node
     condition: kratos-selfservice-ui-node.enabled
   - name: archivista
-    version: "1.6.0"
+    version: "1.6.11"
     repository: file://../archivista
     condition: archivista.enabled
   - name: judge-api
-    version: "1.6.0"
+    version: "1.6.11"
     repository: file://../judge-api
     condition: judge-api.enabled
   - name: dapr
-    version: 1.14.4
+    version: 1.14.5
     repository: file://../dapr
     condition: dapr.enabled
   - name: judge-web
-    version: 1.6.0
+    version: 1.6.2
     repository: file://../judge-web
     condition: web.enabled
   - name: dex
-    version: 0.17.0
+    version: 0.17.3
     repository: file://../dex
     condition: dex.enabled
   - name: fulcio
-    version: 2.3.18
+    version: 2.3.21
     repository: file://../fulcio
     condition: fulcio.enabled
   - name: tsa
-    version: 1.6.0
+    version: 1.6.3
     repository: file://../tsa
     condition: tsa.enabled
-  - name: ollama
-    version: 0.1.0
-    repository: file://../ollama
-    condition: ollama.enabled
   - name: judge-ai-proxy
-    version: 0.1.0
+    version: 0.1.1
     repository: file://../judge-ai-proxy
     condition: judge-ai-proxy.enabled
+  - name: localstack
+    version: 0.1.10
+    repository: file://../localstack
+    condition: localstack.enabled
+  - name: postgresql
+    version: 0.1.1
+    repository: file://../postgresql
+    condition: postgresql.enabled
+  - name: preview-router
+    version: 0.1.0
+    repository: file://../preview-router
+    condition: preview-router.enabled

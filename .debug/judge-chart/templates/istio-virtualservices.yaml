@@ -1,0 +1,290 @@
+
+---
+# Gateway VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: RELEASE-NAME-judge-gateway-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "gateway.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-gateway
+            port:
+              number: 4000
+---
+# Judge Web VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: RELEASE-NAME-judge-web-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "judge.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    # Login UI routes - must come before catch-all
+    # Exact match for /login (without trailing slash) - redirect to add slash
+    - match:
+        - uri:
+            exact: "/login"
+      redirect:
+        uri: "/login/"
+    # Prefix match for /login/ (with trailing slash) - rewrite and route
+    - match:
+        - uri:
+            prefix: "/login/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-kratos-self-service
+            port:
+              number: 80
+    # Kratos public routes
+    - match:
+        - uri:
+            prefix: "/kratos/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-kratos-public
+            port:
+              number: 80
+    # Archivista routes
+    - match:
+        - uri:
+            prefix: "/archivista/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-archivista
+            port:
+              number: 8082
+    # Upload endpoint (proxies to Archivista with auth/tenancy logic)
+    - match:
+        - uri:
+            prefix: "/upload"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-archivista
+            port:
+              number: 8082
+    # Judge API routes
+    - match:
+        - uri:
+            prefix: "/judge-api/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-api
+            port:
+              number: 8080
+    # Gateway routes
+    - match:
+        - uri:
+            prefix: "/gateway/"
+      rewrite:
+        uri: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-gateway
+            port:
+              number: 4000
+    # Default route - must be last (catch-all)
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-web
+            port:
+              number: 8077
+---
+# Judge API VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: RELEASE-NAME-judge-api-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "api.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-api
+            port:
+              number: 8080
+---
+# Fulcio HTTP VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: RELEASE-NAME-judge-fulcio-http-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "fulcio.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-fulcio-server
+            port:
+              number: 80
+---
+# Dex VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: RELEASE-NAME-judge-dex-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "auth.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-dex
+            port:
+              number: 5556
+---
+# TSA VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: RELEASE-NAME-judge-tsa-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "tsa.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-timestamp-server
+            port:
+              number: 80
+---
+# Kratos Public VirtualService
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kratos-public-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "kratos.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-kratos-public
+            port:
+              number: 80
+---
+# Kratos Selfservice UI VirtualService (login)
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: login-vs
+  namespace: NAMESPACE
+  labels:
+    helm.sh/chart: judge-chart-1.7.89
+    app.kubernetes.io/name: judge
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.6.0"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  hosts:
+    - "login.production.example.com"
+  gateways:
+    - istio-system/main-gateway
+  http:
+    # Default route to Kratos UI
+    - match:
+        - uri:
+            prefix: "/"
+      route:
+        - destination:
+            host: RELEASE-NAME-judge-kratos-self-service
+            port:
+              number: 80

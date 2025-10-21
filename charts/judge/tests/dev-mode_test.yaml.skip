@@ -1,0 +1,163 @@
+suite: Dev Mode Infrastructure Switching
+templates:
+  - charts/archivista/templates/deployment.yaml
+  - charts/judge-api/templates/deployment.yaml
+tests:
+  # Test 1: Dev mode uses LocalStack for Archivista
+  - it: should use LocalStack endpoint when global.dev=true for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: true
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_ENDPOINT
+          value: '{{ include "judge.s3.endpoint" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_ENDPOINT")].value
+          value: RELEASE-NAME-localstack.NAMESPACE.svc.cluster.local:4566
+
+  # Test 2: Dev mode uses ACCESS_KEY credentials for Archivista
+  - it: should use ACCESS_KEY credentials when global.dev=true for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: true
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE
+          value: '{{ include "judge.s3.credentialType" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE")].value
+          value: ACCESS_KEY
+
+  # Test 3: Dev mode disables TLS for Archivista
+  - it: should disable TLS when global.dev=true for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: true
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_USE_TLS
+          value: '{{ include "judge.s3.useTLS" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_USE_TLS")].value
+          value: "false"
+
+  # Test 4: Dev mode uses simple bucket name for Archivista
+  - it: should use simple bucket name when global.dev=true for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: true
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+          value: '{{ include "judge.s3.archivista.bucketName" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_BUCKET_NAME")].value
+          value: archivista
+
+  # Test 5: Production mode uses AWS S3 endpoint for Archivista
+  - it: should use S3 endpoint when global.dev=false for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: false
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_ENDPOINT
+          value: '{{ include "judge.s3.endpoint" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_ENDPOINT")].value
+          value: s3.amazonaws.com
+
+  # Test 6: Production mode uses IAM credentials for Archivista
+  - it: should use IAM credentials when global.dev=false for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: false
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE
+          value: '{{ include "judge.s3.credentialType" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_CREDENTIAL_TYPE")].value
+          value: IAM
+
+  # Test 7: Production mode enables TLS for Archivista
+  - it: should enable TLS when global.dev=false for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: false
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_USE_TLS
+          value: '{{ include "judge.s3.useTLS" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_USE_TLS")].value
+          value: "true"
+
+  # Test 8: Production mode uses AWS-prefixed bucket for Archivista
+  - it: should use AWS-prefixed bucket when global.dev=false for archivista
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: false
+      global.aws.prefix: demo-judge
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+          value: '{{ include "judge.s3.archivista.bucketName" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_BUCKET_NAME")].value
+          value: demo-judge-archivista
+
+  # Test 9: Dev mode uses LocalStack endpoint for Judge API
+  - it: should use LocalStack endpoint when global.dev=true for judge-api
+    template: charts/judge-api/templates/deployment.yaml
+    set:
+      global.dev: true
+      judge-api.deployment.env:
+        - name: BLOB_STORE_ENDPOINT
+          value: '{{ include "judge.s3.endpoint" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="BLOB_STORE_ENDPOINT")].value
+          value: RELEASE-NAME-localstack.NAMESPACE.svc.cluster.local:4566
+
+  # Test 10: Dev mode uses simple bucket name for Judge API
+  - it: should use simple bucket name when global.dev=true for judge-api
+    template: charts/judge-api/templates/deployment.yaml
+    set:
+      global.dev: true
+      judge-api.deployment.env:
+        - name: BLOB_STORE_BUCKET_NAME
+          value: '{{ include "judge.s3.judgeApi.bucketName" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="BLOB_STORE_BUCKET_NAME")].value
+          value: judge
+
+  # Test 11: Production mode uses AWS-prefixed bucket for Judge API
+  - it: should use AWS-prefixed bucket when global.dev=false for judge-api
+    template: charts/judge-api/templates/deployment.yaml
+    set:
+      global.dev: false
+      global.aws.prefix: prod-judge
+      judge-api.deployment.env:
+        - name: BLOB_STORE_BUCKET_NAME
+          value: '{{ include "judge.s3.judgeApi.bucketName" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="BLOB_STORE_BUCKET_NAME")].value
+          value: prod-judge-judge
+
+  # Test 12: Multi-environment bucket naming (staging)
+  - it: should use staging-specific bucket prefix
+    template: charts/archivista/templates/deployment.yaml
+    set:
+      global.dev: false
+      global.aws.prefix: staging-judge
+      archivista.deployment.env:
+        - name: ARCHIVISTA_BLOB_STORE_BUCKET_NAME
+          value: '{{ include "judge.s3.archivista.bucketName" . }}'
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_BUCKET_NAME")].value
+          value: staging-judge-archivista

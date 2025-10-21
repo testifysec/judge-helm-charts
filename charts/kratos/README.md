@@ -4,6 +4,136 @@
 
 A ORY Kratos Helm chart for Kubernetes
 
+---
+
+## ⚠️ IMPORTANT: Secret Management for Developers
+
+**This chart uses the `existingSecret` pattern - you MUST create the Kratos secret manually before deployment.**
+
+### Why Manual Secrets?
+
+Starting with chart version 1.6.17, Kratos secrets are **NOT** auto-generated. This prevents ArgoCD from overwriting OAuth credentials and other sensitive configuration on every sync.
+
+### Local Development Setup
+
+**1. Create the secret BEFORE installing the chart:**
+
+```bash
+kubectl create secret generic <release>-judge-kratos \
+  -n <namespace> \
+  --from-literal=dsn="postgresql://judge:dev-preview-password@<release>-postgresql:5432/kratos?sslmode=disable" \
+  --from-literal=secretsCookie="$(openssl rand -hex 16)" \
+  --from-literal=secretsCipher="$(openssl rand -hex 16)" \
+  --from-literal=oidcGithubClientId="YOUR_GITHUB_CLIENT_ID" \
+  --from-literal=oidcGithubClientSecret="YOUR_GITHUB_CLIENT_SECRET"
+```
+
+**Important**:
+- `secretsCookie` and `secretsCipher` MUST be exactly 32 characters (use `openssl rand -hex 16`)
+- Replace `<release>` with your Helm release name (e.g., `judge-staging`)
+- Replace `<namespace>` with your target namespace
+
+**2. Install the chart with existingSecret configuration:**
+
+```yaml
+# values.yaml
+kratos:
+  secret:
+    existingSecret: "judge-staging-judge-kratos"
+```
+
+```bash
+helm upgrade --install judge-staging . \
+  -n judge-staging \
+  -f values.yaml
+```
+
+### CI/CD Pipeline Setup
+
+**Option 1: Pre-deployment Secret Creation (GitHub Actions example)**
+
+```yaml
+name: Deploy Staging
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Kratos secret if not exists
+        run: |
+          if ! kubectl get secret judge-staging-judge-kratos -n judge-staging &>/dev/null; then
+            kubectl create secret generic judge-staging-judge-kratos \
+              -n judge-staging \
+              --from-literal=dsn="${{ secrets.KRATOS_DSN }}" \
+              --from-literal=secretsCookie="$(openssl rand -hex 16)" \
+              --from-literal=secretsCipher="$(openssl rand -hex 16)" \
+              --from-literal=oidcGithubClientId="${{ secrets.GITHUB_OAUTH_CLIENT_ID }}" \
+              --from-literal=oidcGithubClientSecret="${{ secrets.GITHUB_OAUTH_CLIENT_SECRET }}"
+          fi
+
+      - name: Deploy via ArgoCD
+        run: argocd app sync judge-staging --grpc-web
+```
+
+**Option 2: External Secrets Operator (Production Recommended)**
+
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: judge-staging-judge-kratos
+  namespace: judge-staging
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: judge-staging-judge-kratos
+    creationPolicy: Owner
+  data:
+    - secretKey: dsn
+      remoteRef:
+        key: demo/kubernetes/app/judge-staging
+        property: kratos_dsn
+    - secretKey: secretsCookie
+      remoteRef:
+        key: demo/kubernetes/app/judge-staging
+        property: kratos_cookie_secret
+    - secretKey: secretsCipher
+      remoteRef:
+        key: demo/kubernetes/app/judge-staging
+        property: kratos_cipher_secret
+    - secretKey: oidcGithubClientId
+      remoteRef:
+        key: demo/kubernetes/app/judge-staging
+        property: github_oauth_client_id
+    - secretKey: oidcGithubClientSecret
+      remoteRef:
+        key: demo/kubernetes/app/judge-staging
+        property: github_oauth_client_secret
+```
+
+### Troubleshooting
+
+**Error: "secrets.cipher.0: length must be <= 32, but got 44"**
+
+This means you used base64 encoding (`openssl rand -base64 16`). Use hex encoding instead:
+```bash
+openssl rand -hex 16  # Generates exactly 32 characters
+```
+
+**Secret keeps getting overwritten by ArgoCD**
+
+1. Verify you're using chart version >= 1.6.17
+2. Check that `secret.existingSecret` is set in values
+3. Restart ArgoCD repo-server to clear cache: `kubectl delete pod -n argocd -l app.kubernetes.io/name=argocd-repo-server`
+
+---
+
 ## Values
 
 | Key | Type | Default | Description |

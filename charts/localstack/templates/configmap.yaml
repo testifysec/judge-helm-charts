@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-localstack-init
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    app: localstack
+    release: {{ .Release.Name }}
+data:
+  init.sh: |
+    #!/bin/bash
+    echo "Initializing LocalStack resources..."
+
+    # Create S3 buckets
+    {{- range .Values.init.s3Buckets }}
+    echo "Creating S3 bucket: {{ . }}"
+    awslocal s3 mb s3://{{ . }} || true
+    {{- end }}
+
+    # Create SQS queues
+    {{- range .Values.init.sqsQueues }}
+    echo "Creating SQS queue: {{ . }}"
+    awslocal sqs create-queue --queue-name {{ . }} || true
+    {{- end }}
+
+    # Create SNS topics
+    {{- range .Values.init.snsTopics }}
+    echo "Creating SNS topic: {{ . }}"
+    awslocal sns create-topic --name {{ . }} || true
+    {{- end }}
+
+    echo "LocalStack initialization complete!"
+
+    # Create flag file to signal completion for readiness probe
+    touch /tmp/localstack-init-complete

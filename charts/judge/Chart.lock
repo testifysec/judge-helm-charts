@@ -1,42 +1,45 @@
 dependencies:
-- name: mysql
-  repository: file://../mysql
-  version: 1.6.0
-- name: minio
-  repository: file://../minio
-  version: 0.1.1
+- name: judge-preflight
+  repository: file://../judge-preflight
+  version: 0.1.16
 - name: kratos
   repository: file://../kratos
-  version: 1.6.0
+  version: 1.6.22
 - name: kratos-selfservice-ui-node
   repository: file://../kratos-selfservice-ui-node
-  version: 1.6.0
+  version: 1.6.3
 - name: archivista
   repository: file://../archivista
-  version: 1.6.0
+  version: 1.6.11
 - name: judge-api
   repository: file://../judge-api
-  version: 1.6.0
+  version: 1.6.11
 - name: dapr
   repository: file://../dapr
-  version: 1.14.4
+  version: 1.14.5
 - name: judge-web
   repository: file://../judge-web
-  version: 1.6.0
+  version: 1.6.2
 - name: dex
   repository: file://../dex
-  version: 0.17.0
+  version: 0.17.3
 - name: fulcio
   repository: file://../fulcio
-  version: 2.3.18
+  version: 2.3.21
 - name: tsa
   repository: file://../tsa
-  version: 1.6.0
-- name: ollama
-  repository: file://../ollama
-  version: 0.1.0
+  version: 1.6.3
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
+  version: 0.1.1
+- name: localstack
+  repository: file://../localstack
+  version: 0.1.10
+- name: postgresql
+  repository: file://../postgresql
+  version: 0.1.1
+- name: preview-router
+  repository: file://../preview-router
   version: 0.1.0
-digest: sha256:e07e116d60abe97bc4f521346df167d7c0e290b8cb41dade277053c22bab41c3
-generated: "2025-10-07T20:02:31.06373-05:00"
+digest: sha256:623636620432491d868df392aa7b2d48fb75205c10db782156e7628d10989bcc
+generated: "2025-10-19T18:33:27.518912-05:00"

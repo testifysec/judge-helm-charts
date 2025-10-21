@@ -2,7 +2,7 @@ apiVersion: v2
 name: judge-ai-proxy
 description: A Helm chart for the Judge AI proxy service
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "0.1.0"
 maintainers:
   - name: Maintainer

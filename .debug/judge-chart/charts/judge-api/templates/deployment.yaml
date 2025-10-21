@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: RELEASE-NAME-judge-api
+  labels:
+    helm.sh/chart: judge-api-1.6.11
+    app.kubernetes.io/name: judge-api
+    app.kubernetes.io/instance: RELEASE-NAME
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: judge-api
+      app.kubernetes.io/instance: RELEASE-NAME
+  template:
+    metadata:
+      annotations:
+      labels:
+        app.kubernetes.io/name: judge-api
+        app.kubernetes.io/instance: RELEASE-NAME
+    spec:
+      securityContext:
+        {}
+      
+      serviceAccountName: RELEASE-NAME-judge-api
+      containers:
+        - name: judge-api
+          volumeMounts:
+          securityContext:
+            {}
+          image: us-east4-docker.pkg.dev/judge-395516/judge-image-registry/judge-api:v2.0.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - "serve"
+            - "--enable-workflows=false"
+            - "--log-level=info"
+            - "--sql-connection=$(JUDGE_API_SQL_STORE_CONNECTION_STRING)"
+            - "--sql-backend=psql"
+            - "--listen=tcp://0.0.0.0:8080"
+            - "--kratos-admin-url=http://RELEASE-NAME-judge-kratos-admin.NAMESPACE.svc.cluster.local"
+          env:
+            - name: JUDGE_API_SQL_STORE_CONNECTION_STRING
+              valueFrom:
+                secretKeyRef:
+                  name: RELEASE-NAME-judge-api-database
+                  key: connectionString
+            - name: JUDGE_API_SQL_STORE_BACKEND
+              value: psql
+            - name: KRATOS_PUBLIC_URL
+              value: "RELEASE-NAME-judge-kratos-public.NAMESPACE.svc.cluster.local"
+            - name: KRATOS_ADMIN_URL
+              value: "RELEASE-NAME-judge-kratos-admin.NAMESPACE.svc.cluster.local"
+            - name: ARCHIVISTA_PUBSUB_TOPIC
+            - name: ARCHIVISTA_PUBSUB_NAME
+              value: "judge-judge-api-archivista-subscription"
+            - name: BLOB_STORE_USE_TLS
+              value: "true"
+            - name: BLOB_STORE_BUCKET_NAME
+              value: "demo-judge-judge"
+            - name: BLOB_STORE_ENDPOINT
+              value: "s3.amazonaws.com"
+            - name: BLOB_STORE_CREDENTIAL_TYPE
+              value: "IAM"
+            - name: __TESTIFY_SKIP_LICENSE_CHECK__
+              value: "true"
+            - name: JUDGE_URL
+              value: "http://RELEASE-NAME-judge-api.NAMESPACE.svc.cluster.local:8080"
+            - name: ARCHIVISTA_URL
+              value: "http://RELEASE-NAME-judge-archivista.NAMESPACE.svc.cluster.local:8082"
+            - name: GATEWAY_URL
+              value: "http://RELEASE-NAME-judge-gateway.NAMESPACE.svc.cluster.local:4000"
+            - name: AI_SERVER_URL
+              value: "http://RELEASE-NAME-judge-ai-proxy.NAMESPACE.svc.cluster.local:8080/"
+          ports:
+            - containerPort: 8080
+          resources:
+            {}
+
+      imagePullSecrets:
+        - name: regcred

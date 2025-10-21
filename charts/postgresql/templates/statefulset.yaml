@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-postgresql
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: postgresql
+    release: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}-postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: postgresql
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: postgresql
+        image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        env:
+        - name: POSTGRES_USER
+          value: {{ .Values.auth.username | quote }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.auth.password | quote }}
+        - name: POSTGRES_DB
+          value: {{ .Values.auth.database | quote }}
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        - name: init-scripts
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: init-scripts
+        configMap:
+          name: {{ .Release.Name }}-postgresql-init
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      {{- if .Values.persistence.storageClass }}
+      storageClassName: {{ .Values.persistence.storageClass | quote }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.persistence.size }}
+  {{- end }}

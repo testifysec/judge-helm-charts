@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ .Release.Name }}-localstack-test
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: localstack-test
+    release: {{ .Release.Name }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+  - name: test
+    image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+    command:
+    - sh
+    - -c
+    - |
+      set -e
+      echo "=== LocalStack Initialization Tests ==="
+      echo ""
+
+      # Test 1: Verify LocalStack is responding
+      echo "Test 1: LocalStack API is responding..."
+      if awslocal s3 ls > /dev/null 2>&1; then
+        echo "✓ LocalStack API is responding"
+      else
+        echo "✗ LocalStack API is not responding"
+        exit 1
+      fi
+
+      # Test 2: Verify init script completed (flag file exists)
+      echo ""
+      echo "Test 2: Init script completion flag exists..."
+      if [ -f /tmp/localstack-init-complete ]; then
+        echo "✓ Init script completion flag found at /tmp/localstack-init-complete"
+      else
+        echo "✗ Init script completion flag NOT found"
+        echo "  Expected: /tmp/localstack-init-complete"
+        exit 1
+      fi
+
+      # Test 3: Verify all S3 buckets were created
+      echo ""
+      echo "Test 3: S3 buckets created..."
+      {{- range .Values.init.s3Buckets }}
+      if awslocal s3 ls s3://{{ . }} > /dev/null 2>&1; then
+        echo "✓ Bucket '{{ . }}' exists"
+      else
+        echo "✗ Bucket '{{ . }}' does NOT exist"
+        exit 1
+      fi
+      {{- end }}
+
+      # Test 4: Verify SQS queues were created
+      echo ""
+      echo "Test 4: SQS queues created..."
+      {{- range .Values.init.sqsQueues }}
+      if awslocal sqs list-queues | grep -q "{{ . }}"; then
+        echo "✓ Queue '{{ . }}' exists"
+      else
+        echo "✗ Queue '{{ . }}' does NOT exist"
+        exit 1
+      fi
+      {{- end }}
+
+      # Test 5: Verify SNS topics were created
+      echo ""
+      echo "Test 5: SNS topics created..."
+      {{- range .Values.init.snsTopics }}
+      if awslocal sns list-topics | grep -q "{{ . }}"; then
+        echo "✓ Topic '{{ . }}' exists"
+      else
+        echo "✗ Topic '{{ . }}' does NOT exist"
+        exit 1
+      fi
+      {{- end }}
+
+      echo ""
+      echo "=== All tests passed! ==="
+      exit 0
+    env:
+    - name: AWS_ENDPOINT_URL
+      value: "http://{{ .Release.Name }}-localstack:4566"
+    - name: AWS_ACCESS_KEY_ID
+      value: "test"
+    - name: AWS_SECRET_ACCESS_KEY
+      value: "test"
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: postgresql
+description: PostgreSQL database for development environments
+type: application
+version: "0.1.1"
+appVersion: "16"

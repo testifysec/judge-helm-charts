@@ -1,0 +1,21 @@
+# Example values for enabling preview-router
+
+# Enable preview router
+preview-router:
+  enabled: true
+
+  # Use 2 replicas for HA
+  replicaCount: 2
+
+  # Configure for your domain
+  preview:
+    domainSuffix: "preview.testifysec-demo.xyz"
+    fallbackUrl: "https://judge.testifysec-demo.xyz/"
+    namespace: judge
+    serviceNamePattern: "preview-%s-web"
+    servicePort: "8077"
+
+# Ensure Istio is enabled
+istio:
+  enabled: true
+  domain: testifysec-demo.xyz

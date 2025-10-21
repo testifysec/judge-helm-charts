@@ -36,10 +36,10 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "judge-web.image.repository" . }}:{{ tpl (.Values.image.tag | default (include "judge.image.defaultTag" .) | toString) . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.nginxReverseProxy.enabled }}
           env:
             - name: ENABLE_REVERSE_PROXIES
-              value: "true"
+              value: {{ .Values.nginxReverseProxy.enabled | quote }}
+          {{- if .Values.nginxReverseProxy.enabled }}
             {{- if .Values.nginxReverseProxy.gatewayUrl }}
             - name: GATEWAY_URL
               value: {{ .Values.nginxReverseProxy.gatewayUrl }}

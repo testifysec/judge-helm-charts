@@ -1,0 +1,99 @@
+suite: Domain Consistency Validation
+templates:
+  - kratos-config.yaml
+  - istio-gateway.yaml
+tests:
+  - it: should use consistent domain across Kratos config and Istio Gateway
+    set:
+      global.domain: testifysec-demo.xyz
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: testifysec-demo.xyz
+      istio.hosts.web: "judge"
+      istio.hosts.login: "login"
+      istio.hosts.kratos: "kratos"
+    asserts:
+      # Kratos config uses testifysec-demo.xyz
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://judge\\.testifysec-demo\\.xyz"
+        template: kratos-config.yaml
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://login\\.testifysec-demo\\.xyz"
+        template: kratos-config.yaml
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://kratos\\.testifysec-demo\\.xyz"
+        template: kratos-config.yaml
+      # Istio Gateway uses testifysec-demo.xyz
+      - equal:
+          path: spec.servers[0].hosts[0]
+          value: "*.testifysec-demo.xyz"
+        template: istio-gateway.yaml
+      - equal:
+          path: spec.servers[1].hosts[0]
+          value: "*.testifysec-demo.xyz"
+        template: istio-gateway.yaml
+
+  - it: should use consistent domain for staging environment
+    set:
+      global.domain: staging.example.com
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: staging.example.com
+      istio.hosts.web: "judge"
+      istio.hosts.login: "login"
+      istio.hosts.kratos: "kratos"
+    asserts:
+      # Kratos config uses staging.example.com
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://judge\\.staging\\.example\\.com"
+        template: kratos-config.yaml
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://login\\.staging\\.example\\.com"
+        template: kratos-config.yaml
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://kratos\\.staging\\.example\\.com"
+        template: kratos-config.yaml
+      # Istio Gateway uses staging.example.com
+      - equal:
+          path: spec.servers[0].hosts[0]
+          value: "*.staging.example.com"
+        template: istio-gateway.yaml
+      - equal:
+          path: spec.servers[1].hosts[0]
+          value: "*.staging.example.com"
+        template: istio-gateway.yaml
+
+  - it: should propagate domain changes to all services
+    set:
+      global.domain: custom-domain.io
+      kratos.enabled: true
+      istio.enabled: true
+      istio.domain: custom-domain.io
+      istio.hosts.web: "app"
+      istio.hosts.login: "auth"
+      istio.hosts.kratos: "identity"
+    asserts:
+      # All Kratos URLs use custom-domain.io
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://app\\.custom-domain\\.io"
+        template: kratos-config.yaml
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://auth\\.custom-domain\\.io"
+        template: kratos-config.yaml
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://identity\\.custom-domain\\.io"
+        template: kratos-config.yaml
+      # Gateway uses custom-domain.io
+      - equal:
+          path: spec.servers[0].hosts[0]
+          value: "*.custom-domain.io"
+        template: istio-gateway.yaml

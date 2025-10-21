@@ -1,0 +1,62 @@
+# Judge Preflight Validation Configuration
+#
+# NOTE: This chart is designed to be deployed as a subchart of the judge chart.
+# When deployed as a subchart, it reads configuration from the parent chart's .Values.global.*
+#
+# The values below are defaults for standalone testing/linting only.
+# In production, these will be overridden by the parent chart's global values.
+
+# Container image for preflight job
+image:
+  # Use amazon/aws-cli for AWS checks with kubectl installed at runtime
+  repository: amazon/aws-cli
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# ServiceAccount configuration
+serviceAccount:
+  # Annotations for IRSA (IAM Roles for Service Accounts)
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::ACCOUNT_ID:role/ROLE_NAME
+
+# Global configuration (matches parent chart structure)
+global:
+  # Development mode flag
+  dev: false
+
+  # AWS Configuration
+  aws:
+    enabled: false
+    region: us-east-1
+    prefix: demo-judge
+    accountId: ""
+
+  # Secrets management
+  secrets:
+    provider: vault
+    vault:
+      server: https://vault.example.com
+      path: secret
+      version: v2
+      authMountPath: kubernetes
+      env: dev
+      project: myproject
+
+# Service dependencies validation
+services:
+  # Cert-manager (for TLS certificates)
+  certManager:
+    enabled: true
+    namespace: cert-manager
+
+# Secrets validation
+secrets:
+  # Fulcio server secret (all environments)
+  fulcio:
+    enabled: true
+    name: fulcio-server-secret
+    requiredKeys:
+      - cert
+      - private
+      - public
+      - password

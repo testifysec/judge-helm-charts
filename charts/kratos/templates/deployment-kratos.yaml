@@ -14,6 +14,7 @@ metadata:
       {{- toYaml . | nindent 4 }}
     {{- end }}
   annotations:
+    argocd.argoproj.io/sync-wave: "3"
     {{- with .Values.deployment.annotations }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
@@ -53,6 +54,81 @@ spec:
 {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
+        - name: {{ .Chart.Name }}-process-config
+          image: public.ecr.aws/docker/library/busybox:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "=== Starting Kratos config processing ==="
+              echo "OIDC_GITHUB_CLIENT_ID=$OIDC_GITHUB_CLIENT_ID"
+              echo "OIDC_GITHUB_CLIENT_SECRET=$OIDC_GITHUB_CLIENT_SECRET"
+
+              # List source ConfigMap contents
+              echo "=== Source ConfigMap files at /etc/config/kratos ==="
+              ls -la /etc/config/kratos/
+              echo "=== Checking for jsonnet files ==="
+              find /etc/config/kratos -name "*.jsonnet" -exec ls -la {} \;
+
+              # Process kratos.yaml with sed for credential substitution
+              echo "=== Processing kratos.yaml ==="
+              sed -e "s/\${OIDC_GITHUB_CLIENT_ID}/${OIDC_GITHUB_CLIENT_ID}/g" \
+                  -e "s/\${OIDC_GITHUB_CLIENT_SECRET}/${OIDC_GITHUB_CLIENT_SECRET}/g" \
+                  /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
+              echo "kratos.yaml processed successfully"
+
+              # Copy OIDC mapper files (github.jsonnet, gitlab.jsonnet, etc.)
+              echo "=== Copying mapper files ==="
+              cp /etc/config/kratos/github.jsonnet /etc/config/kratos-processed/ && echo "Copied github.jsonnet" || echo "FAILED to copy github.jsonnet"
+              cp /etc/config/kratos/gitlab.jsonnet /etc/config/kratos-processed/ && echo "Copied gitlab.jsonnet" || echo "FAILED to copy gitlab.jsonnet"
+
+              # Verify files were copied
+              echo "=== Target emptyDir volume contents ==="
+              ls -la /etc/config/kratos-processed/
+
+              echo "=== Config processing complete ==="
+          volumeMounts:
+            - name: {{ include "kratos.name" . }}-config-volume
+              mountPath: /etc/config/kratos
+              readOnly: true
+            - name: {{ include "kratos.name" . }}-config-processed
+              mountPath: /etc/config/kratos-processed
+          env:
+            {{- if .Values.oidc.github.existingSecret }}
+            {{- if .Values.oidc.github.clientIdSecretKey }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.clientIdSecretKey }}
+            {{- else }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            {{- end }}
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.secretKey }}
+            {{- else }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientSecret
+                  optional: true
+            {{- end }}
       {{- if .Values.deployment.extraInitContainers  }}
         {{- tpl  .Values.deployment.extraInitContainers . | nindent 8 }}
       {{- end }}
@@ -71,7 +147,7 @@ spec:
           args: ["migrate", "sql", "-e", "--yes", "--config", "/etc/config/kratos/kratos.yaml"]
           {{- end }}
           volumeMounts:
-            - name: {{ include "kratos.name" . }}-config-volume
+            - name: {{ include "kratos.name" . }}-config-processed
               mountPath: /etc/config/kratos
               readOnly: true
           {{- with .Values.deployment.extraVolumeMounts }}
@@ -102,6 +178,8 @@ spec:
         - name: {{ include "kratos.name" . }}-config-volume
           configMap:
             name: {{ include "kratos.fullname" . }}-config
+        - name: {{ include "kratos.name" . }}-config-processed
+          emptyDir: {}
         {{- $root := . -}}
         {{- range $method, $methodEntry := .Values.kratos.emailTemplates }}
         {{- range $result, $resultEntry := $methodEntry }}
@@ -122,6 +200,7 @@ spec:
           args:
             - serve
             - all
+            - --sqa-opt-out
             {{- if .Values.kratos.development }}
             - --dev
             {{- end }}
@@ -134,7 +213,7 @@ spec:
             {{- if .Values.deployment.extraVolumeMounts }}
               {{- toYaml .Values.deployment.extraVolumeMounts | nindent 12 }}
             {{- end }}
-            - name: {{ include "kratos.name" . }}-config-volume
+            - name: {{ include "kratos.name" . }}-config-processed
               mountPath: /etc/config/kratos
               readOnly: true
             {{- $root := . -}}
@@ -169,12 +248,47 @@ spec:
                   name: {{ include "kratos.secretname" . }}
                   key: secretsCipher
                   optional: true
-            {{- if .Values.kratos.config.courier.smtp.connection_uri }}
+            {{- if .Values.oidc.github.existingSecret }}
+            {{- if .Values.oidc.github.clientIdSecretKey }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.clientIdSecretKey }}
+            {{- else }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            {{- end }}
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.oidc.github.existingSecret }}
+                  key: {{ .Values.oidc.github.secretKey }}
+            {{- else }}
+            - name: OIDC_GITHUB_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientId
+                  optional: true
+            - name: OIDC_GITHUB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "kratos.secretname" . }}
+                  key: oidcGithubClientSecret
+                  optional: true
+            {{- end }}
+            {{- if and .Values.kratos.config.courier.smtp.connection_uri (ne .Values.kratos.config.courier.smtp.connection_uri "") }}
             - name: COURIER_SMTP_CONNECTION_URI
               valueFrom:
                 secretKeyRef:
                   name: {{ include "kratos.secretname" . }}
                   key: smtpConnectionURI
+                  optional: true
             {{- end }}
             {{- if .Values.kratos.dev_disable_api_flow_enforcement }}
             - name: DEV_DISABLE_API_FLOW_ENFORCEMENT

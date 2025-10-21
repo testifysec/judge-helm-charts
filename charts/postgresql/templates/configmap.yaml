@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-postgresql-init
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: postgresql
+    release: {{ .Release.Name }}
+data:
+  init.sql: |
+    -- Create databases for Judge platform services
+    {{- range .Values.initDatabases }}
+    CREATE DATABASE {{ . }};
+    GRANT ALL PRIVILEGES ON DATABASE {{ . }} TO {{ $.Values.auth.username }};
+    {{- end }}

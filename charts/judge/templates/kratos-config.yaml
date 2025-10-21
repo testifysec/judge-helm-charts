@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kratos-config
+  name: {{ printf "%s-judge-kratos-config" .Release.Name }}
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: judge-kratos
@@ -70,4 +70,6 @@ data:
       identityId: ctx.identity.id,
       traits: ctx.identity.traits,
     }
+
+  # Force pod restart with enhanced init container logging (v2)
 {{- end -}}
