@@ -11,6 +11,7 @@ Production-ready Helm chart for deploying the complete Judge platform on Kuberne
 - [Overview](#overview)
 - [Prerequisites](#prerequisites)
 - [Configuration](#configuration)
+- [Smart Defaults](#smart-defaults)
 - [Installation](#installation)
 - [External Secrets Operator](#external-secrets-operator)
 - [OIDC Authentication](#oidc-authentication)
@@ -307,6 +308,26 @@ global:
 ```
 
 **IMPORTANT**: Never commit database passwords to version control. Use a separate `secrets.yaml` file (not committed) or ESO with Vault.
+
+## Smart Defaults
+
+Judge Helm charts use **Smart Defaults** to minimize configuration while maintaining full customizability. Configuration automatically adapts based on context without explicit settings.
+
+**Key behaviors:**
+- **Istio Consolidation**: All Istio config under `global.istio` (no duplication)
+- **Dev Infrastructure**: `global.dev=true` auto-enables LocalStack + PostgreSQL
+- **Preflight Validation**: Disabled by default (opt-in for production)
+
+**Example - Dev Mode:**
+```yaml
+global:
+  dev: true  # Auto-enables localstack + postgresql
+  domain: dev.example.com
+  istio:
+    enabled: true
+```
+
+**Documentation**: See [SMART-DEFAULTS.md](SMART-DEFAULTS.md) for complete documentation, testing strategy, and migration guide.
 
 ## Installation
 
@@ -869,6 +890,7 @@ istioctl analyze -n judge
 
 - [Getting Started Guide](docs/getting-started-with-judge-helm.md)
 - [Configuration Reference](docs/configuring-judge-helm.md)
+- [Smart Defaults Pattern](SMART-DEFAULTS.md) - Auto-adapting configuration
 
 ### Architecture
 

@@ -1,4 +1,6 @@
 # Global configuration - SINGLE SOURCE OF TRUTH
+# Smart Defaults: Configuration auto-adapts based on context (dev vs prod, cloud provider, etc.)
+# See SMART-DEFAULTS.md for full documentation on automatic behaviors
 global:
   # Default image tag for all Judge platform services (DEPRECATED - use versions.platform)
   # Kept for backward compatibility, will be removed in v2.0.0
