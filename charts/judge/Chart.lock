@@ -25,7 +25,7 @@ dependencies:
   version: 0.17.3
 - name: fulcio
   repository: file://../fulcio
-  version: 2.3.21
+  version: 2.3.22
 - name: tsa
   repository: file://../tsa
   version: 1.6.3
@@ -41,5 +41,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:623636620432491d868df392aa7b2d48fb75205c10db782156e7628d10989bcc
-generated: "2025-10-19T18:33:27.518912-05:00"
+digest: sha256:c84cf05847943d4a948ec664cee2d6e32f20e3de2ef758e8960c2eca7b77ab22
+generated: "2025-10-21T22:52:09.382317-05:00"

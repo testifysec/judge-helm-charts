@@ -4,10 +4,10 @@ templates:
 tests:
   - it: should use production-specific UI flow URLs
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "judge"
       istio.hosts.login: "login"
       istio.hosts.kratos: "kratos"
@@ -17,38 +17,38 @@ tests:
       # Error flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://login\\.testifysec-demo\\.xyz/error"
+          pattern: "ui_url: https://login\\.testifysec\\.dev/error"
       # Login flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://login\\.testifysec-demo\\.xyz/login"
+          pattern: "ui_url: https://login\\.testifysec\\.dev/login"
       # Logout flow (after.default_browser_return_url)
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "default_browser_return_url: https://login\\.testifysec-demo\\.xyz/login"
+          pattern: "default_browser_return_url: https://login\\.testifysec\\.dev/login"
       # Recovery flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://login\\.testifysec-demo\\.xyz/recovery"
+          pattern: "ui_url: https://login\\.testifysec\\.dev/recovery"
       # Registration flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://login\\.testifysec-demo\\.xyz/registration"
+          pattern: "ui_url: https://login\\.testifysec\\.dev/registration"
       # Settings flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://login\\.testifysec-demo\\.xyz/settings"
+          pattern: "ui_url: https://login\\.testifysec\\.dev/settings"
       # Verification flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://login\\.testifysec-demo\\.xyz/verification"
+          pattern: "ui_url: https://login\\.testifysec\\.dev/verification"
 
   - it: should use staging-specific UI flow URLs
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "staging-judge"
       istio.hosts.login: "staging-login"
       istio.hosts.kratos: "staging-kratos"
@@ -58,38 +58,38 @@ tests:
       # Error flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://staging-login\\.testifysec-demo\\.xyz/error"
+          pattern: "ui_url: https://staging-login\\.testifysec\\.dev/error"
       # Login flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://staging-login\\.testifysec-demo\\.xyz/login"
+          pattern: "ui_url: https://staging-login\\.testifysec\\.dev/login"
       # Logout flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "default_browser_return_url: https://staging-login\\.testifysec-demo\\.xyz/login"
+          pattern: "default_browser_return_url: https://staging-login\\.testifysec\\.dev/login"
       # Recovery flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://staging-login\\.testifysec-demo\\.xyz/recovery"
+          pattern: "ui_url: https://staging-login\\.testifysec\\.dev/recovery"
       # Registration flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://staging-login\\.testifysec-demo\\.xyz/registration"
+          pattern: "ui_url: https://staging-login\\.testifysec\\.dev/registration"
       # Settings flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://staging-login\\.testifysec-demo\\.xyz/settings"
+          pattern: "ui_url: https://staging-login\\.testifysec\\.dev/settings"
       # Verification flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://staging-login\\.testifysec-demo\\.xyz/verification"
+          pattern: "ui_url: https://staging-login\\.testifysec\\.dev/verification"
 
   - it: should use dev-specific UI flow URLs
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "dev-judge"
       istio.hosts.login: "dev-login"
       istio.hosts.kratos: "dev-kratos"
@@ -99,38 +99,38 @@ tests:
       # Error flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://dev-login\\.testifysec-demo\\.xyz/error"
+          pattern: "ui_url: https://dev-login\\.testifysec\\.dev/error"
       # Login flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://dev-login\\.testifysec-demo\\.xyz/login"
+          pattern: "ui_url: https://dev-login\\.testifysec\\.dev/login"
       # Logout flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "default_browser_return_url: https://dev-login\\.testifysec-demo\\.xyz/login"
+          pattern: "default_browser_return_url: https://dev-login\\.testifysec\\.dev/login"
       # Recovery flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://dev-login\\.testifysec-demo\\.xyz/recovery"
+          pattern: "ui_url: https://dev-login\\.testifysec\\.dev/recovery"
       # Registration flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://dev-login\\.testifysec-demo\\.xyz/registration"
+          pattern: "ui_url: https://dev-login\\.testifysec\\.dev/registration"
       # Settings flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://dev-login\\.testifysec-demo\\.xyz/settings"
+          pattern: "ui_url: https://dev-login\\.testifysec\\.dev/settings"
       # Verification flow
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "ui_url: https://dev-login\\.testifysec-demo\\.xyz/verification"
+          pattern: "ui_url: https://dev-login\\.testifysec\\.dev/verification"
 
   - it: should NOT use localhost domains for UI flows
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "judge"
       istio.hosts.login: "login"
     asserts:

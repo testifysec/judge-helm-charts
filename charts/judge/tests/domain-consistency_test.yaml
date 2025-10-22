@@ -5,35 +5,35 @@ templates:
 tests:
   - it: should use consistent domain across Kratos config and Istio Gateway
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "judge"
       istio.hosts.login: "login"
       istio.hosts.kratos: "kratos"
     asserts:
-      # Kratos config uses testifysec-demo.xyz
+      # Kratos config uses testifysec.dev
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "https://judge\\.testifysec-demo\\.xyz"
+          pattern: "https://judge\\.testifysec\\.dev"
         template: kratos-config.yaml
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "https://login\\.testifysec-demo\\.xyz"
+          pattern: "https://login\\.testifysec\\.dev"
         template: kratos-config.yaml
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "https://kratos\\.testifysec-demo\\.xyz"
+          pattern: "https://kratos\\.testifysec\\.dev"
         template: kratos-config.yaml
-      # Istio Gateway uses testifysec-demo.xyz
+      # Istio Gateway uses testifysec.dev
       - equal:
           path: spec.servers[0].hosts[0]
-          value: "*.testifysec-demo.xyz"
+          value: "*.testifysec.dev"
         template: istio-gateway.yaml
       - equal:
           path: spec.servers[1].hosts[0]
-          value: "*.testifysec-demo.xyz"
+          value: "*.testifysec.dev"
         template: istio-gateway.yaml
 
   - it: should use consistent domain for staging environment

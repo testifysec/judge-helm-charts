@@ -5,10 +5,10 @@ tests:
   - it: should use production-specific Dex domain
     documentIndex: 4  # Dex VirtualService (0: gateway, 1: web, 2: api, 3: fulcio, 4: dex)
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.dex: "dex"
       istio.hosts.fulcio: "fulcio"
       istio.hosts.tsa: "tsa"
@@ -21,15 +21,15 @@ tests:
           value: RELEASE-NAME-judge-dex-vs
       - equal:
           path: spec.hosts[0]
-          value: "dex.testifysec-demo.xyz"
+          value: "dex.testifysec.dev"
 
   - it: should use staging-specific Dex domain
     documentIndex: 4
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.dex: "staging-dex"
       istio.hosts.fulcio: "staging-fulcio"
       istio.hosts.tsa: "staging-tsa"
@@ -39,15 +39,15 @@ tests:
           of: VirtualService
       - equal:
           path: spec.hosts[0]
-          value: "staging-dex.testifysec-demo.xyz"
+          value: "staging-dex.testifysec.dev"
 
   - it: should use dev-specific Dex domain
     documentIndex: 4
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.dex: "dev-dex"
       istio.hosts.fulcio: "dev-fulcio"
       istio.hosts.tsa: "dev-tsa"
@@ -57,7 +57,7 @@ tests:
           of: VirtualService
       - equal:
           path: spec.hosts[0]
-          value: "dev-dex.testifysec-demo.xyz"
+          value: "dev-dex.testifysec.dev"
 
   - it: should use custom Dex subdomain
     documentIndex: 4

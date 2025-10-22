@@ -4,10 +4,10 @@ templates:
 tests:
   - it: should use environment-specific cookie domain for production
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "judge"
       istio.hosts.login: "login"
       istio.hosts.kratos: "kratos"
@@ -16,14 +16,14 @@ tests:
           of: ConfigMap
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: judge\\.testifysec-demo\\.xyz"
+          pattern: "domain: judge\\.testifysec\\.dev"
 
   - it: should use environment-specific cookie domain for staging
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "staging-judge"
       istio.hosts.login: "staging-login"
       istio.hosts.kratos: "staging-kratos"
@@ -32,14 +32,14 @@ tests:
           of: ConfigMap
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: staging-judge\\.testifysec-demo\\.xyz"
+          pattern: "domain: staging-judge\\.testifysec\\.dev"
 
   - it: should use environment-specific cookie domain for dev
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "dev-judge"
       istio.hosts.login: "dev-login"
       istio.hosts.kratos: "dev-kratos"
@@ -48,18 +48,18 @@ tests:
           of: ConfigMap
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: dev-judge\\.testifysec-demo\\.xyz"
+          pattern: "domain: dev-judge\\.testifysec\\.dev"
 
   - it: should NOT use shared root domain for cookies
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "judge"
     asserts:
       - isKind:
           of: ConfigMap
       - notMatchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: testifysec-demo\\.xyz$"
+          pattern: "domain: testifysec\\.dev$"
