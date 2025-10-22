@@ -4,7 +4,7 @@ logLevel: "info"
 image:
   registry: us-east4-docker.pkg.dev
   repository: judge-395516/judge-image-registry
-  pullPolicy: IfNotPresent
+  # Helm Golf: pullPolicy omitted to enable global configuration
   tag: "v1.15.0"  # Recommended stable version
   pullSecrets:
     - name: gcr-secret

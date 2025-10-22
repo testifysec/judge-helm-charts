@@ -10,15 +10,8 @@ commonLabels: {}
 # team_name: dev
 
 image:
-  # -- Name of the image repository to pull the container image from.
-  # Set to empty string to enable global.registry.repository override (for marketplace deployments)
-  repository: ""
-
-  # -- [Image pull policy](https://kubernetes.io/docs/concepts/containers/images/#updating-images). Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
-  pullPolicy: ""
-
-  # -- Image tag override for the default value (chart appVersion).
-  tag: ""
+  # Helm Golf: Fields omitted by default to enable global configuration
+  # Override with explicit values if needed for this chart instance
 
 # -- Reference to one or more secrets to be used when [pulling images](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/#create-a-pod-that-uses-your-secret) (from private registries).
 imagePullSecrets: []

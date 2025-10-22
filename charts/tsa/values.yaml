@@ -5,22 +5,16 @@ nameOverride: "tsa"
 
 # Image configuration (normalized structure for helm golf)
 image:
-  # Set to empty string to enable global.registry.repository override
-  repository: ""
-  # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
-  pullPolicy: ""
-  # Tag managed via global.versions.tsa - defaults to Chart.AppVersion
-  tag: ""
+  # Helm Golf: Fields omitted by default to enable global configuration
   pullSecrets:
     - name: gcr-secret
 
 server:
   replicaCount: 1
-  # Schema requires server.image - keeping for compatibility
+  # Helm Golf: server.image fields use empty defaults to enable global configuration
   image:
     registry: ""
     repository: ""
-    # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
     pullPolicy: ""
     version: ""
   name: server
