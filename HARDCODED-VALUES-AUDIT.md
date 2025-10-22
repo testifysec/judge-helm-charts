@@ -106,8 +106,92 @@ registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
 
 **Status**: ✅ OK - Test/example files, not deployed
 
+## Solution: Values Override Pattern
+
+**Strategy**: Keep chart defaults unchanged, override at deployment level
+
+All hardcoded values can be overridden through values files without modifying charts:
+
+```yaml
+# values/production.yaml - Complete override example
+global:
+  domain: mycompany.com
+
+# 1. preview-router - Override ECR registry
+preview-router:
+  image:
+    repository: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/preview-router
+  config:
+    fallbackUrl: "https://judge.mycompany.com/"
+    domainSuffix: "preview.mycompany.com"
+
+# 2. kratos-selfservice-ui-node - Override ingress hosts
+kratos-selfservice-ui-node:
+  ingress:
+    hosts:
+      - host: login.mycompany.com
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+    tls:
+      - hosts:
+          - login.mycompany.com
+        secretName: login-tls-secret
+  kratosBrowserUrl: "https://kratos.mycompany.com"
+
+# 3. judge-web - Override ingress hosts
+judge-web:
+  ingress:
+    hosts:
+      - host: "judge.mycompany.com"
+    tls:
+      - hosts:
+          - judge.mycompany.com
+        secretName: judge-tls-secret
+
+# 4. kratos - Override all domain references
+kratos:
+  ingress:
+    public:
+      hosts:
+        - host: kratos.mycompany.com
+    admin:
+      hosts:
+        - host: kratos-admin.mycompany.com
+  kratos:
+    config:
+      selfservice:
+        default_browser_return_url: https://judge.mycompany.com
+        allowed_return_urls:
+          - https://login.mycompany.com
+          - https://kratos.mycompany.com
+          - https://judge.mycompany.com
+      serve:
+        public:
+          base_url: https://kratos.mycompany.com
+
+# 5. judge (parent) - Override demo domain
+istio:
+  domain: mycompany.com
+
+# 6. archivista - Override ingress host
+archivista:
+  ingress:
+    hosts:
+      - host: archivista.mycompany.com
+
+# 7. judge-api - Override ingress host
+judge-api:
+  ingress:
+    hosts:
+      - host: judge-api.mycompany.com
+```
+
+**Key Pattern**: Chart defaults provide localhost/demo values for quick starts. Production deployments override through values hierarchy.
+
 ## Summary
 
 **Total Issues**: 7 charts with hardcoded values
-**Priority**: High - These prevent portability and multi-tenant deployments
-**Impact**: Users must manually override multiple nested values
+**Priority**: Medium - Can be fully overridden at deployment level
+**Impact**: Users must provide comprehensive values overrides for production
+**Solution**: Document override pattern, keep chart defaults for development ease
