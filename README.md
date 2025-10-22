@@ -32,45 +32,35 @@ Create a `values.yaml` file with your AWS-specific settings:
 ```yaml
 # values.yaml - Minimal configuration for AWS Marketplace deployment
 global:
-  # Your domain for external access
   domain: example.com
-
-  # AWS Infrastructure
   aws:
     enabled: true
-    accountId: "YOUR_AWS_ACCOUNT_ID"      # Your 12-digit AWS account ID
-    region: "us-east-1"                    # AWS region
-    prefix: "prod-judge"                   # Resource naming prefix (must match EKS cluster name)
+    accountId: "YOUR_AWS_ACCOUNT_ID"
+    region: "us-east-1"
+    prefix: "prod-judge"
     irsa:
-      enabled: true                        # Enable IAM Roles for Service Accounts
-
-  # AWS Marketplace container registry (automatic configuration)
+      enabled: true
   registry:
     marketplace:
       enabled: true
-
-  # Secrets management via Vault + External Secrets Operator
   secrets:
     provider: "vault"
     vault:
-      server: "https://vault.example.com"  # Your Vault server URL
-      env: "prod"                          # Environment: dev, staging, prod
-      project: "mycompany-judge"           # Your project identifier
+      server: "https://vault.example.com"
+      env: "prod"
+      project: "mycompany-judge"
 
-  # Version management (optional - uses defaults if not specified)
-  versions:
-    platform: "v1.15.0"                    # Judge platform version
-
-# Istio service mesh configuration
 istio:
   enabled: true
-  domain: example.com                      # Must match global.domain
-  tlsSecretName: wildcard-tls             # Your TLS certificate secret
+  domain: example.com
+  tlsSecretName: wildcard-tls
   hosts:
-    web: "judge"                           # Web UI at judge.example.com
-    api: "api"                             # API at api.example.com
-    login: "login"                         # Login at login.example.com
+    web: "judge"
+    api: "api"
+    login: "login"
 ```
+
+See [Global Configuration Reference](#global-configuration-reference) for detailed explanation of all fields.
 
 ### 2. Install Chart
 
@@ -122,12 +112,7 @@ global:
   domain: example.com
 ```
 
-**Pattern**: Services are accessible at `{hostname}.{domain}`
-- Web UI: `judge.example.com` (or custom via `istio.hosts.web`)
-- API: `api.example.com` (or custom via `istio.hosts.api`)
-- Login: `login.example.com` (or custom via `istio.hosts.login`)
-
-**Note**: Internal service-to-service communication uses Kubernetes DNS (`.svc.cluster.local`) automatically.
+**Note**: Internal service-to-service communication uses Kubernetes DNS (`.svc.cluster.local`) automatically. For hostname customization, see [Istio Service Mesh Configuration](#istio-service-mesh-configuration).
 
 ### AWS Infrastructure Configuration
 
@@ -580,19 +565,6 @@ global:
 ---
 
 ## Common Configuration Overrides
-
-### Hostname Customization
-
-Change public-facing service URLs:
-
-```yaml
-istio:
-  domain: mycompany.com
-  hosts:
-    web: "supply-chain"                    # supply-chain.mycompany.com
-    api: "supply-chain-api"                # supply-chain-api.mycompany.com
-    login: "sso"                           # sso.mycompany.com
-```
 
 ### Resource Limits
 
