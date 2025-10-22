@@ -93,3 +93,41 @@ Create the key of the secret to use for the connection string
 {{- .Values.sqlStore.secretKey }}
 {{- end }}
 {{- end }}
+
+{{/*
+Image tag helper (fallback for standalone lint)
+Returns the default image tag from global.version
+*/}}
+{{- define "judge.image.defaultTag" -}}
+{{- if and .Values.global .Values.global.version -}}
+{{ .Values.global.version }}
+{{- else -}}
+latest
+{{- end -}}
+{{- end -}}
+
+{{/*
+AWS IRSA Annotation Helper (fallback for standalone lint)
+Auto-generates eks.amazonaws.com/role-arn annotation when IRSA is enabled
+*/}}
+{{- define "judge.aws.irsa.annotations" -}}
+{{- $service := .service -}}
+{{- $root := .root -}}
+{{- if and $root.Values.global $root.Values.global.aws $root.Values.global.aws.irsa $root.Values.global.aws.irsa.enabled -}}
+{{- $accountId := "" -}}
+{{- if $root.Values.global.aws.accountId -}}
+{{- $accountId = $root.Values.global.aws.accountId -}}
+{{- else if and $root.Values.global.cloud $root.Values.global.cloud.aws $root.Values.global.cloud.aws.accountId -}}
+{{- $accountId = $root.Values.global.cloud.aws.accountId -}}
+{{- end -}}
+{{- $prefix := $root.Values.global.aws.prefix | default "judge" -}}
+eks.amazonaws.com/role-arn: arn:aws:iam::{{ $accountId }}:role/{{ $prefix }}-{{ $service }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Service URL helper for Gateway (fallback for standalone lint)
+*/}}
+{{- define "judge.service.gatewayUrl" -}}
+{{- printf "http://%s-judge-gateway.%s.svc.cluster.local:4000" .Release.Name .Release.Namespace -}}
+{{- end -}}

@@ -128,3 +128,60 @@ Create the key of the secret to use for the workflow slack token
 {{- .Values.workflows.slackIntegration.tokenKey }}
 {{- end }}
 {{- end }}
+
+{{/*
+Image tag helper (fallback for standalone lint)
+Returns the default image tag from global.version
+*/}}
+{{- define "judge.image.defaultTag" -}}
+{{- if and .Values.global .Values.global.version -}}
+{{ .Values.global.version }}
+{{- else -}}
+latest
+{{- end -}}
+{{- end -}}
+
+{{/*
+AWS IRSA Annotation Helper (fallback for standalone lint)
+Auto-generates eks.amazonaws.com/role-arn annotation when IRSA is enabled
+*/}}
+{{- define "judge.aws.irsa.annotations" -}}
+{{- $service := .service -}}
+{{- $root := .root -}}
+{{- if and $root.Values.global $root.Values.global.aws $root.Values.global.aws.irsa $root.Values.global.aws.irsa.enabled -}}
+{{- $accountId := "" -}}
+{{- if $root.Values.global.aws.accountId -}}
+{{- $accountId = $root.Values.global.aws.accountId -}}
+{{- else if and $root.Values.global.cloud $root.Values.global.cloud.aws $root.Values.global.cloud.aws.accountId -}}
+{{- $accountId = $root.Values.global.cloud.aws.accountId -}}
+{{- end -}}
+{{- $prefix := $root.Values.global.aws.prefix | default "judge" -}}
+eks.amazonaws.com/role-arn: arn:aws:iam::{{ $accountId }}:role/{{ $prefix }}-{{ $service }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Service URL helper for Kratos Admin (fallback for standalone lint)
+*/}}
+{{- define "judge.service.kratosAdminUrl" -}}
+{{- $kratosName := "judge-kratos" -}}
+{{- if hasKey .Values "kratos" -}}
+  {{- if .Values.kratos -}}
+    {{- $kratosName = default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- end -}}
+{{- end -}}
+{{- printf "http://%s-%s-admin.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
+{{- end -}}
+
+{{/*
+Service URL helper for Kratos Public (fallback for standalone lint)
+*/}}
+{{- define "judge.service.kratosPublicUrl" -}}
+{{- $kratosName := "judge-kratos" -}}
+{{- if hasKey .Values "kratos" -}}
+  {{- if .Values.kratos -}}
+    {{- $kratosName = default "judge-kratos" .Values.kratos.nameOverride -}}
+  {{- end -}}
+{{- end -}}
+{{- printf "http://%s-%s-public.%s.svc.cluster.local" .Release.Name $kratosName .Release.Namespace -}}
+{{- end -}}
