@@ -95,7 +95,35 @@ validate-hostnames: ## Validate hostname consistency
 validate-all: validate validate-service-urls validate-database validate-external-secrets validate-hostnames ## Run all validation checks
 	@echo "$(GREEN)✓ All validation checks passed!$(NC)"
 
-test: check-deps validate-all ## Run all tests (dependency freshness + all validations)
+##@ Testing
+
+test-unit: ## Run helm unittest for template logic tests
+	@echo "$(YELLOW)Running helm unit tests...$(NC)"
+	@which helm > /dev/null || (echo "$(RED)Error: helm not installed$(NC)" && exit 1)
+	@helm plugin list | grep -q unittest || (echo "$(RED)Error: helm unittest plugin not installed$(NC)" && echo "Install: helm plugin install https://github.com/helm-unittest/helm-unittest" && exit 1)
+	@echo ""
+	@echo "Running all unit tests..."
+	helm unittest $(JUDGE_CHART)
+	@echo ""
+	@echo "$(GREEN)✓ All unit tests passed$(NC)"
+
+test-unit-smart-defaults: ## Run only smart defaults unit tests
+	@echo "$(YELLOW)Running smart defaults unit tests...$(NC)"
+	@which helm > /dev/null || (echo "$(RED)Error: helm not installed$(NC)" && exit 1)
+	@helm plugin list | grep -q unittest || (echo "$(RED)Error: helm unittest plugin not installed$(NC)" && echo "Install: helm plugin install https://github.com/helm-unittest/helm-unittest" && exit 1)
+	helm unittest $(JUDGE_CHART) -f '$(JUDGE_CHART)/tests/smart-defaults_test.yaml'
+	@echo "$(GREEN)✓ Smart defaults unit tests passed$(NC)"
+
+test-integration: ## Run integration tests for Chart.yaml dependency conditions
+	@echo "$(YELLOW)Running smart defaults integration tests...$(NC)"
+	@./scripts/test_smart_defaults_integration.sh
+	@echo "$(GREEN)✓ Integration tests passed$(NC)"
+
+test-smart-defaults: test-unit-smart-defaults test-integration ## Run all smart defaults tests (unit + integration)
+	@echo ""
+	@echo "$(GREEN)✓ All smart defaults tests passed!$(NC)"
+
+test: check-deps test-unit validate-all ## Run all tests (dependencies + unit tests + validations)
 	@echo ""
 	@echo "$(GREEN)✓ All tests passed!$(NC)"
 

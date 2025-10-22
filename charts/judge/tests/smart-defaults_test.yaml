@@ -1,0 +1,72 @@
+suite: Smart Defaults Pattern
+templates:
+  - templates/istio-gateway.yaml
+
+tests:
+  # ============================================================================
+  # Test 1: Istio Configuration - Global Config Only
+  # ============================================================================
+  - it: should NOT render Istio resources when disabled
+    template: templates/istio-gateway.yaml
+    set:
+      global.domain: testifysec.dev
+      global.istio.enabled: false  # Explicitly disabled
+    asserts:
+      - hasDocuments:
+          count: 0  # Should not render
+
+  - it: should render Istio resources with global.istio config
+    template: templates/istio-gateway.yaml
+    set:
+      global.domain: testifysec.dev
+      global.istio.enabled: true
+      global.istio.tlsSecretName: wildcard-tls
+      global.istio.ingressGatewaySelector.istio: ingress
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Gateway
+      - equal:
+          path: spec.servers[0].hosts[0]
+          value: "*.testifysec.dev"
+      - equal:
+          path: spec.servers[1].hosts[0]
+          value: "*.testifysec.dev"
+
+  # ============================================================================
+  # Test 2: Istio Domain Inheritance
+  # ============================================================================
+  - it: should use global.domain for Istio hosts
+    template: templates/istio-gateway.yaml
+    set:
+      global.domain: custom-domain.io
+      global.istio.enabled: true
+      global.istio.tlsSecretName: wildcard-tls
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: spec.servers[0].hosts[0]
+          value: "*.custom-domain.io"
+      - equal:
+          path: spec.servers[1].hosts[0]
+          value: "*.custom-domain.io"
+
+  # ============================================================================
+  # Test 3: Values File Minimalism
+  # ============================================================================
+  - it: should work with absolute minimal configuration
+    template: templates/istio-gateway.yaml
+    set:
+      global.domain: example.com
+      global.istio.enabled: true
+      global.istio.tlsSecretName: wildcard-tls
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Gateway
+      - equal:
+          path: spec.servers[0].hosts[0]
+          value: "*.example.com"
