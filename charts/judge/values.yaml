@@ -207,6 +207,12 @@ global:
       clientId: ""         # GitHub OAuth App client ID
       clientSecret: ""     # GitHub OAuth App client secret
 
+  # ArgoCD Integration (Optional)
+  # When enabled, automatically adds ArgoCD sync options to Job resources
+  # Required for proper Job management in ArgoCD (Jobs are immutable)
+  argocd:
+    enabled: false  # Set to true when deploying via ArgoCD
+
   # Istio/Networking Configuration (Optional - for helm golf)
   # Uncomment to set hostnames globally instead of root-level istio.hosts
   # istio:
