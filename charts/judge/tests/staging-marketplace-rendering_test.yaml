@@ -151,8 +151,6 @@ tests:
     template: templates/kratos-config.yaml
     set:
       global.domain: "testifysec.dev"
-      istio.domain: "testifysec.dev"
-      istio.enabled: true
       global.istio.enabled: true
       global.istio.hosts.login: "staging-marketplace-login"
       global.istio.hosts.kratos: "staging-marketplace-kratos"
@@ -176,8 +174,7 @@ tests:
     template: templates/kratos-config.yaml
     set:
       global.domain: "testifysec.dev"
-      istio.domain: "testifysec.dev"
-      global.istio.hosts.web: "staging-marketplace-judge"  # Subdomain prefix
+      global.global.istio.hosts.web: "staging-marketplace-judge"  # Subdomain prefix
       kratos.enabled: true
     asserts:
       # Cookie domain should be BASE domain (testifysec.dev)

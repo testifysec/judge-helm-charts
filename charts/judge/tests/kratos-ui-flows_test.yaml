@@ -6,11 +6,10 @@ tests:
     set:
       global.domain: testifysec.dev
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.web: "judge"
-      istio.hosts.login: "login"
-      istio.hosts.kratos: "kratos"
+      global.istio.enabled: true
+      global.istio.hosts.web: "judge"
+      global.istio.hosts.login: "login"
+      global.istio.hosts.kratos: "kratos"
     asserts:
       - isKind:
           of: ConfigMap
@@ -47,11 +46,10 @@ tests:
     set:
       global.domain: testifysec.dev
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.web: "staging-judge"
-      istio.hosts.login: "staging-login"
-      istio.hosts.kratos: "staging-kratos"
+      global.istio.enabled: true
+      global.istio.hosts.web: "staging-judge"
+      global.istio.hosts.login: "staging-login"
+      global.istio.hosts.kratos: "staging-kratos"
     asserts:
       - isKind:
           of: ConfigMap
@@ -88,11 +86,10 @@ tests:
     set:
       global.domain: testifysec.dev
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.web: "dev-judge"
-      istio.hosts.login: "dev-login"
-      istio.hosts.kratos: "dev-kratos"
+      global.istio.enabled: true
+      global.istio.hosts.web: "dev-judge"
+      global.istio.hosts.login: "dev-login"
+      global.istio.hosts.kratos: "dev-kratos"
     asserts:
       - isKind:
           of: ConfigMap
@@ -129,10 +126,9 @@ tests:
     set:
       global.domain: testifysec.dev
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.web: "judge"
-      istio.hosts.login: "login"
+      global.istio.enabled: true
+      global.istio.hosts.web: "judge"
+      global.istio.hosts.login: "login"
     asserts:
       - isKind:
           of: ConfigMap

@@ -6,12 +6,11 @@ tests:
     documentIndex: 4  # Dex VirtualService (0: gateway, 1: web, 2: api, 3: fulcio, 4: dex)
     set:
       global.domain: testifysec.dev
+      global.istio.enabled: true
+      global.istio.hosts.dex: "dex"
+      global.istio.hosts.fulcio: "fulcio"
+      global.istio.hosts.tsa: "tsa"
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.dex: "dex"
-      istio.hosts.fulcio: "fulcio"
-      istio.hosts.tsa: "tsa"
       dex.enabled: true
     asserts:
       - isKind:
@@ -27,12 +26,11 @@ tests:
     documentIndex: 4
     set:
       global.domain: testifysec.dev
+      global.istio.enabled: true
+      global.istio.hosts.dex: "staging-dex"
+      global.istio.hosts.fulcio: "staging-fulcio"
+      global.istio.hosts.tsa: "staging-tsa"
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.dex: "staging-dex"
-      istio.hosts.fulcio: "staging-fulcio"
-      istio.hosts.tsa: "staging-tsa"
       dex.enabled: true
     asserts:
       - isKind:
@@ -45,12 +43,11 @@ tests:
     documentIndex: 4
     set:
       global.domain: testifysec.dev
+      global.istio.enabled: true
+      global.istio.hosts.dex: "dev-dex"
+      global.istio.hosts.fulcio: "dev-fulcio"
+      global.istio.hosts.tsa: "dev-tsa"
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.dex: "dev-dex"
-      istio.hosts.fulcio: "dev-fulcio"
-      istio.hosts.tsa: "dev-tsa"
       dex.enabled: true
     asserts:
       - isKind:
@@ -63,12 +60,11 @@ tests:
     documentIndex: 4
     set:
       global.domain: custom-domain.io
+      global.istio.enabled: true
+      global.istio.hosts.dex: "oauth"
+      global.istio.hosts.fulcio: "ca"
+      global.istio.hosts.tsa: "timestamp"
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: custom-domain.io
-      istio.hosts.dex: "oauth"
-      istio.hosts.fulcio: "ca"
-      istio.hosts.tsa: "timestamp"
       dex.enabled: true
     asserts:
       - isKind:
@@ -81,12 +77,11 @@ tests:
     documentIndex: 4
     set:
       global.domain: production.example.com
+      global.istio.enabled: true
+      global.istio.hosts.dex: "auth"
+      global.istio.hosts.fulcio: "fulcio"
+      global.istio.hosts.tsa: "tsa"
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: production.example.com
-      istio.hosts.dex: "auth"
-      istio.hosts.fulcio: "fulcio"
-      istio.hosts.tsa: "tsa"
       dex.enabled: true
     asserts:
       - isKind:

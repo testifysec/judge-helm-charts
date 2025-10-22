@@ -7,11 +7,10 @@ tests:
     set:
       global.domain: testifysec.dev
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: testifysec.dev
-      istio.hosts.web: "judge"
-      istio.hosts.login: "login"
-      istio.hosts.kratos: "kratos"
+      global.istio.enabled: true
+      global.istio.hosts.web: "judge"
+      global.istio.hosts.login: "login"
+      global.istio.hosts.kratos: "kratos"
     asserts:
       # Kratos config uses testifysec.dev
       - matchRegex:
@@ -40,11 +39,10 @@ tests:
     set:
       global.domain: staging.example.com
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: staging.example.com
-      istio.hosts.web: "judge"
-      istio.hosts.login: "login"
-      istio.hosts.kratos: "kratos"
+      global.istio.enabled: true
+      global.istio.hosts.web: "judge"
+      global.istio.hosts.login: "login"
+      global.istio.hosts.kratos: "kratos"
     asserts:
       # Kratos config uses staging.example.com
       - matchRegex:
@@ -73,11 +71,10 @@ tests:
     set:
       global.domain: custom-domain.io
       kratos.enabled: true
-      istio.enabled: true
-      istio.domain: custom-domain.io
-      istio.hosts.web: "app"
-      istio.hosts.login: "auth"
-      istio.hosts.kratos: "identity"
+      global.istio.enabled: true
+      global.istio.hosts.web: "app"
+      global.istio.hosts.login: "auth"
+      global.istio.hosts.kratos: "identity"
     asserts:
       # All Kratos URLs use custom-domain.io
       - matchRegex:

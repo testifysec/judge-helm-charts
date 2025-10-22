@@ -29,20 +29,28 @@ global:
   # See DOMAIN.md for complete documentation and update checklist
   domain: example.com
 
-  # Istio Configuration (Optional - allows consolidating root istio.* config here)
-  # Priority: root istio.* → global.istio.* → defaults
-  # Uncomment to use global config instead of root-level istio: block
-  # istio:
-  #   enabled: false
-  #   hosts:
-  #     web: "judge"
-  #     api: "api"
-  #     gateway: "gateway"
-  #     login: "login"
-  #     kratos: "kratos"
-  #     dex: "dex"
-  #     fulcio: "fulcio"
-  #     tsa: "tsa"
+  # Istio Service Mesh Configuration
+  # All Istio-related settings are configured here for consistency
+  istio:
+    enabled: true
+    tlsSecretName: wildcard-tls  # Kubernetes secret containing TLS certificate
+
+    # Ingress gateway selector (must match Istio gateway pod labels)
+    ingressGatewaySelector:
+      istio: ingress
+
+    # Hostname customization (subdomain prefixes only)
+    # Combined with global.domain to form full URLs: {host}.{global.domain}
+    # Example: web: "judge" + domain: "example.com" = judge.example.com
+    hosts:
+      gateway: "gateway"   # Gateway service API
+      web: "judge"         # Main Judge web UI
+      api: "api"           # Judge API
+      fulcio: "fulcio"     # Fulcio code signing CA
+      dex: "dex"           # Dex OIDC provider
+      tsa: "tsa"           # Timestamp Authority
+      kratos: "kratos"     # Kratos identity service
+      login: "login"       # Login UI
 
   # Deployment Mode (NEW - replaces dev flag)
   # Options: aws | dev
@@ -231,28 +239,6 @@ global:
   #     kratos: "kratos"     # Kratos identity service (kratos.domain)
   #     login: "login"       # Login UI (login.domain)
 
-# Istio service mesh configuration
-istio:
-  enabled: true
-  # MUST match global.domain - validation will fail if they differ
-  domain: example.com
-  tlsSecretName: wildcard-tls
-  # Selector for Istio ingress gateway (must match the label on the ingress gateway pod)
-  ingressGatewaySelector:
-    istio: ingress
-
-  # Public ingress hostnames (subdomains only - will be appended to istio.domain)
-  # Override these in your values file to customize public-facing URLs
-  # Example: hosts.web: "attestation" becomes attestation.yourdomain.com
-  hosts:
-    gateway: "gateway"      # Gateway service API (gateway.domain)
-    web: "judge"            # Main Judge web UI (judge.domain)
-    api: "api"              # Judge API (api.domain)
-    fulcio: "fulcio"        # Fulcio code signing CA (fulcio.domain)
-    dex: "dex"              # Dex OIDC provider (dex.domain)
-    tsa: "tsa"              # Timestamp Authority (tsa.domain)
-    kratos: "kratos"        # Kratos identity service (kratos.domain)
-    login: "login"          # Login UI (login.domain)
 nameOverride: "judge"
 gateway:
   enabled: true

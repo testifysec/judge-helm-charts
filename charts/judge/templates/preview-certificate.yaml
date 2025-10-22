@@ -4,7 +4,7 @@
     {{- $previewRouterEnabled = true }}
   {{- end }}
 {{- end }}
-{{- if and .Values.istio.enabled $previewRouterEnabled }}
+{{- if and .Values.global.istio.enabled $previewRouterEnabled }}
 ---
 # Certificate for preview subdomain
 apiVersion: cert-manager.io/v1
@@ -19,19 +19,19 @@ metadata:
 spec:
   secretName: preview-wildcard-tls
   issuerRef:
-    name: {{ .Values.istio.tlsIssuer | default "letsencrypt-prod" }}
+    name: {{ .Values.global.istio.tlsIssuer | default "letsencrypt-prod" }}
     kind: ClusterIssuer
   dnsNames:
-    - "*.preview.{{ .Values.istio.domain }}"
+    - "*.preview.{{ .Values.global.domain }}"
   # DNS-01 challenge required for wildcard certificates
-  {{- if .Values.istio.tlsDNS01 }}
+  {{- if .Values.global.istio.tlsDNS01 }}
   acme:
     solvers:
     - dns01:
         route53:
           region: {{ .Values.global.aws.region | default "us-east-1" }}
-          {{- if .Values.istio.hostedZoneID }}
-          hostedZoneID: {{ .Values.istio.hostedZoneID }}
+          {{- if .Values.global.istio.hostedZoneID }}
+          hostedZoneID: {{ .Values.global.istio.hostedZoneID }}
           {{- end }}
   {{- end }}
 {{- end }}

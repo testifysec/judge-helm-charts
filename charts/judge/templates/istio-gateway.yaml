@@ -1,5 +1,4 @@
-{{- if .Values.istio.enabled }}
-{{- include "judge.validateDomain" . }}
+{{- if .Values.global.istio.enabled }}
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
@@ -9,14 +8,14 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   selector:
-    {{- toYaml .Values.istio.ingressGatewaySelector | nindent 4 }}
+    {{- toYaml .Values.global.istio.ingressGatewaySelector | nindent 4 }}
   servers:
     - port:
         number: 80
         name: http
         protocol: HTTP
       hosts:
-        - "*.{{ .Values.istio.domain }}"
+        - "*.{{ .Values.global.domain }}"
       # HTTP to HTTPS redirect
       tls:
         httpsRedirect: true
@@ -26,9 +25,9 @@ spec:
         protocol: HTTPS
       tls:
         mode: SIMPLE
-        credentialName: {{ .Values.istio.tlsSecretName | default "wildcard-tls" }}
+        credentialName: {{ .Values.global.istio.tlsSecretName | default "wildcard-tls" }}
       hosts:
-        - "*.{{ .Values.istio.domain }}"
+        - "*.{{ .Values.global.domain }}"
     {{- $previewRouterEnabled := false }}
     {{- if hasKey .Values "preview-router" }}
       {{- if index .Values "preview-router" "enabled" }}
@@ -45,6 +44,6 @@ spec:
         mode: SIMPLE
         credentialName: preview-wildcard-tls
       hosts:
-        - "*.preview.{{ .Values.istio.domain }}"
+        - "*.preview.{{ .Values.global.domain }}"
     {{- end }}
 {{- end }}

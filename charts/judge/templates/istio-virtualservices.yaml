@@ -1,4 +1,4 @@
-{{- if .Values.istio.enabled }}
+{{- if .Values.global.istio.enabled }}
 ---
 # Gateway VirtualService
 apiVersion: networking.istio.io/v1beta1
@@ -291,7 +291,7 @@ metadata:
     {{- include "judge.labels" . | nindent 4 }}
 spec:
   hosts:
-    - "*.preview.{{ .Values.istio.domain }}"
+    - "*.preview.{{ .Values.global.domain }}"
   gateways:
     - istio-system/main-gateway
   http:

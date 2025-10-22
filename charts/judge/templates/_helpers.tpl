@@ -1,17 +1,7 @@
 {{/*
-Validate that istio.domain matches global.domain.
-This prevents configuration drift where URLs use different domains.
-Usage: {{ include "judge.validateDomain" . }}
+Removed: Domain validation is no longer needed.
+All configuration is now under global.* only.
 */}}
-{{- define "judge.validateDomain" -}}
-{{- if .Values.istio -}}
-{{- if .Values.istio.enabled -}}
-{{- if ne .Values.global.domain .Values.istio.domain -}}
-{{- fail (printf "ERROR: global.domain (%s) MUST match istio.domain (%s). Update istio.domain in values.yaml to match global.domain." .Values.global.domain .Values.istio.domain) -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
-{{- end -}}
 
 {{/*
 ArgoCD Job Annotations Helper
@@ -28,9 +18,9 @@ argocd.argoproj.io/sync-options: "Force=true,Replace=true"
 {{/*
 Istio Ingress Hostname Helpers
 These construct public-facing hostnames for VirtualServices.
-Format: {subdomain}.{istio.domain}
-Users can override subdomains via istio.hosts.* OR global.istio.hosts.* in values.yaml
-Priority: root istio.* → global.istio.* → defaults
+Format: {subdomain}.{global.domain}
+Users can override subdomains via global.istio.hosts.* in values.yaml
+Priority: global.istio.hosts.{service} → default
 */}}
 {{- define "judge.ingress.host.gateway" -}}
 {{ include "judge.istio.host" (dict "service" "gateway" "default" "gateway" "context" .) }}
@@ -1053,29 +1043,19 @@ Supports both global.auth.github and old location for backward compatibility
 
 {{/*
 Get Istio host for a service
-Priority: global.istio.hosts.{service} → root istio.hosts.{service} → default
-Domain priority: root istio.domain → global.domain
+Reads from global.istio.hosts.{service} with fallback to default, combines with global.domain
 Usage: {{ include "judge.istio.host" (dict "service" "web" "default" "judge" "context" .) }}
+Returns: {hostname}.{global.domain}
+Example: "judge.example.com"
 */}}
 {{- define "judge.istio.host" -}}
 {{- $service := .service -}}
 {{- $default := .default -}}
 {{- $context := .context -}}
-{{- $rootHost := "" -}}
-{{- $globalHost := "" -}}
-{{/*  DEBUG global check */}}
+{{- $host := $default -}}
 {{- if and $context.Values.global.istio $context.Values.global.istio.hosts (hasKey $context.Values.global.istio.hosts $service) -}}
-  {{- $globalHost = index $context.Values.global.istio.hosts $service -}}
+  {{- $host = index $context.Values.global.istio.hosts $service -}}
 {{- end -}}
-{{/*  DEBUG root check */}}
-{{- if and $context.Values.istio $context.Values.istio.hosts (hasKey $context.Values.istio.hosts $service) -}}
-  {{- $rootHost = index $context.Values.istio.hosts $service -}}
-{{- end -}}
-{{- $host := coalesce $globalHost $rootHost $default -}}
-{{- $istioDomain := "" -}}
-{{- if $context.Values.istio -}}
-  {{- $istioDomain = $context.Values.istio.domain | default "" -}}
-{{- end -}}
-{{- $domain := coalesce $istioDomain $context.Values.global.domain -}}
+{{- $domain := $context.Values.global.domain -}}
 {{- printf "%s.%s" $host $domain -}}
 {{- end -}}
