@@ -16,3 +16,5 @@ secrets.yaml
 # Helm
 *.tgz
 charts/*/charts/
+terraform.tfstate
+vault-init/

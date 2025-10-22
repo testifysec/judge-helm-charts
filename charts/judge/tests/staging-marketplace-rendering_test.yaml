@@ -1,0 +1,190 @@
+suite: Staging Marketplace Values - Rendered Output Test
+templates:
+  # ServiceAccounts
+  - charts/archivista/templates/serviceaccount.yaml
+  - charts/judge-api/templates/serviceaccount.yaml
+  - charts/kratos/templates/rbac.yaml
+
+  # Deployments and their dependencies
+  - charts/archivista/templates/deployment.yaml
+
+  - charts/dex/templates/secret.yaml
+  - charts/dex/templates/deployment.yaml
+
+  - charts/fulcio/templates/fulcio-configmap.yaml
+  - charts/fulcio/templates/fulcio-deployment.yaml
+
+  - charts/kratos/templates/configmap-config.yaml
+  - charts/kratos/templates/configmap-templates.yaml
+  - charts/kratos/templates/secrets.yaml
+  - charts/kratos/templates/deployment-kratos.yaml
+
+  - charts/kratos-selfservice-ui-node/templates/deployment.yaml
+
+  - charts/tsa/templates/tsa-configmap.yaml
+  - charts/tsa/templates/tsa-deployment.yaml
+
+  # Parent chart templates
+  - templates/kratos-config.yaml
+
+tests:
+  # ============================================================================
+  # Test 1: ServiceAccount Names (from global.secrets.vault.serviceAccounts)
+  # ============================================================================
+  - it: should use correct ServiceAccount names for Vault auth
+    template: charts/archivista/templates/serviceaccount.yaml
+    set:
+      global.secrets.vault.serviceAccounts.archivista: "judge-platform-judge-archivista"
+    asserts:
+      - equal:
+          path: metadata.name
+          value: "judge-platform-judge-archivista"
+
+  - it: should use correct ServiceAccount name for judge-api
+    template: charts/judge-api/templates/serviceaccount.yaml
+    set:
+      global.secrets.vault.serviceAccounts.judgeApi: "judge-platform-judge-api"
+    asserts:
+      - equal:
+          path: metadata.name
+          value: "judge-platform-judge-api"
+
+  - it: should use correct ServiceAccount name for kratos
+    template: charts/kratos/templates/rbac.yaml
+    set:
+      global.secrets.vault.serviceAccounts.kratos: "judge-platform-judge-kratos"
+    asserts:
+      - equal:
+          path: metadata.name
+          value: "judge-platform-judge-kratos"
+
+  # ============================================================================
+  # Test 2: IRSA Role ARNs (from global.aws.prefix and accountId)
+  # ============================================================================
+  - it: should have correct IRSA annotation for archivista
+    template: charts/archivista/templates/serviceaccount.yaml
+    set:
+      global.aws.enabled: true
+      global.aws.accountId: "831646886084"
+      global.aws.prefix: "demo-judge"
+      global.aws.irsa.enabled: true
+      serviceAccount.create: true
+    asserts:
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: "arn:aws:iam::831646886084:role/demo-judge-archivista"
+
+  - it: should have correct IRSA annotation for judge-api
+    template: charts/judge-api/templates/serviceaccount.yaml
+    set:
+      global.aws.enabled: true
+      global.aws.accountId: "831646886084"
+      global.aws.prefix: "demo-judge"
+      global.aws.irsa.enabled: true
+      serviceAccount.create: true
+    asserts:
+      - equal:
+          path: metadata.annotations["eks.amazonaws.com/role-arn"]
+          value: "arn:aws:iam::831646886084:role/demo-judge-judge-api"
+
+  # ============================================================================
+  # Test 3: Marketplace ECR Images (using global.versions)
+  # ============================================================================
+  - it: should use marketplace ECR for dex image
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.registry.marketplace.enabled: true
+      global.versions.dex: "v2.43.1"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-dex:v2\\.43\\.1"
+
+  - it: should use marketplace ECR for fulcio image
+    template: charts/fulcio/templates/fulcio-deployment.yaml
+    set:
+      global.registry.marketplace.enabled: true
+      global.versions.fulcio: "v1.4.5"
+      server.ingress.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-fulcio:v1\\.4\\.5"
+
+  - it: should use marketplace ECR for kratos image
+    template: charts/kratos/templates/deployment-kratos.yaml
+    set:
+      global.registry.marketplace.enabled: true
+      global.versions.kratos: "v1.0.0-token-update"
+      kratos.automigration.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-kratos:v1\\.0\\.0-token-update"
+
+  - it: should use marketplace ECR for tsa image
+    template: charts/tsa/templates/tsa-deployment.yaml
+    set:
+      global.registry.marketplace.enabled: true
+      global.versions.tsa: "v1.6.0"
+      server.ingress.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-timestamp-server:v1\\.6\\.0"
+
+  - it: should use marketplace ECR for kratos-ui image
+    template: charts/kratos-selfservice-ui-node/templates/deployment.yaml
+    set:
+      global.registry.marketplace.enabled: true
+      global.versions.kratosUI: "v1.6.0"
+      kratos-selfservice-ui-node.nameOverride: "judge-kratos-self-service"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-kratos-self-service:v1\\.6\\.0"
+
+  # ============================================================================
+  # Test 4: Istio Configuration (from global.istio.hosts)
+  # ============================================================================
+  - it: should render kratos config with correct istio hosts
+    template: templates/kratos-config.yaml
+    set:
+      global.domain: "testifysec.dev"
+      istio.domain: "testifysec.dev"
+      istio.enabled: true
+      global.istio.enabled: true
+      global.istio.hosts.login: "staging-marketplace-login"
+      global.istio.hosts.kratos: "staging-marketplace-kratos"
+      global.istio.hosts.web: "staging-marketplace-judge"
+      kratos.enabled: true
+    asserts:
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://staging-marketplace-login\\.testifysec\\.dev"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://staging-marketplace-kratos\\.testifysec\\.dev"
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "https://staging-marketplace-judge\\.testifysec\\.dev"
+
+  # ============================================================================
+  # Test 5: Kratos Cookie Domain (from global.domain, NOT subdomain)
+  # ============================================================================
+  - it: should use base domain for kratos cookies (cross-subdomain)
+    template: templates/kratos-config.yaml
+    set:
+      global.domain: "testifysec.dev"
+      istio.domain: "testifysec.dev"
+      global.istio.hosts.web: "staging-marketplace-judge"  # Subdomain prefix
+      kratos.enabled: true
+    asserts:
+      # Cookie domain should be BASE domain (testifysec.dev)
+      # NOT subdomain (staging-marketplace-judge.testifysec.dev)
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: testifysec\\.dev"
+      - notMatchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: staging-marketplace-judge\\.testifysec\\.dev"

@@ -49,9 +49,9 @@ spec:
           {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with default .Values.imagePullSecrets .Values.global.imagePullSecrets }}
+      {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
-{{- toYaml . | nindent 8 }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       initContainers:
         - name: {{ .Chart.Name }}-process-config
@@ -134,7 +134,7 @@ spec:
       {{- end }}
       {{- if and ( .Values.kratos.automigration.enabled ) ( eq .Values.kratos.automigration.type "initContainer" ) }}
         - name: {{ .Chart.Name }}-automigrate
-          image: {{ include "judge.image.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "kratos" "context" .) }}
           imagePullPolicy: {{ include "kratos.imagePullPolicy" . }}
           {{- if .Values.kratos.automigration.customCommand }}
           command: {{- toYaml .Values.kratos.automigration.customCommand | nindent 12 }}
@@ -173,7 +173,7 @@ spec:
       {{- end }}
       volumes:
         {{- if .Values.deployment.extraVolumes }}
-{{ toYaml .Values.deployment.extraVolumes | indent 8 }}
+        {{- toYaml .Values.deployment.extraVolumes | nindent 8 }}
         {{- end }}
         - name: {{ include "kratos.name" . }}-config-volume
           configMap:
@@ -193,7 +193,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.deployment.terminationGracePeriodSeconds }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "judge.image.repository" . }}:{{ .Values.image.tag | default .Chart.AppVersion }}
+          image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "kratos" "context" .) }}
           imagePullPolicy: {{ include "kratos.imagePullPolicy" . }}
           command:
             - kratos

@@ -1,12 +1,22 @@
 {{/*
 Render the imageRepository with the global and chart specific values.
+Precedence: .Values.image.repository (if non-empty) → .Values.global.registry.repository → ""
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
-{{- if eq .Values.image.repository "" }}
-{{- printf "%s/%s" .Values.image.registry $chartName | trimSuffix "/" -}}
+{{- $registryUrl := coalesce ((.Values.image).registry) ((.Values.global).registry.url | default "") "ghcr.io" }}
+{{- $localRepo := ((.Values.image).repository) | default "" }}
+{{- $globalRepo := ((.Values.global).registry.repository) | default "" }}
+{{- $repository := "" }}
+{{- if ne $localRepo "" }}
+  {{- $repository = $localRepo }}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.image.registry .Values.image.repository $chartName | trimSuffix "/" -}}
+  {{- $repository = $globalRepo }}
+{{- end }}
+{{- if eq $repository "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
+{{- else }}
+{{- printf "%s/%s/%s" $registryUrl $repository $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 
@@ -64,10 +74,24 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{/*
 Create the name of the service account to use
+Helm golf: Supports global configuration via global.secrets.vault.serviceAccounts.archivista
+Priority: local serviceAccount.name → global.secrets.vault.serviceAccounts.archivista → default
 */}}
 {{- define "archivista.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "archivista.fullname" .) .Values.serviceAccount.name }}
+{{- $globalName := "" -}}
+{{- if and .Values.global (hasKey .Values.global "secrets") -}}
+  {{- if and .Values.global.secrets (hasKey .Values.global.secrets "vault") -}}
+    {{- if and .Values.global.secrets.vault (hasKey .Values.global.secrets.vault "serviceAccounts") -}}
+      {{- if hasKey .Values.global.secrets.vault.serviceAccounts "archivista" -}}
+        {{- $globalName = .Values.global.secrets.vault.serviceAccounts.archivista -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $localName := .Values.serviceAccount.name | default "" -}}
+{{- $defaultName := include "archivista.fullname" . -}}
+{{- coalesce $localName $globalName $defaultName -}}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
@@ -93,3 +117,41 @@ Create the key of the secret to use for the connection string
 {{- .Values.sqlStore.secretKey }}
 {{- end }}
 {{- end }}
+
+{{/*
+Image tag helper (fallback for standalone lint)
+Returns the default image tag from global.version
+*/}}
+{{- define "judge.image.defaultTag" -}}
+{{- if and .Values.global .Values.global.version -}}
+{{ .Values.global.version }}
+{{- else -}}
+latest
+{{- end -}}
+{{- end -}}
+
+{{/*
+AWS IRSA Annotation Helper (fallback for standalone lint)
+Auto-generates eks.amazonaws.com/role-arn annotation when IRSA is enabled
+*/}}
+{{- define "judge.aws.irsa.annotations" -}}
+{{- $service := .service -}}
+{{- $root := .root -}}
+{{- if and $root.Values.global $root.Values.global.aws $root.Values.global.aws.irsa $root.Values.global.aws.irsa.enabled -}}
+{{- $accountId := "" -}}
+{{- if $root.Values.global.aws.accountId -}}
+{{- $accountId = $root.Values.global.aws.accountId -}}
+{{- else if and $root.Values.global.cloud $root.Values.global.cloud.aws $root.Values.global.cloud.aws.accountId -}}
+{{- $accountId = $root.Values.global.cloud.aws.accountId -}}
+{{- end -}}
+{{- $prefix := $root.Values.global.aws.prefix | default "judge" -}}
+eks.amazonaws.com/role-arn: arn:aws:iam::{{ $accountId }}:role/{{ $prefix }}-{{ $service }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Service URL helper for Gateway (fallback for standalone lint)
+*/}}
+{{- define "judge.service.gatewayUrl" -}}
+{{- printf "http://%s-judge-gateway.%s.svc.cluster.local:4000" .Release.Name .Release.Namespace -}}
+{{- end -}}

@@ -1,0 +1,109 @@
+suite: Image Repository Auto-Fallback (Helm Golf #2)
+templates:
+  # Test with infrastructure subcharts that use judge.image.repository helper
+  - charts/dex/templates/deployment.yaml
+  - charts/dex/templates/secret.yaml
+  - charts/fulcio/templates/fulcio-configmap.yaml
+  - charts/fulcio/templates/fulcio-deployment.yaml
+  - charts/tsa/templates/tsa-configmap.yaml
+  - charts/tsa/templates/tsa-deployment.yaml
+  - charts/kratos/templates/configmap-config.yaml
+  - charts/kratos/templates/configmap-templates.yaml
+  - charts/kratos/templates/secrets.yaml
+  - charts/kratos/templates/deployment-kratos.yaml
+  - charts/kratos-selfservice-ui-node/templates/deployment.yaml
+  - templates/kratos-config.yaml
+
+tests:
+  # ==============================================================================
+  # Test 1: Empty repository should auto-fallback to global.registry.repository
+  # ==============================================================================
+  - it: should use global.registry.repository when dex image.repository is empty
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.registry.repository: "testifysec"
+      global.registry.url: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      dex.image.repository: ""  # Explicitly empty
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-dex:"
+
+  - it: should use global.registry.repository when fulcio image.repository is empty
+    template: charts/fulcio/templates/fulcio-deployment.yaml
+    set:
+      global.registry.repository: "testifysec"
+      global.registry.url: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      fulcio.image.repository: ""  # Explicitly empty
+      server.ingress.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-fulcio:"
+
+  - it: should use global.registry.repository when tsa image.repository is empty
+    template: charts/tsa/templates/tsa-deployment.yaml
+    set:
+      global.registry.repository: "testifysec"
+      global.registry.url: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      tsa.image.repository: ""  # Explicitly empty
+      server.ingress.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-timestamp-server:"
+
+  # ==============================================================================
+  # Test 2: Unset repository should also auto-fallback
+  # ==============================================================================
+  - it: should use global.registry.repository when dex image.repository is not set
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.registry.repository: "my-org"
+      global.registry.url: "ghcr.io"
+      # dex.image.repository not set at all
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^ghcr\\.io/my-org/judge-dex:"
+
+  # ==============================================================================
+  # Test 3: Explicit repository should override global
+  # ==============================================================================
+  - it: should use explicit repository when dex image.repository is set
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.registry.repository: "testifysec"
+      global.registry.url: "ghcr.io"
+      dex.image.repository: "custom-org"  # Explicitly set
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^ghcr\\.io/custom-org/judge-dex:"
+
+  # ==============================================================================
+  # Test 4: Verify all infrastructure charts support auto-fallback
+  # ==============================================================================
+  - it: should auto-fallback for kratos main container
+    template: charts/kratos/templates/deployment-kratos.yaml
+    set:
+      global.registry.repository: "testifysec"
+      global.registry.url: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      kratos.image.repository: ""
+      kratos.automigration.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-kratos:"
+
+  - it: should auto-fallback for kratos-selfservice-ui-node
+    template: charts/kratos-selfservice-ui-node/templates/deployment.yaml
+    set:
+      global.registry.repository: "testifysec"
+      global.registry.url: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
+      kratos-selfservice-ui-node.image.repository: ""
+      kratos-selfservice-ui-node.nameOverride: "judge-kratos-self-service"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-kratos-self-service:"

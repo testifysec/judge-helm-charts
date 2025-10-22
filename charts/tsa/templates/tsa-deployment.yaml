@@ -29,8 +29,8 @@ spec:
       automountServiceAccountToken: {{ .Values.server.serviceAccount.mountToken }}
       containers:
         - name: {{ template "tsa.fullname" . }}
-          image: {{ include "judge.image.repository" . }}:{{ ((.Values.image).tag) | default .Chart.AppVersion }}
-          imagePullPolicy: "{{ .Values.server.image.pullPolicy }}"
+          image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "tsa" "context" .) }}
+          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
           ports:
 {{- include "tsa.containerPorts" .Values.server.service.ports | indent 12 }}
           args:

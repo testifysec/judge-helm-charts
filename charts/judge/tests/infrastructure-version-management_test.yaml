@@ -1,0 +1,161 @@
+suite: Infrastructure Component Version Management
+templates:
+  # Dex and dependencies
+  - charts/dex/templates/secret.yaml
+  - charts/dex/templates/deployment.yaml
+
+  # Fulcio and dependencies
+  - charts/fulcio/templates/fulcio-configmap.yaml
+  - charts/fulcio/templates/fulcio-deployment.yaml
+
+  # TSA and dependencies
+  - charts/tsa/templates/tsa-configmap.yaml
+  - charts/tsa/templates/tsa-deployment.yaml
+
+  # Kratos and dependencies
+  - templates/kratos-config.yaml
+  - charts/kratos/templates/configmap-config.yaml
+  - charts/kratos/templates/configmap-templates.yaml
+  - charts/kratos/templates/secrets.yaml
+  - charts/kratos/templates/deployment-kratos.yaml
+
+  # Kratos UI
+  - charts/kratos-selfservice-ui-node/templates/deployment.yaml
+tests:
+  # ==============================================================================
+  # TDD RED PHASE - Tests for global.versions.{service} pattern
+  # ==============================================================================
+  # These tests verify infrastructure components use judge.imageTag helper
+  # with global.versions.{service} support for centralized version management
+  # ==============================================================================
+
+  # Test 1: Dex uses global.versions.dex
+  - it: should use global.versions.dex for dex image tag
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.dex: v2.43.1
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-dex:v2\\.43\\.1$"
+
+  # Test 2: Fulcio uses global.versions.fulcio
+  - it: should use global.versions.fulcio for fulcio image tag
+    template: charts/fulcio/templates/fulcio-deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.fulcio: v1.4.5
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-fulcio:v1\\.4\\.5$"
+
+  # Test 3: TSA uses global.versions.tsa
+  - it: should use global.versions.tsa for tsa image tag
+    template: charts/tsa/templates/tsa-deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.tsa: v1.6.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-timestamp-server:v1\\.6\\.0$"
+
+  # Test 4: Kratos uses global.versions.kratos (main container)
+  - it: should use global.versions.kratos for kratos main container
+    template: charts/kratos/templates/deployment-kratos.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.kratos: v1.0.0-token-update
+      kratos.automigration.enabled: false
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-kratos:v1\\.0\\.0-token-update$"
+
+  # Test 5: Kratos uses global.versions.kratos (initContainer)
+  - it: should use global.versions.kratos for kratos automigrate initContainer
+    template: charts/kratos/templates/deployment-kratos.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.kratos: v1.0.0-token-update
+      kratos.automigration.enabled: true
+      kratos.automigration.type: initContainer
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.initContainers[1].image
+          pattern: "^.*/judge-kratos:v1\\.0\\.0-token-update$"
+
+  # Test 6: Kratos UI uses global.versions.kratosUI
+  - it: should use global.versions.kratosUI for kratos-selfservice-ui-node
+    template: charts/kratos-selfservice-ui-node/templates/deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.kratosUI: v1.6.0
+      kratos-selfservice-ui-node.nameOverride: "judge-kratos-self-service"
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-kratos-self-service:v1\\.6\\.0$"
+
+  # ==============================================================================
+  # VERSION CHANGE TESTS - Verify updates propagate
+  # ==============================================================================
+
+  # Test 7: Dex version changes propagate
+  - it: should update dex when global.versions.dex changes to v2.44.0
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.dex: v2.44.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-dex:v2\\.44\\.0$"
+
+  # Test 8: Fulcio version changes propagate
+  - it: should update fulcio when global.versions.fulcio changes to v1.5.0
+    template: charts/fulcio/templates/fulcio-deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.fulcio: v1.5.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-fulcio:v1\\.5\\.0$"
+
+  # Test 9: TSA version changes propagate
+  - it: should update tsa when global.versions.tsa changes to v1.7.0
+    template: charts/tsa/templates/tsa-deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+      global.versions.tsa: v1.7.0
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-timestamp-server:v1\\.7\\.0$"
+
+  # ==============================================================================
+  # FALLBACK TESTS - Verify fallback to Chart.AppVersion when no global version
+  # ==============================================================================
+
+  # Test 10: Dex falls back to Chart.AppVersion when global.versions.dex not set
+  - it: should use Chart.AppVersion for dex when global.versions.dex not set
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.registry.url: us-east4-docker.pkg.dev
+      global.registry.repository: judge-395516/judge-image-registry
+    asserts:
+      - matchRegex:
+          path: spec.template.spec.containers[0].image
+          pattern: "^.*/judge-dex:v?[0-9]+\\.[0-9]+\\.[0-9]+.*$"

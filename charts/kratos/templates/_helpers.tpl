@@ -2,13 +2,23 @@
 
 {{/*
 Render the imageRepository with the global and chart specific values.
+Precedence: .Values.image.repository (if non-empty) → .Values.global.registry.repository → ""
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
-{{- if eq .Values.image.repository "" }}
-{{- printf "%s/%s" .Values.image.registry $chartName | trimSuffix "/" -}}
+{{- $registryUrl := coalesce ((.Values.image).registry) ((.Values.global).registry.url | default "") "ghcr.io" }}
+{{- $localRepo := ((.Values.image).repository) | default "" }}
+{{- $globalRepo := ((.Values.global).registry.repository) | default "" }}
+{{- $repository := "" }}
+{{- if ne $localRepo "" }}
+  {{- $repository = $localRepo }}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.image.registry .Values.image.repository $chartName | trimSuffix "/" -}}
+  {{- $repository = $globalRepo }}
+{{- end }}
+{{- if eq $repository "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
+{{- else }}
+{{- printf "%s/%s/%s" $registryUrl $repository $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 
@@ -165,10 +175,24 @@ Generate imagePullPolicy
 
 {{/*
 Create the name of the service account to use
+Helm golf: Supports global configuration via global.secrets.vault.serviceAccounts.kratos
+Priority: local deployment.serviceAccount.name → global.secrets.vault.serviceAccounts.kratos → default
 */}}
 {{- define "kratos.serviceAccountName" -}}
 {{- if .Values.deployment.serviceAccount.create }}
-{{- default (include "kratos.fullname" .) .Values.deployment.serviceAccount.name }}
+{{- $globalName := "" -}}
+{{- if and .Values.global (hasKey .Values.global "secrets") -}}
+  {{- if and .Values.global.secrets (hasKey .Values.global.secrets "vault") -}}
+    {{- if and .Values.global.secrets.vault (hasKey .Values.global.secrets.vault "serviceAccounts") -}}
+      {{- if hasKey .Values.global.secrets.vault.serviceAccounts "kratos" -}}
+        {{- $globalName = .Values.global.secrets.vault.serviceAccounts.kratos -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $localName := .Values.deployment.serviceAccount.name | default "" -}}
+{{- $defaultName := include "kratos.fullname" . -}}
+{{- coalesce $localName $globalName $defaultName -}}
 {{- else }}
 {{- default "default" .Values.deployment.serviceAccount.name }}
 {{- end }}
@@ -221,4 +245,86 @@ Common labels for the cleanup cron job
 "app.kubernetes.io/managed-by": {{ .Release.Service | quote }}
 "app.kubernetes.io/component": cleanup
 "helm.sh/chart": {{ include "kratos.chart" . | quote }}
+{{- end -}}
+
+{{/*
+Database Endpoint Helper for Kratos (fallback for standalone lint)
+Returns PostgreSQL DSN for dev mode or RDS DSN for production
+*/}}
+{{- define "judge.database.endpoint.kratos" -}}
+{{- $mode := "aws" -}}
+{{- if and .Values.global .Values.global.mode -}}
+{{- $mode = .Values.global.mode -}}
+{{- else if and .Values.global .Values.global.dev -}}
+{{- $mode = "dev" -}}
+{{- end -}}
+{{- if eq $mode "dev" -}}
+{{- $username := "judge" -}}
+{{- $password := "dev-preview-password" -}}
+{{- if and .Values.global .Values.global.devDatabase -}}
+{{- $username = .Values.global.devDatabase.username | default "judge" -}}
+{{- $password = .Values.global.devDatabase.password | default "dev-preview-password" -}}
+{{- end -}}
+postgres://{{ $username }}:{{ $password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/kratos?sslmode=disable
+{{- else -}}
+{{- $username := "kratos" -}}
+{{- $password := "PLACEHOLDER_PASSWORD" -}}
+{{- $endpoint := "localhost" -}}
+{{- $port := "5432" -}}
+{{- if and .Values.global .Values.global.database -}}
+{{- $username = default "kratos" .Values.global.database.username -}}
+{{- $port = default "5432" .Values.global.database.port -}}
+{{- if .Values.global.database.aws -}}
+{{- $endpoint = default "localhost" .Values.global.database.aws.endpoint -}}
+{{- end -}}
+{{- end -}}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.database -}}
+{{- $password = default "PLACEHOLDER_PASSWORD" .Values.global.secrets.database.passwordEncoded -}}
+{{- end -}}
+postgres://{{ $username }}:{{ $password }}@{{ $endpoint }}:{{ $port }}/kratos?sslmode=require
+{{- end -}}
+{{- end -}}
+
+
+
+{{/*
+Get image tag for a service - simplified version management
+Usage: {{ include "judge.imageTag" (dict "service" "api" "context" .) }}
+Precedence:
+1. global.versions.{service} - Explicit service version
+2. global.versions.platform - Platform-wide default for Judge services
+3. .Chart.AppVersion - Chart default
+*/}}
+{{- define "judge.imageTag" -}}
+{{- $service := .service -}}
+{{- $context := .context -}}
+{{- $tag := "" -}}
+{{/* Check global.versions.{service} */}}
+{{- if $context.Values.global -}}
+  {{- if $context.Values.global.versions -}}
+    {{- if hasKey $context.Values.global.versions $service -}}
+      {{- $version := index $context.Values.global.versions $service -}}
+      {{- if ne $version "" -}}
+        {{- $tag = $version -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{/* Fallback: global.versions.platform */}}
+{{- if eq $tag "" -}}
+  {{- if $context.Values.global -}}
+    {{- if $context.Values.global.versions -}}
+      {{- if $context.Values.global.versions.platform -}}
+        {{- if ne $context.Values.global.versions.platform "" -}}
+          {{- $tag = $context.Values.global.versions.platform -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{/* Final fallback: Chart.AppVersion */}}
+{{- if eq $tag "" -}}
+  {{- $tag = $context.Chart.AppVersion -}}
+{{- end -}}
+{{- $tag -}}
 {{- end -}}

@@ -16,7 +16,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: "1.8.5"
+version: "1.8.11"
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -31,19 +31,19 @@ dependencies:
     repository: file://../judge-preflight
     condition: judge-preflight.enabled
   - name: kratos
-    version: 1.6.22
+    version: 1.6.25
     repository: file://../kratos
     condition: kratos.enabled
   - name: kratos-selfservice-ui-node
-    version: 1.6.3
+    version: 1.6.5
     repository: file://../kratos-selfservice-ui-node
     condition: kratos-selfservice-ui-node.enabled
   - name: archivista
-    version: "1.6.11"
+    version: "1.6.14"
     repository: file://../archivista
     condition: archivista.enabled
   - name: judge-api
-    version: "1.6.11"
+    version: "1.6.14"
     repository: file://../judge-api
     condition: judge-api.enabled
   - name: dapr
@@ -55,15 +55,15 @@ dependencies:
     repository: file://../judge-web
     condition: web.enabled
   - name: dex
-    version: 0.17.3
+    version: 0.17.5
     repository: file://../dex
     condition: dex.enabled
   - name: fulcio
-    version: 2.3.22
+    version: 2.3.24
     repository: file://../fulcio
     condition: fulcio.enabled
   - name: tsa
-    version: 1.6.3
+    version: 1.6.5
     repository: file://../tsa
     condition: tsa.enabled
   - name: judge-ai-proxy

@@ -9,7 +9,7 @@ metadata:
   {{- end }}
   labels:
     {{- include "kratos.labels" . | nindent 4 }}
-  {{- if or .Values.deployment.serviceAccount.annotations (and .Values.global.aws .Values.global.aws.irsa .Values.global.aws.irsa.enabled) }}
+  {{- if or .Values.deployment.serviceAccount.annotations (and .Values.global (hasKey .Values.global "aws") .Values.global.aws (hasKey .Values.global.aws "irsa") .Values.global.aws.irsa (hasKey .Values.global.aws.irsa "enabled") .Values.global.aws.irsa.enabled) }}
   annotations:
     {{- include "judge.aws.irsa.annotations" (dict "service" "kratos" "root" .) | nindent 4 }}
     {{- with .Values.deployment.serviceAccount.annotations }}

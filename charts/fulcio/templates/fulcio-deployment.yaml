@@ -29,7 +29,7 @@ spec:
       {{- end }}
       containers:
         - name: {{ template "fulcio.fullname" . }}
-          image: {{ include "judge.image.repository" . }}:{{ ((.Values.image).tag) | default .Chart.AppVersion }}
+          image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "fulcio" "context" .) }}
           imagePullPolicy: "{{ .Values.server.image.pullPolicy }}"
           ports:
 {{- include "fulcio.containerPorts" .Values.server.service.ports | indent 12 }}
