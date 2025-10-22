@@ -213,7 +213,7 @@ global:
   argocd:
     enabled: false  # Set to true when deploying via ArgoCD
 
-  # Istio/Networking Configuration (Optional - for helm golf)
+  # Istio/Networking Configuration (Optional - for configuration pattern)
   # Uncomment to set hostnames globally instead of root-level istio.hosts
   # istio:
   #   enabled: true

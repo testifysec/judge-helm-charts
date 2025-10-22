@@ -1,4 +1,4 @@
-suite: Image Pull Policy Auto-Fallback (Helm Golf #3)
+suite: Image Pull Policy Auto-Fallback (configuration pattern #3)
 templates:
   # Test with infrastructure subcharts that should use judge.image.pullPolicy helper
   - charts/dex/templates/deployment.yaml

@@ -1,4 +1,4 @@
-## 2025-10-22 - Helm Golf #3: Image Pull Policy Helper Implementation
+## 2025-10-22 - configuration pattern #3: Image Pull Policy Helper Implementation
 
 **What I tried:** 
 - Added `judge.image.pullPolicy` helper to 7 charts (dex, fulcio, tsa, kratos, kratos-ui, archivista, judge-api)

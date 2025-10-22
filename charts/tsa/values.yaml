@@ -3,15 +3,15 @@ namespace:
   name: tsa-system
 nameOverride: "tsa"
 
-# Image configuration (normalized structure for helm golf)
+# Image configuration (normalized structure for configuration pattern)
 image:
-  # Helm Golf: Fields omitted by default to enable global configuration
+  # configuration pattern: Fields omitted by default to enable global configuration
   pullSecrets:
     - name: gcr-secret
 
 server:
   replicaCount: 1
-  # Helm Golf: server.image fields use empty defaults to enable global configuration
+  # configuration pattern: server.image fields use empty defaults to enable global configuration
   image:
     registry: ""
     repository: ""

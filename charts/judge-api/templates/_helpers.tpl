@@ -98,7 +98,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{/*
 Create the name of the service account to use
-Helm golf: Supports global configuration via global.secrets.vault.serviceAccounts.judgeApi
+Configuration pattern: Supports global configuration via global.secrets.vault.serviceAccounts.judgeApi
 Priority: local serviceAccount.name → global.secrets.vault.serviceAccounts.judgeApi → default
 */}}
 {{- define "judge-api.serviceAccountName" -}}

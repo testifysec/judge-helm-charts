@@ -10,7 +10,7 @@ revisionHistoryLimit: 5
 image:
   # SELFSERVICE image
   registry: us-east4-docker.pkg.dev
-  # Helm Golf: Fields omitted by default to enable global configuration
+  # configuration pattern: Fields omitted by default to enable global configuration
   pullSecrets:
     - name: gcr-secret
 nameOverride: ""

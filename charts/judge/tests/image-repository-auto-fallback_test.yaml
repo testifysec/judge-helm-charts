@@ -1,4 +1,4 @@
-suite: Image Repository Auto-Fallback (Helm Golf #2)
+suite: Image Repository Auto-Fallback (configuration pattern #2)
 templates:
   # Test with infrastructure subcharts that use judge.image.repository helper
   - charts/dex/templates/deployment.yaml

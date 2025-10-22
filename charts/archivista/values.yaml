@@ -2,9 +2,9 @@ replicaCount: 1
 
 image:
   registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
-  # Helm Golf: repository omitted to enable global configuration
+  # configuration pattern: repository omitted to enable global configuration
   tag: v1.15.0  # Recommended stable version
-  # Helm Golf: pullPolicy omitted to enable global configuration
+  # configuration pattern: pullPolicy omitted to enable global configuration
   # Overrides the image tag whose default is the chart appVersion.
   #repository: ghcr.io/in-toto/archivista
   #tag: "0.4.0"

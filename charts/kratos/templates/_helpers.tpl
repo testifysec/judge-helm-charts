@@ -199,7 +199,7 @@ Generate imagePullPolicy
 
 {{/*
 Create the name of the service account to use
-Helm golf: Supports global configuration via global.secrets.vault.serviceAccounts.kratos
+Configuration pattern: Supports global configuration via global.secrets.vault.serviceAccounts.kratos
 Priority: local deployment.serviceAccount.name → global.secrets.vault.serviceAccounts.kratos → default
 */}}
 {{- define "kratos.serviceAccountName" -}}
