@@ -117,12 +117,9 @@ global:
       - id: github
         provider: github-app
 
-# Disable local dev infrastructure when using AWS
-localstack:
-  enabled: false
-
-postgresql:
-  enabled: false
+# Dev Mode Infrastructure (Smart Defaults)
+# localstack and postgresql auto-enable when global.dev: true
+# They're automatically disabled when global.dev: false - no need to set explicitly
 
 judge-preflight:
   enabled: false
