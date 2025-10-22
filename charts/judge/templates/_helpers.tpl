@@ -581,7 +581,7 @@ Kratos URL Strategy (CRITICAL):
 {{- $wildcardUrl := printf "https://*.%s" $domain -}}
 {{- $rootUrl := printf "https://%s" $domain -}}
 cookies:
-  domain: {{ $judgeUrl | trimPrefix "https://" }}
+  domain: {{ $domain }}
   path: /
   same_site: Lax
 courier:

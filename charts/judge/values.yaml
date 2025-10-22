@@ -167,6 +167,25 @@ global:
       env: "dev"      # Environment identifier: dev, staging, prod (override per environment)
       project: "myproject"  # Project identifier for path construction (override with your project)
 
+      # NEW: Explicit ServiceAccount names for Vault Kubernetes authentication
+      # These MUST match the actual Kubernetes ServiceAccount names created by the Helm chart.
+      # Vault roles will use these exact names to authorize pods.
+      #
+      # Default pattern: {release-name}-{service-name}
+      # Example with release "judge-platform":
+      #   - judgeApi: "judge-platform-judge-api"
+      #   - archivista: "judge-platform-judge-archivista"
+      #   - kratos: "judge-platform-judge-kratos"
+      #
+      # Custom example with release "judge-platform-staging-marketplace":
+      #   - judgeApi: "judge-platform-staging-marketplace-judge-api"
+      #   - archivista: "judge-platform-staging-marketplace-judge-archivista"
+      #   - kratos: "judge-platform-staging-marketplace-judge-kratos"
+      serviceAccounts:
+        judgeApi: ""      # Leave empty to use computed name from release
+        archivista: ""    # Leave empty to use computed name from release
+        kratos: ""        # Leave empty to use computed name from release
+
   # Authentication Configuration (NEW - more accessible OIDC config)
   auth:
     github:

@@ -2,12 +2,12 @@ suite: Kratos Cookie Domain Configuration
 templates:
   - kratos-config.yaml
 tests:
-  - it: should use environment-specific cookie domain for production
+  - it: should use base domain for cookies to enable cross-subdomain access (production)
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "judge"
       istio.hosts.login: "login"
       istio.hosts.kratos: "kratos"
@@ -16,14 +16,18 @@ tests:
           of: ConfigMap
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: judge\\.testifysec-demo\\.xyz"
+          pattern: "domain: testifysec\\.dev"
+      # Verify cookies work across subdomains (judge, login, kratos)
+      - notMatchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: judge\\.testifysec\\.dev"
 
-  - it: should use environment-specific cookie domain for staging
+  - it: should use base domain for cookies to enable cross-subdomain access (staging)
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "staging-judge"
       istio.hosts.login: "staging-login"
       istio.hosts.kratos: "staging-kratos"
@@ -32,14 +36,18 @@ tests:
           of: ConfigMap
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: staging-judge\\.testifysec-demo\\.xyz"
+          pattern: "domain: testifysec\\.dev"
+      # Verify cookies work across subdomains (staging-judge, staging-login, staging-kratos)
+      - notMatchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: staging-judge\\.testifysec\\.dev"
 
-  - it: should use environment-specific cookie domain for dev
+  - it: should use base domain for cookies to enable cross-subdomain access (dev)
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: testifysec.dev
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
+      istio.domain: testifysec.dev
       istio.hosts.web: "dev-judge"
       istio.hosts.login: "dev-login"
       istio.hosts.kratos: "dev-kratos"
@@ -48,18 +56,27 @@ tests:
           of: ConfigMap
       - matchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: dev-judge\\.testifysec-demo\\.xyz"
+          pattern: "domain: testifysec\\.dev"
+      # Verify cookies work across subdomains (dev-judge, dev-login, dev-kratos)
+      - notMatchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: dev-judge\\.testifysec\\.dev"
 
-  - it: should NOT use shared root domain for cookies
+  - it: should handle different base domains correctly
     set:
-      global.domain: testifysec-demo.xyz
+      global.domain: example.com
       kratos.enabled: true
       istio.enabled: true
-      istio.domain: testifysec-demo.xyz
-      istio.hosts.web: "judge"
+      istio.domain: example.com
+      istio.hosts.web: "app"
+      istio.hosts.login: "login"
+      istio.hosts.kratos: "auth"
     asserts:
       - isKind:
           of: ConfigMap
+      - matchRegex:
+          path: data["kratos.yaml"]
+          pattern: "domain: example\\.com"
       - notMatchRegex:
           path: data["kratos.yaml"]
-          pattern: "domain: testifysec-demo\\.xyz$"
+          pattern: "domain: app\\.example\\.com"
