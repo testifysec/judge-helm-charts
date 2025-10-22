@@ -133,7 +133,7 @@ ingress:
   className: "nginx"
   annotations: {}
   hosts:
-    - host: judge-api.testifysec.localhost
+    - host: judge-api.publicurl.com
       paths:
         - path: /
           pathType: Prefix

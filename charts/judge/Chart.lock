@@ -4,31 +4,31 @@ dependencies:
   version: 0.1.16
 - name: kratos
   repository: file://../kratos
-  version: 1.6.28
+  version: 1.6.30
 - name: kratos-selfservice-ui-node
   repository: file://../kratos-selfservice-ui-node
-  version: 1.6.8
+  version: 1.6.9
 - name: archivista
   repository: file://../archivista
-  version: 1.6.16
+  version: 1.6.17
 - name: judge-api
   repository: file://../judge-api
-  version: 1.6.17
+  version: 1.6.18
 - name: dapr
   repository: file://../dapr
   version: 1.14.5
 - name: judge-web
   repository: file://../judge-web
-  version: 1.6.3
+  version: 1.6.4
 - name: dex
   repository: file://../dex
   version: 0.17.7
 - name: fulcio
   repository: file://../fulcio
-  version: 2.3.28
+  version: 2.3.29
 - name: tsa
   repository: file://../tsa
-  version: 1.6.7
+  version: 1.6.8
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.1
@@ -40,6 +40,6 @@ dependencies:
   version: 0.1.1
 - name: preview-router
   repository: file://../preview-router
-  version: 0.1.0
-digest: sha256:eafcb990182d47bd85f71e38003a53a6bbc799019824916a0e877d389901be3d
-generated: "2025-10-22T15:51:25.141657-05:00"
+  version: 0.1.1
+digest: sha256:c46a9d4a1bd9283b6dc47791023c8b60439bb37302985c88163e5a7efcd25e48
+generated: "2025-10-22T16:20:59.508673-05:00"

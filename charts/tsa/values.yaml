@@ -58,7 +58,7 @@ server:
       annotations: {}
       hosts:
       - path: /
-        host: "timestamp.localhost"
+        host: "timestamp.publicurl.com"
       tls: []
   securityContext:
     runAsNonRoot: true

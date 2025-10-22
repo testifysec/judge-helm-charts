@@ -61,7 +61,7 @@ server:
       annotations: {}
       hosts:
       - path: /
-        host: "fulcio.localhost"
+        host: "fulcio.publicurl.com"
       tls: []
     grpc:
       enabled: false
@@ -69,12 +69,12 @@ server:
       annotations:
         nginx.ingress.kubernetes.io/backend-protocol: "GRPC"
       hosts:
-        - host: fulcio.localhost
+        - host: fulcio.publicurl.com
           path: /dev.sigstore.fulcio.v2.CA
       tls:
         - secretName: fulcio-grpc-ingress-tls
           hosts:
-            - fulcio.localhost
+            - fulcio.publicurl.com
   ingresses:
     - enabled: false
       grpc: true
@@ -83,7 +83,7 @@ server:
       className: "gce"
       hosts:
         - path: /
-          host: fulcio.localhost
+          host: fulcio.publicurl.com
       annotations: {}
       tls: []
       staticGlobalIP: lb-ext-ip

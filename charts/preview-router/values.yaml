@@ -7,7 +7,7 @@ enabled: false
 replicaCount: 2
 
 image:
-  repository: 178674732984.dkr.ecr.us-east-1.amazonaws.com/preview-router
+  repository: ""  # Uses global.registry.url pattern
   tag: "v0.1.0"
   pullPolicy: IfNotPresent
 
@@ -28,5 +28,5 @@ preview:
   namespace: judge
   serviceNamePattern: "preview-%s-web"
   servicePort: "8077"
-  fallbackUrl: "https://judge.testifysec-demo.xyz/"
-  domainSuffix: "preview.testifysec-demo.xyz"
+  fallbackUrl: "https://judge.example.com/"
+  domainSuffix: "preview.example.com"

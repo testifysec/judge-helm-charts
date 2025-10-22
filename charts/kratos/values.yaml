@@ -118,14 +118,14 @@ ingress:
       cert-manager.io/cluster-issuer: tls-ca-issuer
       kubernetes.io/ssl-redirect: "true"
     hosts:
-      - host: kratos.testifysec.localhost
+      - host: kratos.publicurl.com
         paths:
           - path: /
             pathType: ImplementationSpecific
     tls:
       - secretName: kratos-tls-secret
         hosts:
-          - kratos.testifysec.localhost
+          - kratos.publicurl.com
 
 ## -- Application specific config
 kratos:
@@ -204,11 +204,11 @@ kratos:
         port: 4433
       public:
         port: 4434
-        base_url: https://kratos.testifysec.localhost
+        base_url: https://kratos.publicurl.com
         cors:
           enabled: true
           allowed_origins:
-            - https://*.testifysec.localhost:8077
+            - https://*.publicurl.com:8077
           allowed_methods:
             - POST
             - GET
@@ -229,30 +229,30 @@ kratos:
     selfservice:
       flows:
         error:
-          ui_url: https://login.testifysec.localhost/error
+          ui_url: https://login.publicurl.com/error
         settings:
-          ui_url: http://login.testifysec.localhost/settings
+          ui_url: http://login.publicurl.com/settings
           privileged_session_max_age: 15m
           required_aal: highest_available
         recovery:
           enabled: true
-          ui_url: https://login.testifysec.localhost/recovery
+          ui_url: https://login.publicurl.com/recovery
         verification:
           enabled: true
-          ui_url: https://login.testifysec.localhost/verification
+          ui_url: https://login.publicurl.com/verification
           after:
-            default_browser_return_url: https://login.testifysec.localhost/
+            default_browser_return_url: https://login.publicurl.com/
         logout:
           after:
-            default_browser_return_url: https://login.testifysec.localhost/login
+            default_browser_return_url: https://login.publicurl.com/login
         login:
-          ui_url: https://login.testifysec.localhost
+          ui_url: https://login.publicurl.com
           lifespan: 10m
           after:
-            default_browser_return_url: https://judge.testifysec.localhost:8077
+            default_browser_return_url: https://judge.publicurl.com:8077
         registration:
           lifespan: 10m
-          ui_url: https://login.testifysec.localhost/registration
+          ui_url: https://login.publicurl.com/registration
           after:
             oidc:
               hooks:
@@ -262,13 +262,13 @@ kratos:
                     url: http://judge-api.judge.svc.cluster.local:8080/webhook/defaulttenant
                     method: POST
                     body: base64://ZnVuY3Rpb24oY3R4KSB7CiAgICAgIGlkZW50aXR5SWQ6IGN0eC5pZGVudGl0eS5pZCwKICAgICAgdHJhaXRzOiBjdHguaWRlbnRpdHkudHJhaXRzCn0=
-      default_browser_return_url: https://judge.testifysec.localhost:8077
+      default_browser_return_url: https://judge.publicurl.com:8077
       allowed_return_urls:
-        - https://login.testifysec.localhost
-        - https://kratos.testifysec.localhost
-        - https://judge.testifysec.localhost
-        - https://localhost
-        - https://judge.testifysec.localhost:8077
+        - https://login.publicurl.com
+        - https://kratos.publicurl.com
+        - https://judge.publicurl.com
+        - https://publicurl.com
+        - https://judge.publicurl.com:8077
 
       methods:
         password:
@@ -306,7 +306,7 @@ kratos:
         - id: other
           url: base64://eyIkaWQiOiJvcnk6Ly9pZGVudGl0eS1vdGhlci1zY2hlbWEiLCIkc2NoZW1hIjoiaHR0cDovL2pzb24tc2NoZW1hLm9yZy9kcmFmdC0wNy9zY2hlbWEjIiwidGl0bGUiOiJJZGVudGl0eU90aGVyU2NoZW1hIiwidHlwZSI6Im9iamVjdCIsInByb3BlcnRpZXMiOnsidHJhaXRzIjp7InR5cGUiOiJvYmplY3QiLCJwcm9wZXJ0aWVzIjp7Im90aGVyIjp7InR5cGUiOiJzdHJpbmcifSwiZW1haWwiOnsidHlwZSI6InN0cmluZyIsInRpdGxlIjoiZW1haWwiLCJvcnkuc2gva3JhdG9zIjp7ImNyZWRlbnRpYWxzIjp7InBhc3N3b3JkIjp7ImlkZW50aWZpZXIiOnRydWV9fX19LCJuYW1lIjp7InR5cGUiOiJzdHJpbmciLCJ0aXRsZSI6IkZ1bGwgTmFtZSIsIm1pbkxlbmd0aCI6MX19LCJyZXF1aXJlZCI6WyJvdGhlciIsImVtYWlsIiwibmFtZSJdLCJhZGRpdGlvbmFsUHJvcGVydGllcyI6dHJ1ZX19fQo=
     cookies:
-      domain: testifysec.localhost
+      domain: localhost
       path: /
       same_site: Lax
 

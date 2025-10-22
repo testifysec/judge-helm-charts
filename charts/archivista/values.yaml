@@ -93,7 +93,7 @@ ingress:
   className: ""
   annotations: {}
   hosts:
-    - host: archivista.testifysec.localhost
+    - host: archivista.publicurl.com
       paths:
         - path: /
           pathType: ImplementationSpecific

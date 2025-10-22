@@ -27,7 +27,7 @@ global:
   # Domain for all external service URLs (VirtualServices, OIDC redirects, etc.)
   # WARNING: Changing this requires updating istio.domain AND verifying all 22 hardcoded URLs below match
   # See DOMAIN.md for complete documentation and update checklist
-  domain: testifysec-demo.xyz
+  domain: example.com
 
   # Istio Configuration (Optional - allows consolidating root istio.* config here)
   # Priority: root istio.* → global.istio.* → defaults
@@ -235,7 +235,7 @@ global:
 istio:
   enabled: true
   # MUST match global.domain - validation will fail if they differ
-  domain: testifysec-demo.xyz
+  domain: example.com
   tlsSecretName: wildcard-tls
   # Selector for Istio ingress gateway (must match the label on the ingress gateway pod)
   ingressGatewaySelector:
@@ -272,7 +272,7 @@ gateway:
   judgeapi:
     url: "http://judge-api.judge.svc.cluster.local:8080"
   login:
-    url: "https://login.testifysec-demo.xyz/login"
+    url: "https://login.example.com/login"
 kratos:
   nameOverride: "judge-kratos"  # ECR repo name
   fullnameOverride: ""  # Remove fullnameOverride to ensure consistent {release}-{nameOverride} naming
@@ -292,11 +292,11 @@ kratos:
         same_site: Lax  # Good balance - "Strict" breaks OAuth, "None" less secure
       selfservice:
         allowed_return_urls:
-          - https://login.testifysec-demo.xyz
-          - https://kratos.testifysec-demo.xyz
-          - https://judge.testifysec-demo.xyz
+          - https://login.example.com
+          - https://kratos.example.com
+          - https://judge.example.com
           - https://localhost
-          - https://judge.testifysec-demo.xyz:8077
+          - https://judge.example.com:8077
         methods:
           oidc:
             config:
@@ -434,7 +434,7 @@ dex:
   image:
     tag: ""  # Tag managed via global.versions.dex
   config:
-    issuer: https://dex.testifysec-demo.xyz
+    issuer: https://dex.example.com
     storage:
       type: memory
     logger:
@@ -455,7 +455,7 @@ dex:
         config:
           clientID: your-gitlab-client-id
           clientSecret: your-gitlab-client-secret
-          redirectURI: https://dex.testifysec-demo.xyz/callback
+          redirectURI: https://dex.example.com/callback
 fulcio:
   nameOverride: "judge-fulcio"  # ECR repo name
   enabled: true
@@ -471,9 +471,9 @@ fulcio:
       {
         "OIDCIssuers":
           {
-            "https://dex.testifysec-demo.xyz":
+            "https://dex.example.com":
               {
-                "IssuerURL": "https://dex.testifysec-demo.xyz",
+                "IssuerURL": "https://dex.example.com",
                 "ClientID": "testifysec",
                 "Type": "email",
               },

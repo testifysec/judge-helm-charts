@@ -63,7 +63,7 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: "judge.testifysec.localhost"
+    - host: "judge.publicurl.com"
       paths:
         - path: /
           pathType: Prefix
@@ -74,7 +74,7 @@ ingress:
                 number: 8077
   tls:
     - hosts:
-        - judge.testifysec.localhost
+        - judge.publicurl.com
       secretName: judge-tls-secret
 
 # configures redirects to external services via ingress rules
@@ -89,7 +89,7 @@ redirectIngress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: "judge.testifysec.localhost"
+    - host: "judge.publicurl.com"
       paths:
         - path: /archivista(/|$)(.*)
           pathType: ImplementationSpecific

@@ -57,13 +57,13 @@ ingress:
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: login.testifysec.localhost
+    - host: login.publicurl.com
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
     - hosts:
-        - login.testifysec.localhost
+        - login.publicurl.com
       secretName: login-tls-secret
   #  - secretName: chart-example-tls
   #    hosts:
@@ -173,7 +173,7 @@ kratosAdminUrl: "http://kratos-admin"
 kratosPublicUrl: "http://kratos-public"
 
 # -- Set this to ORY Kratos's public URL accessible from the outside world.
-kratosBrowserUrl: "http://kratos.testifysec.localhost"
+kratosBrowserUrl: "http://kratos.publicurl.com"
 
 # -- The basePath
 basePath: ""

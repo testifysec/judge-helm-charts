@@ -16,7 +16,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: "1.8.21"
+version: "1.8.23"
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -31,19 +31,19 @@ dependencies:
     repository: file://../judge-preflight
     condition: judge-preflight.enabled
   - name: kratos
-    version: 1.6.28
+    version: 1.6.30
     repository: file://../kratos
     condition: kratos.enabled
   - name: kratos-selfservice-ui-node
-    version: 1.6.8
+    version: 1.6.9
     repository: file://../kratos-selfservice-ui-node
     condition: kratos-selfservice-ui-node.enabled
   - name: archivista
-    version: "1.6.16"
+    version: "1.6.17"
     repository: file://../archivista
     condition: archivista.enabled
   - name: judge-api
-    version: "1.6.17"
+    version: "1.6.18"
     repository: file://../judge-api
     condition: judge-api.enabled
   - name: dapr
@@ -51,7 +51,7 @@ dependencies:
     repository: file://../dapr
     condition: dapr.enabled
   - name: judge-web
-    version: 1.6.3
+    version: 1.6.4
     repository: file://../judge-web
     condition: web.enabled
   - name: dex
@@ -59,11 +59,11 @@ dependencies:
     repository: file://../dex
     condition: dex.enabled
   - name: fulcio
-    version: 2.3.28
+    version: 2.3.29
     repository: file://../fulcio
     condition: fulcio.enabled
   - name: tsa
-    version: 1.6.7
+    version: 1.6.8
     repository: file://../tsa
     condition: tsa.enabled
   - name: judge-ai-proxy
@@ -79,6 +79,6 @@ dependencies:
     repository: file://../postgresql
     condition: postgresql.enabled
   - name: preview-router
-    version: 0.1.0
+    version: 0.1.1
     repository: file://../preview-router
     condition: preview-router.enabled
