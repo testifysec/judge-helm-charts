@@ -165,10 +165,24 @@ Generate imagePullPolicy
 
 {{/*
 Create the name of the service account to use
+Helm golf: Supports global configuration via global.secrets.vault.serviceAccounts.kratos
+Priority: local deployment.serviceAccount.name → global.secrets.vault.serviceAccounts.kratos → default
 */}}
 {{- define "kratos.serviceAccountName" -}}
 {{- if .Values.deployment.serviceAccount.create }}
-{{- default (include "kratos.fullname" .) .Values.deployment.serviceAccount.name }}
+{{- $globalName := "" -}}
+{{- if and .Values.global (hasKey .Values.global "secrets") -}}
+  {{- if and .Values.global.secrets (hasKey .Values.global.secrets "vault") -}}
+    {{- if and .Values.global.secrets.vault (hasKey .Values.global.secrets.vault "serviceAccounts") -}}
+      {{- if hasKey .Values.global.secrets.vault.serviceAccounts "kratos" -}}
+        {{- $globalName = .Values.global.secrets.vault.serviceAccounts.kratos -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $localName := .Values.deployment.serviceAccount.name | default "" -}}
+{{- $defaultName := include "kratos.fullname" . -}}
+{{- coalesce $localName $globalName $defaultName -}}
 {{- else }}
 {{- default "default" .Values.deployment.serviceAccount.name }}
 {{- end }}
@@ -221,4 +235,42 @@ Common labels for the cleanup cron job
 "app.kubernetes.io/managed-by": {{ .Release.Service | quote }}
 "app.kubernetes.io/component": cleanup
 "helm.sh/chart": {{ include "kratos.chart" . | quote }}
+{{- end -}}
+
+{{/*
+Database Endpoint Helper for Kratos (fallback for standalone lint)
+Returns PostgreSQL DSN for dev mode or RDS DSN for production
+*/}}
+{{- define "judge.database.endpoint.kratos" -}}
+{{- $mode := "aws" -}}
+{{- if and .Values.global .Values.global.mode -}}
+{{- $mode = .Values.global.mode -}}
+{{- else if and .Values.global .Values.global.dev -}}
+{{- $mode = "dev" -}}
+{{- end -}}
+{{- if eq $mode "dev" -}}
+{{- $username := "judge" -}}
+{{- $password := "dev-preview-password" -}}
+{{- if and .Values.global .Values.global.devDatabase -}}
+{{- $username = .Values.global.devDatabase.username | default "judge" -}}
+{{- $password = .Values.global.devDatabase.password | default "dev-preview-password" -}}
+{{- end -}}
+postgres://{{ $username }}:{{ $password }}@{{ .Release.Name }}-postgresql.{{ .Release.Namespace }}.svc.cluster.local:5432/kratos?sslmode=disable
+{{- else -}}
+{{- $username := "kratos" -}}
+{{- $password := "PLACEHOLDER_PASSWORD" -}}
+{{- $endpoint := "localhost" -}}
+{{- $port := "5432" -}}
+{{- if and .Values.global .Values.global.database -}}
+{{- $username = default "kratos" .Values.global.database.username -}}
+{{- $port = default "5432" .Values.global.database.port -}}
+{{- if .Values.global.database.aws -}}
+{{- $endpoint = default "localhost" .Values.global.database.aws.endpoint -}}
+{{- end -}}
+{{- end -}}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.database -}}
+{{- $password = default "PLACEHOLDER_PASSWORD" .Values.global.secrets.database.passwordEncoded -}}
+{{- end -}}
+postgres://{{ $username }}:{{ $password }}@{{ $endpoint }}:{{ $port }}/kratos?sslmode=require
+{{- end -}}
 {{- end -}}
