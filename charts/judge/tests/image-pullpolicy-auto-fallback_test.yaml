@@ -1,0 +1,107 @@
+suite: Image Pull Policy Auto-Fallback (Helm Golf #3)
+templates:
+  # Test with infrastructure subcharts that should use judge.image.pullPolicy helper
+  - charts/dex/templates/deployment.yaml
+  - charts/dex/templates/secret.yaml
+  - charts/fulcio/templates/fulcio-deployment.yaml
+  - charts/fulcio/templates/fulcio-configmap.yaml
+  - charts/tsa/templates/tsa-deployment.yaml
+  - charts/tsa/templates/tsa-configmap.yaml
+  - charts/kratos/templates/deployment-kratos.yaml
+  - charts/kratos/templates/configmap-config.yaml
+  - charts/kratos/templates/configmap-templates.yaml
+  - charts/kratos/templates/secrets.yaml
+  - charts/kratos-selfservice-ui-node/templates/deployment.yaml
+  - templates/kratos-config.yaml
+
+tests:
+  # ==============================================================================
+  # Test 1: Unset pullPolicy should auto-fallback to global.image.pullPolicy
+  # ==============================================================================
+  - it: should use global.image.pullPolicy when dex image.pullPolicy is not set
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.image.pullPolicy: "Always"
+      # dex.image.pullPolicy not set at all
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "Always"
+
+  - it: should use global.image.pullPolicy when fulcio image.pullPolicy is not set
+    template: charts/fulcio/templates/fulcio-deployment.yaml
+    set:
+      global.image.pullPolicy: "Never"
+      server.ingress.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "Never"
+
+  - it: should use global.image.pullPolicy when tsa image.pullPolicy is not set
+    template: charts/tsa/templates/tsa-deployment.yaml
+    set:
+      global.image.pullPolicy: "Always"
+      server.ingress.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "Always"
+
+  # ==============================================================================
+  # Test 2: Explicit pullPolicy should override global
+  # ==============================================================================
+  - it: should use explicit pullPolicy when dex image.pullPolicy is set
+    template: charts/dex/templates/deployment.yaml
+    set:
+      global.image.pullPolicy: "Always"
+      dex.image.pullPolicy: "IfNotPresent"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "IfNotPresent"
+
+  - it: should use explicit pullPolicy when fulcio image.pullPolicy is set
+    template: charts/fulcio/templates/fulcio-deployment.yaml
+    set:
+      global.image.pullPolicy: "Never"
+      fulcio.image.pullPolicy: "Always"
+      server.ingress.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "Always"
+
+  # ==============================================================================
+  # Test 3: Default to "IfNotPresent" when neither global nor local is set
+  # ==============================================================================
+  - it: should default to IfNotPresent when no pullPolicy is configured
+    template: charts/dex/templates/deployment.yaml
+    set: {}
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "IfNotPresent"
+
+  # ==============================================================================
+  # Test 4: Verify all infrastructure charts support auto-fallback
+  # ==============================================================================
+  - it: should auto-fallback for kratos main container
+    template: charts/kratos/templates/deployment-kratos.yaml
+    set:
+      global.image.pullPolicy: "Always"
+      kratos.automigration.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "Always"
+
+  - it: should auto-fallback for kratos-selfservice-ui-node
+    template: charts/kratos-selfservice-ui-node/templates/deployment.yaml
+    set:
+      global.image.pullPolicy: "Never"
+      kratos-selfservice-ui-node.nameOverride: "judge-kratos-self-service"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: "Never"
