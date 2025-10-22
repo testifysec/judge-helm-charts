@@ -72,3 +72,14 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Get default image tag from global.version or use "latest"
+*/}}
+{{- define "judge.image.defaultTag" -}}
+{{- if and .Values.global .Values.global.version -}}
+{{ .Values.global.version }}
+{{- else -}}
+latest
+{{- end -}}
+{{- end -}}

@@ -5,8 +5,8 @@
 replicaCount: 1
 
 image:
-  registry: us-east4-docker.pkg.dev
-  repository: judge-395516/judge-image-registry
+  registry: ""      # Inherit from global.registry.url (marketplace or custom)
+  repository: ""    # Inherit from global.registry.repository
   tag: "v1.6.0"
   pullPolicy: IfNotPresent
 

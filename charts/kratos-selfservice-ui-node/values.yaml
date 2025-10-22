@@ -9,10 +9,9 @@ revisionHistoryLimit: 5
 ## -- Deployment image settings
 image:
   # SELFSERVICE image
-  registry: us-east4-docker.pkg.dev
+  registry: ""      # Inherit from global.registry.url (marketplace or custom)
   # configuration pattern: Fields omitted by default to enable global configuration
-  pullSecrets:
-    - name: gcr-secret
+  pullSecrets: []   # ECR auth via node IAM role
 nameOverride: ""
 fullnameOverride: "kratos-selfservice-ui-node"
 
