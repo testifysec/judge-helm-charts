@@ -19,7 +19,8 @@ server:
     registry: gcr.io
     # Set to empty string to enable global.registry.repository override (for marketplace deployments)
     repository: ""
-    pullPolicy: IfNotPresent
+    # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
+    pullPolicy: ""
     # crane digest gcr.io/projectsigstore/fulcio:v1.4.4
     # -- v1.4.4
     version: sha256:d4e075bfaf0539a5220f3a76b80454261ecda443248fce283fd185d27e9910d4
@@ -113,7 +114,8 @@ createcerts:
   image:
     registry: ghcr.io
     repository: sigstore/scaffolding/createcerts
-    pullPolicy: IfNotPresent
+    # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
+    pullPolicy: ""
     # v0.6.17
     version: sha256:2aaea38198d25ee53fb1f6da79eaa75c24bcc4ef81792a68687ba2ae0dc8ccf6
   ttlSecondsAfterFinished: 3600

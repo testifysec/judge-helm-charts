@@ -15,7 +15,8 @@ image:
   repository: ""
   # Tag managed via global.versions.kratos - defaults to Chart.AppVersion
   tag: ""
-  pullPolicy: IfNotPresent
+  # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
+  pullPolicy: ""
 
 imagePullSecrets: []
 nameOverride: ""

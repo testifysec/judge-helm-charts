@@ -14,8 +14,8 @@ image:
   # Set to empty string to enable global.registry.repository override (for marketplace deployments)
   repository: ""
 
-  # -- [Image pull policy](https://kubernetes.io/docs/concepts/containers/images/#updating-images) for updating already existing images on a node.
-  pullPolicy: IfNotPresent
+  # -- [Image pull policy](https://kubernetes.io/docs/concepts/containers/images/#updating-images). Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
+  pullPolicy: ""
 
   # -- Image tag override for the default value (chart appVersion).
   tag: ""

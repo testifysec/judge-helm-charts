@@ -21,6 +21,30 @@ Precedence: .Values.image.repository (if non-empty) → .Values.global.registry.
 {{- end }}
 
 {{/*
+Render the imagePullPolicy with the global and chart specific values.
+Precedence: .Values.image.pullPolicy (if set) → .Values.global.image.pullPolicy → "IfNotPresent"
+*/}}
+{{- define "judge.image.pullPolicy" -}}
+{{- $localPolicy := "" -}}
+{{- if .Values.image -}}
+  {{- $localPolicy = .Values.image.pullPolicy | default "" -}}
+{{- end -}}
+{{- $globalPolicy := "" -}}
+{{- if .Values.global -}}
+  {{- if .Values.global.image -}}
+    {{- $globalPolicy = .Values.global.image.pullPolicy | default "" -}}
+  {{- end -}}
+{{- end -}}
+{{- if ne $localPolicy "" -}}
+  {{- $localPolicy -}}
+{{- else if ne $globalPolicy "" -}}
+  {{- $globalPolicy -}}
+{{- else -}}
+  {{- "IfNotPresent" -}}
+{{- end -}}
+{{- end }}
+
+{{/*
 Expand the name of the chart.
 */}}
 {{- define "fulcio.name" -}}

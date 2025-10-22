@@ -57,7 +57,7 @@ spec:
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "dex" "context" .) }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: {{ include "judge.image.pullPolicy" . }}
           args:
             - dex
             - serve

@@ -56,7 +56,7 @@ spec:
       initContainers:
         - name: {{ .Chart.Name }}-process-config
           image: public.ecr.aws/docker/library/busybox:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: {{ include "judge.image.pullPolicy" . }}
           command:
             - /bin/sh
             - -c
@@ -135,7 +135,7 @@ spec:
       {{- if and ( .Values.kratos.automigration.enabled ) ( eq .Values.kratos.automigration.type "initContainer" ) }}
         - name: {{ .Chart.Name }}-automigrate
           image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "kratos" "context" .) }}
-          imagePullPolicy: {{ include "kratos.imagePullPolicy" . }}
+          imagePullPolicy: {{ include "judge.image.pullPolicy" . }}
           {{- if .Values.kratos.automigration.customCommand }}
           command: {{- toYaml .Values.kratos.automigration.customCommand | nindent 12 }}
           {{- else }}
@@ -194,7 +194,7 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "kratos" "context" .) }}
-          imagePullPolicy: {{ include "kratos.imagePullPolicy" . }}
+          imagePullPolicy: {{ include "judge.image.pullPolicy" . }}
           command:
             - kratos
           args:

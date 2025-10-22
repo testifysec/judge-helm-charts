@@ -12,7 +12,8 @@ image:
   registry: us-east4-docker.pkg.dev
   # Set to empty string to enable global.registry.repository override (for marketplace deployments)
   repository: ""
-  pullPolicy: IfNotPresent
+  # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
+  pullPolicy: ""
   # Tag managed via global.versions.kratosUI - defaults to Chart.AppVersion
   tag: ""
   pullSecrets:

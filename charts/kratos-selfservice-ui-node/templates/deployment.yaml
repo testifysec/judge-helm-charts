@@ -46,7 +46,7 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "kratosUI" "context" .) }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          imagePullPolicy: {{ include "judge.image.pullPolicy" . }}
           env:
           - name: KRATOS_PUBLIC_URL
             value: {{ tpl .Values.kratosPublicUrl . | quote }}

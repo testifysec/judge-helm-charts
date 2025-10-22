@@ -30,7 +30,7 @@ spec:
       containers:
         - name: {{ template "fulcio.fullname" . }}
           image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "fulcio" "context" .) }}
-          imagePullPolicy: "{{ .Values.server.image.pullPolicy }}"
+          imagePullPolicy: {{ include "judge.image.pullPolicy" . }}
           ports:
 {{- include "fulcio.containerPorts" .Values.server.service.ports | indent 12 }}
           args:

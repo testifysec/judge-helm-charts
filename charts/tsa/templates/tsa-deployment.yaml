@@ -30,7 +30,7 @@ spec:
       containers:
         - name: {{ template "tsa.fullname" . }}
           image: {{ include "judge.image.repository" . }}:{{ include "judge.imageTag" (dict "service" "tsa" "context" .) }}
-          imagePullPolicy: "{{ .Values.image.pullPolicy }}"
+          imagePullPolicy: {{ include "judge.image.pullPolicy" . }}
           ports:
 {{- include "tsa.containerPorts" .Values.server.service.ports | indent 12 }}
           args:

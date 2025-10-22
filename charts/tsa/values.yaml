@@ -7,7 +7,8 @@ nameOverride: "tsa"
 image:
   # Set to empty string to enable global.registry.repository override
   repository: ""
-  pullPolicy: IfNotPresent
+  # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
+  pullPolicy: ""
   # Tag managed via global.versions.tsa - defaults to Chart.AppVersion
   tag: ""
   pullSecrets:
@@ -19,7 +20,8 @@ server:
   image:
     registry: ""
     repository: ""
-    pullPolicy: IfNotPresent
+    # Leave empty to auto-fallback to global.image.pullPolicy or "IfNotPresent"
+    pullPolicy: ""
     version: ""
   name: server
   svcPort: 80
