@@ -129,9 +129,9 @@ global:
       # versions: {}  # Optional: override specific service versions
 
     # Standard registry configuration (used when marketplace is disabled)
-    provider: gcp-artifact
-    url: us-east4-docker.pkg.dev
-    repository: judge-395516/judge-image-registry
+    # Example: Docker Hub, internal registry, etc.
+    url: ""           # Registry URL (e.g., "myregistry.example.com")
+    repository: ""    # Repository namespace (e.g., "myorg" → myregistry.example.com/myorg/judge-api)
 
   imagePullSecrets: []  # ECR auth via node IAM role, not K8s secret
   storageClass: ""
