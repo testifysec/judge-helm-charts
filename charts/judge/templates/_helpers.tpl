@@ -101,12 +101,20 @@ testifysec
 
 {{/*
 Render the imageRepository with the global and chart specific values.
+Precedence: .Values.image.repository (if non-empty) → judge.registry.repository (marketplace-aware) → ""
 Supports AWS Marketplace ECR, standard ECR, GCP Artifact Registry, and custom registries
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
 {{- $registryUrl := include "judge.registry.url" . }}
-{{- $repository := include "judge.registry.repository" . }}
+{{- $localRepo := ((.Values.image).repository) | default "" }}
+{{- $globalRepo := include "judge.registry.repository" . }}
+{{- $repository := "" }}
+{{- if ne $localRepo "" }}
+  {{- $repository = $localRepo }}
+{{- else }}
+  {{- $repository = $globalRepo }}
+{{- end }}
 {{- if eq $repository "" }}
 {{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
 {{- else }}

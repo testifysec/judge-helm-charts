@@ -426,7 +426,7 @@ dex:
   nameOverride: "judge-dex"  # ECR repo name
   enabled: true
   image:
-    tag: v2.43.1
+    tag: ""  # Tag managed via global.versions.dex
   config:
     issuer: https://dex.testifysec-demo.xyz
     storage:

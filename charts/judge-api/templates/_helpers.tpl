@@ -1,12 +1,22 @@
 {{/*
 Render the imageRepository with the global and chart specific values.
+Precedence: .Values.image.repository (if non-empty) → .Values.global.registry.repository → ""
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
-{{- if eq .Values.image.repository "" }}
-{{- printf "%s/%s" .Values.image.registry $chartName | trimSuffix "/" -}}
+{{- $registryUrl := coalesce ((.Values.image).registry) ((.Values.global).registry.url | default "") "ghcr.io" }}
+{{- $localRepo := ((.Values.image).repository) | default "" }}
+{{- $globalRepo := ((.Values.global).registry.repository) | default "" }}
+{{- $repository := "" }}
+{{- if ne $localRepo "" }}
+  {{- $repository = $localRepo }}
 {{- else }}
-{{- printf "%s/%s/%s" .Values.image.registry .Values.image.repository $chartName | trimSuffix "/" -}}
+  {{- $repository = $globalRepo }}
+{{- end }}
+{{- if eq $repository "" }}
+{{- printf "%s/%s" $registryUrl $chartName | trimSuffix "/" -}}
+{{- else }}
+{{- printf "%s/%s/%s" $registryUrl $repository $chartName | trimSuffix "/" -}}
 {{- end }}
 {{- end }}
 
