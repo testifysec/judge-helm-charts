@@ -121,8 +121,8 @@ global:
 # localstack and postgresql auto-enable when global.dev: true
 # They're automatically disabled when global.dev: false - no need to set explicitly
 
-judge-preflight:
-  enabled: false
+# Pre-flight validation is disabled by default
+# Enable in production: judge-preflight.enabled: true
 ```
 
 See [demo-values.yaml](demo-values.yaml) for a complete working example.

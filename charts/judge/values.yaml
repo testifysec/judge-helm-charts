@@ -525,5 +525,6 @@ postgresql:
 # Runs before deployment to validate all prerequisites
 # NOTE: Preflight chart reads configuration directly from .Values.global.*
 # No need to pass values through - it has access to parent chart's global values
+# Set to true to enable pre-deployment validation checks (recommended for production)
 judge-preflight:
-  enabled: true
+  enabled: false  # Disabled by default - opt-in for validation
