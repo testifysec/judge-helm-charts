@@ -6,7 +6,7 @@ Usage: {{ include "judge.argocd.jobAnnotations" . | nindent 4 }}
 Note: Duplicated from parent judge chart to allow standalone linting.
 */}}
 {{- define "judge.argocd.jobAnnotations" -}}
-{{- if and .Values.global.argocd .Values.global.argocd.enabled -}}
+{{- if and .Values.global (and .Values.global.argocd .Values.global.argocd.enabled) -}}
 argocd.argoproj.io/sync-options: "Force=true,Replace=true"
 {{- end -}}
 {{- end -}}
