@@ -49,15 +49,13 @@ global:
       server: "https://vault.example.com"
       env: "prod"
       project: "mycompany-judge"
-
-istio:
-  enabled: true
-  domain: example.com
-  tlsSecretName: wildcard-tls
-  hosts:
-    web: "judge"
-    api: "api"
-    login: "login"
+  istio:
+    enabled: true
+    tlsSecretName: wildcard-tls
+    hosts:
+      web: "judge"
+      api: "api"
+      login: "login"
 ```
 
 See [Global Configuration Reference](#global-configuration-reference) for detailed explanation of all fields.
@@ -177,35 +175,36 @@ global:
 ### Istio Service Mesh Configuration
 
 ```yaml
-# Root-level istio configuration (can also be set via global.istio)
-istio:
-  enabled: true
-  domain: example.com                      # MUST match global.domain
-  tlsSecretName: wildcard-tls             # Kubernetes secret with TLS certificate
+global:
+  istio:
+    enabled: true
+    tlsSecretName: wildcard-tls           # Kubernetes secret with TLS certificate
 
-  # Ingress gateway selector (must match Istio gateway pod labels)
-  ingressGatewaySelector:
-    istio: ingress
+    # Ingress gateway selector (must match Istio gateway pod labels)
+    ingressGatewaySelector:
+      istio: ingress
 
-  # Hostname customization (subdomain prefixes only)
-  hosts:
-    web: "judge"                           # Results in: judge.example.com
-    api: "api"                             # Results in: api.example.com
-    gateway: "gateway"                     # Results in: gateway.example.com
-    login: "login"                         # Results in: login.example.com
-    kratos: "kratos"                       # Results in: kratos.example.com
-    dex: "dex"                             # Results in: dex.example.com
-    fulcio: "fulcio"                       # Results in: fulcio.example.com
-    tsa: "tsa"                             # Results in: tsa.example.com
+    # Hostname customization (subdomain prefixes only)
+    # Combined with global.domain to form full URLs
+    hosts:
+      web: "judge"                         # Results in: judge.{global.domain}
+      api: "api"                           # Results in: api.{global.domain}
+      gateway: "gateway"                   # Results in: gateway.{global.domain}
+      login: "login"                       # Results in: login.{global.domain}
+      kratos: "kratos"                     # Results in: kratos.{global.domain}
+      dex: "dex"                           # Results in: dex.{global.domain}
+      fulcio: "fulcio"                     # Results in: fulcio.{global.domain}
+      tsa: "tsa"                           # Results in: tsa.{global.domain}
 ```
 
 **Customization Example**:
 ```yaml
-istio:
+global:
   domain: mycompany.com
-  hosts:
-    web: "supply-chain"                    # supply-chain.mycompany.com
-    api: "supply-chain-api"                # supply-chain-api.mycompany.com
+  istio:
+    hosts:
+      web: "supply-chain"                  # supply-chain.mycompany.com
+      api: "supply-chain-api"              # supply-chain-api.mycompany.com
 ```
 
 ### Development Mode
@@ -840,8 +839,9 @@ spec:
           class: istio
 
 # Reference in values.yaml
-istio:
-  tlsSecretName: wildcard-tls              # Created by cert-manager
+global:
+  istio:
+    tlsSecretName: wildcard-tls            # Created by cert-manager
 ```
 
 **Option 2: Manual Certificate**:
