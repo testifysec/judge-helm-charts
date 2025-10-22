@@ -20,7 +20,7 @@ Required for proper Job management in ArgoCD (Jobs are immutable).
 Usage: {{ include "judge.argocd.jobAnnotations" . | nindent 4 }}
 */}}
 {{- define "judge.argocd.jobAnnotations" -}}
-{{- if and .Values.global.argocd .Values.global.argocd.enabled -}}
+{{- if and .Values.global (and .Values.global.argocd .Values.global.argocd.enabled) -}}
 argocd.argoproj.io/sync-options: "Force=true,Replace=true"
 {{- end -}}
 {{- end -}}

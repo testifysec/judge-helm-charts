@@ -1,4 +1,17 @@
 {{/*
+ArgoCD Job Annotations Helper
+Returns ArgoCD sync options annotation when global.argocd.enabled is true.
+Required for proper Job management in ArgoCD (Jobs are immutable).
+Usage: {{ include "judge.argocd.jobAnnotations" . | nindent 4 }}
+Note: Duplicated from parent judge chart to allow standalone linting.
+*/}}
+{{- define "judge.argocd.jobAnnotations" -}}
+{{- if and .Values.global.argocd .Values.global.argocd.enabled -}}
+argocd.argoproj.io/sync-options: "Force=true,Replace=true"
+{{- end -}}
+{{- end -}}
+
+{{/*
 Render the imageRepository with the global and chart specific values.
 Precedence: .Values.image.repository (if non-empty) → .Values.global.registry.repository → ""
 */}}

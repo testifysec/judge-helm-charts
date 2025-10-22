@@ -6,10 +6,16 @@ metadata:
 {{ include "fulcio.namespace" . | indent 2 }}
   labels:
     {{- include "fulcio.labels" . | nindent 4 }}
-{{- if .Values.createcerts.annotations }}
+  {{- $argocdAnnotations := include "judge.argocd.jobAnnotations" . }}
+  {{- if or $argocdAnnotations .Values.createcerts.annotations }}
   annotations:
-{{ toYaml .Values.createcerts.annotations | indent 4 }}
-{{- end }}
+    {{- if $argocdAnnotations }}
+    {{- $argocdAnnotations | nindent 4 }}
+    {{- end }}
+    {{- with .Values.createcerts.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- end }}
 spec:
 {{- if .Values.createcerts.ttlSecondsAfterFinished }}
   ttlSecondsAfterFinished: {{ .Values.createcerts.ttlSecondsAfterFinished }}
