@@ -512,6 +512,15 @@ ssp:
   # Dagger engine socket path
   daggerHost: "unix:///var/run/dagger/engine.sock"
 
+# Dev Mode Infrastructure (Smart Defaults)
+# These are automatically enabled when global.dev=true (or global.mode=dev)
+# Set explicitly to override automatic behavior
+localstack:
+  enabled: false  # Auto-enabled in dev mode for S3/SNS/SQS emulation
+
+postgresql:
+  enabled: false  # Auto-enabled in dev mode for local database
+
 # Pre-flight Validation Configuration
 # Runs before deployment to validate all prerequisites
 # NOTE: Preflight chart reads configuration directly from .Values.global.*

@@ -41,5 +41,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.1
-digest: sha256:c46a9d4a1bd9283b6dc47791023c8b60439bb37302985c88163e5a7efcd25e48
-generated: "2025-10-22T16:20:59.508673-05:00"
+digest: sha256:e909944c1c3127fda553b19bd4b392b086ea91c528bc8e0efd4255b88f61d219
+generated: "2025-10-22T18:04:20.541494-05:00"
