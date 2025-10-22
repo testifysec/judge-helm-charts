@@ -64,10 +64,24 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{/*
 Create the name of the service account to use
+Helm golf: Supports global configuration via global.secrets.vault.serviceAccounts.archivista
+Priority: local serviceAccount.name → global.secrets.vault.serviceAccounts.archivista → default
 */}}
 {{- define "archivista.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "archivista.fullname" .) .Values.serviceAccount.name }}
+{{- $globalName := "" -}}
+{{- if and .Values.global (hasKey .Values.global "secrets") -}}
+  {{- if and .Values.global.secrets (hasKey .Values.global.secrets "vault") -}}
+    {{- if and .Values.global.secrets.vault (hasKey .Values.global.secrets.vault "serviceAccounts") -}}
+      {{- if hasKey .Values.global.secrets.vault.serviceAccounts "archivista" -}}
+        {{- $globalName = .Values.global.secrets.vault.serviceAccounts.archivista -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $localName := .Values.serviceAccount.name | default "" -}}
+{{- $defaultName := include "archivista.fullname" . -}}
+{{- coalesce $localName $globalName $defaultName -}}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

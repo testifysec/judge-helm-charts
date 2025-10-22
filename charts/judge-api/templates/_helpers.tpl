@@ -64,10 +64,24 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 {{/*
 Create the name of the service account to use
+Helm golf: Supports global configuration via global.secrets.vault.serviceAccounts.judgeApi
+Priority: local serviceAccount.name → global.secrets.vault.serviceAccounts.judgeApi → default
 */}}
 {{- define "judge-api.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "judge-api.fullname" .) .Values.serviceAccount.name }}
+{{- $globalName := "" -}}
+{{- if and .Values.global (hasKey .Values.global "secrets") -}}
+  {{- if and .Values.global.secrets (hasKey .Values.global.secrets "vault") -}}
+    {{- if and .Values.global.secrets.vault (hasKey .Values.global.secrets.vault "serviceAccounts") -}}
+      {{- if hasKey .Values.global.secrets.vault.serviceAccounts "judgeApi" -}}
+        {{- $globalName = .Values.global.secrets.vault.serviceAccounts.judgeApi -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $localName := .Values.serviceAccount.name | default "" -}}
+{{- $defaultName := include "judge-api.fullname" . -}}
+{{- coalesce $localName $globalName $defaultName -}}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

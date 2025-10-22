@@ -10,10 +10,10 @@ dependencies:
   version: 1.6.3
 - name: archivista
   repository: file://../archivista
-  version: 1.6.12
+  version: 1.6.13
 - name: judge-api
   repository: file://../judge-api
-  version: 1.6.12
+  version: 1.6.13
 - name: dapr
   repository: file://../dapr
   version: 1.14.5
@@ -41,5 +41,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.0
-digest: sha256:d0c982dd8d05e7a3be64ea87820132f2bb218c9c145ec08619b0519ed265d8ec
-generated: "2025-10-22T09:18:07.392931-05:00"
+digest: sha256:00972763057b0064216f00c4a884c838775f32dca7cfa7751b796491b8791552
+generated: "2025-10-22T09:43:52.165924-05:00"
