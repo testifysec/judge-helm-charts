@@ -43,16 +43,90 @@ The chart supports multi-cloud deployments (AWS, GCP, Azure) with provider-speci
 
 ## Configuration
 
-### Quick Start: What You Must Configure
+### Minimal Required Configuration
 
-Before installation, you **must** configure these values in your `values.yaml`:
+The absolute minimum configuration to deploy Judge platform:
 
-1. **Domain name** - `global.domain: your-domain.com`
-2. **Cloud provider** - AWS account ID, region
-3. **Container registry** - ECR repository URL
-4. **Database connection** - RDS endpoint
-5. **Object storage** - S3 bucket names
-6. **IAM roles** - IRSA role ARNs for service accounts
+```yaml
+global:
+  # Base domain for all services (REQUIRED)
+  domain: your-domain.com
+
+  # Development mode: Set false for production AWS deployment
+  dev: false
+
+  # ArgoCD integration (if using ArgoCD)
+  argocd:
+    enabled: true
+
+  # Istio service mesh (REQUIRED)
+  istio:
+    enabled: true
+    tlsSecretName: wildcard-tls  # Kubernetes secret with TLS cert
+    ingressGatewaySelector:
+      istio: ingress
+    hosts:
+      web: "judge"
+      api: "api"
+      gateway: "gateway"
+      login: "login"
+      kratos: "kratos"
+      dex: "dex"
+      fulcio: "fulcio"
+      tsa: "tsa"
+
+  # Image versions (REQUIRED)
+  versions:
+    platform: "v1.15.0"
+    dex: "v2.43.1"
+    fulcio: "v1.4.5"
+    tsa: "v1.6.0"
+    kratosUI: "v1.6.0"
+    kratos: "v1.0.0-token-update"
+
+  # Container registry (REQUIRED)
+  registry:
+    marketplace:
+      enabled: true  # Use AWS Marketplace ECR, or false for custom registry
+
+  # AWS infrastructure (REQUIRED when dev: false)
+  aws:
+    enabled: true
+    accountId: "831646886084"
+    region: "us-east-1"
+    prefix: "demo-judge"  # Resource naming prefix
+    irsa:
+      enabled: true  # Enable IAM Roles for Service Accounts
+
+  # Secrets management (REQUIRED)
+  secrets:
+    provider: "vault"  # or "local" for dev mode
+    vault:
+      server: "http://vault.vault.svc.cluster.local:8200"
+      env: "demo"  # Environment name (maps to Vault secret paths)
+      project: "testifysec-judge"  # Project name (maps to Vault secret paths)
+      serviceAccounts:
+        judgeApi: "judge-platform-judge-api"
+        archivista: "judge-platform-judge-archivista"
+        kratos: "judge-platform-judge-kratos"
+
+  # OIDC authentication (OPTIONAL)
+  oidc:
+    enabled: true
+    providers:
+      - id: github
+        provider: github-app
+
+# Disable local dev infrastructure when using AWS
+localstack:
+  enabled: false
+
+postgresql:
+  enabled: false
+
+judge-preflight:
+  enabled: false
+```
 
 See [demo-values.yaml](demo-values.yaml) for a complete working example.
 
