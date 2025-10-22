@@ -17,38 +17,39 @@ Usage: {{ include "judge.validateDomain" . }}
 Istio Ingress Hostname Helpers
 These construct public-facing hostnames for VirtualServices.
 Format: {subdomain}.{istio.domain}
-Users can override subdomains via istio.hosts.* in values.yaml
+Users can override subdomains via istio.hosts.* OR global.istio.hosts.* in values.yaml
+Priority: root istio.* → global.istio.* → defaults
 */}}
 {{- define "judge.ingress.host.gateway" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.gateway | default "gateway" }}{{ else }}gateway{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "gateway" "default" "gateway" "context" .) }}
 {{- end -}}
 
 {{- define "judge.ingress.host.web" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.web | default "judge" }}{{ else }}judge{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "web" "default" "judge" "context" .) }}
 {{- end -}}
 
 {{- define "judge.ingress.host.api" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.api | default "api" }}{{ else }}api{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "api" "default" "api" "context" .) }}
 {{- end -}}
 
 {{- define "judge.ingress.host.fulcio" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.fulcio | default "fulcio" }}{{ else }}fulcio{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "fulcio" "default" "fulcio" "context" .) }}
 {{- end -}}
 
 {{- define "judge.ingress.host.dex" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.dex | default "dex" }}{{ else }}dex{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "dex" "default" "dex" "context" .) }}
 {{- end -}}
 
 {{- define "judge.ingress.host.tsa" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.tsa | default "tsa" }}{{ else }}tsa{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "tsa" "default" "tsa" "context" .) }}
 {{- end -}}
 
 {{- define "judge.ingress.host.kratos" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.kratos | default "kratos" }}{{ else }}kratos{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "kratos" "default" "kratos" "context" .) }}
 {{- end -}}
 
 {{- define "judge.ingress.host.login" -}}
-{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ if .Values.istio }}{{ .Values.istio.domain }}{{ else }}{{ .Values.global.domain }}{{ end }}
+{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}
 {{- end -}}
 
 {{/*
@@ -320,19 +321,19 @@ Domain URL helpers
 These construct URLs from global.domain configuration
 */}}
 {{- define "judge.url.kratos" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.kratos | default "kratos" }}{{ else }}kratos{{ end }}.{{ .Values.global.domain }}
+https://{{ include "judge.istio.host" (dict "service" "kratos" "default" "kratos" "context" .) }}
 {{- end -}}
 
 {{- define "judge.url.login" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}
 {{- end -}}
 
 {{- define "judge.url.judge" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.web | default "judge" }}{{ else }}judge{{ end }}.{{ .Values.global.domain }}
+https://{{ include "judge.istio.host" (dict "service" "web" "default" "judge" "context" .) }}
 {{- end -}}
 
 {{- define "judge.url.dex" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.dex | default "dex" }}{{ else }}dex{{ end }}.{{ .Values.global.domain }}
+https://{{ include "judge.istio.host" (dict "service" "dex" "default" "dex" "context" .) }}
 {{- end -}}
 
 {{- define "judge.url.wildcard" -}}
@@ -523,31 +524,31 @@ eliminating string concatenation in values files
 */}}
 
 {{- define "judge.url.loginError" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/error
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}/error
 {{- end -}}
 
 {{- define "judge.url.loginSettings" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/settings
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}/settings
 {{- end -}}
 
 {{- define "judge.url.loginRecovery" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/recovery
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}/recovery
 {{- end -}}
 
 {{- define "judge.url.loginVerification" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/verification
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}/verification
 {{- end -}}
 
 {{- define "judge.url.loginBase" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}/
 {{- end -}}
 
 {{- define "judge.url.loginLogin" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/login
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}/login
 {{- end -}}
 
 {{- define "judge.url.loginRegistration" -}}
-https://{{ if .Values.istio }}{{ .Values.istio.hosts.login | default "login" }}{{ else }}login{{ end }}.{{ .Values.global.domain }}/registration
+https://{{ include "judge.istio.host" (dict "service" "login" "default" "login" "context" .) }}/registration
 {{- end -}}
 
 {{/*
@@ -566,18 +567,10 @@ Kratos URL Strategy (CRITICAL):
 - wildcardUrl/rootUrl: External URLs for allowed_return_urls post-auth.
 */}}
 {{- define "judge.kratos.config.complete" -}}
+{{- $kratosUrl := printf "https://%s" (include "judge.istio.host" (dict "service" "kratos" "default" "kratos" "context" .)) -}}
+{{- $loginUrl := printf "https://%s" (include "judge.istio.host" (dict "service" "login" "default" "login" "context" .)) -}}
+{{- $judgeUrl := printf "https://%s" (include "judge.istio.host" (dict "service" "web" "default" "judge" "context" .)) -}}
 {{- $domain := .Values.global.domain -}}
-{{- $kratosSubdomain := "kratos" -}}
-{{- $loginSubdomain := "login" -}}
-{{- $webSubdomain := "judge" -}}
-{{- if .Values.istio -}}
-{{- $kratosSubdomain = .Values.istio.hosts.kratos | default "kratos" -}}
-{{- $loginSubdomain = .Values.istio.hosts.login | default "login" -}}
-{{- $webSubdomain = .Values.istio.hosts.web | default "judge" -}}
-{{- end -}}
-{{- $kratosUrl := printf "https://%s.%s" $kratosSubdomain $domain -}}
-{{- $loginUrl := printf "https://%s.%s" $loginSubdomain $domain -}}
-{{- $judgeUrl := printf "https://%s.%s" $webSubdomain $domain -}}
 {{- $wildcardUrl := printf "https://*.%s" $domain -}}
 {{- $rootUrl := printf "https://%s" $domain -}}
 cookies:
@@ -1025,22 +1018,29 @@ Supports both global.auth.github and old location for backward compatibility
 
 {{/*
 Get Istio host for a service
-Usage: {{ include "judge.istio.host" (dict "service" "web" "context" .) }}
+Priority: global.istio.hosts.{service} → root istio.hosts.{service} → default
+Domain priority: root istio.domain → global.domain
+Usage: {{ include "judge.istio.host" (dict "service" "web" "default" "judge" "context" .) }}
 */}}
 {{- define "judge.istio.host" -}}
 {{- $service := .service -}}
+{{- $default := .default -}}
 {{- $context := .context -}}
-{{- if $context.Values.global.istio -}}
-  {{- if $context.Values.global.istio.hosts -}}
-    {{- if hasKey $context.Values.global.istio.hosts $service -}}
-      {{- index $context.Values.global.istio.hosts $service -}}.{{ $context.Values.global.domain }}
-    {{- else -}}
-      {{- $service -}}.{{ $context.Values.global.domain }}
-    {{- end -}}
-  {{- else -}}
-    {{- $service -}}.{{ $context.Values.global.domain }}
-  {{- end -}}
-{{- else -}}
-  {{- $service -}}.{{ $context.Values.global.domain }}
+{{- $rootHost := "" -}}
+{{- $globalHost := "" -}}
+{{/*  DEBUG global check */}}
+{{- if and $context.Values.global.istio $context.Values.global.istio.hosts (hasKey $context.Values.global.istio.hosts $service) -}}
+  {{- $globalHost = index $context.Values.global.istio.hosts $service -}}
 {{- end -}}
+{{/*  DEBUG root check */}}
+{{- if and $context.Values.istio $context.Values.istio.hosts (hasKey $context.Values.istio.hosts $service) -}}
+  {{- $rootHost = index $context.Values.istio.hosts $service -}}
+{{- end -}}
+{{- $host := coalesce $globalHost $rootHost $default -}}
+{{- $istioDomain := "" -}}
+{{- if $context.Values.istio -}}
+  {{- $istioDomain = $context.Values.istio.domain | default "" -}}
+{{- end -}}
+{{- $domain := coalesce $istioDomain $context.Values.global.domain -}}
+{{- printf "%s.%s" $host $domain -}}
 {{- end -}}

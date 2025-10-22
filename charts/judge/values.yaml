@@ -29,6 +29,21 @@ global:
   # See DOMAIN.md for complete documentation and update checklist
   domain: testifysec-demo.xyz
 
+  # Istio Configuration (Optional - allows consolidating root istio.* config here)
+  # Priority: root istio.* → global.istio.* → defaults
+  # Uncomment to use global config instead of root-level istio: block
+  # istio:
+  #   enabled: false
+  #   hosts:
+  #     web: "judge"
+  #     api: "api"
+  #     gateway: "gateway"
+  #     login: "login"
+  #     kratos: "kratos"
+  #     dex: "dex"
+  #     fulcio: "fulcio"
+  #     tsa: "tsa"
+
   # Deployment Mode (NEW - replaces dev flag)
   # Options: aws | dev
   # - aws: Production AWS services (S3, RDS, SNS/SQS)
@@ -192,22 +207,23 @@ global:
       clientId: ""         # GitHub OAuth App client ID
       clientSecret: ""     # GitHub OAuth App client secret
 
-  # Istio/Networking Configuration (NEW - consolidated under global)
-  istio:
-    enabled: true
-    tlsSecretName: wildcard-tls
-    ingressGatewaySelector:
-      istio: ingress
-    # Subdomain prefixes (combined with global.domain)
-    hosts:
-      gateway: "gateway"   # Gateway service API (gateway.domain)
-      web: "judge"         # Main Judge web UI (judge.domain)
-      api: "api"           # Judge API (api.domain)
-      fulcio: "fulcio"     # Fulcio code signing CA (fulcio.domain)
-      dex: "dex"           # Dex OIDC provider (dex.domain)
-      tsa: "tsa"           # Timestamp Authority (tsa.domain)
-      kratos: "kratos"     # Kratos identity service (kratos.domain)
-      login: "login"       # Login UI (login.domain)
+  # Istio/Networking Configuration (Optional - for helm golf)
+  # Uncomment to set hostnames globally instead of root-level istio.hosts
+  # istio:
+  #   enabled: true
+  #   tlsSecretName: wildcard-tls
+  #   ingressGatewaySelector:
+  #     istio: ingress
+  #   # Subdomain prefixes (combined with global.domain)
+  #   hosts:
+  #     gateway: "gateway"   # Gateway service API (gateway.domain)
+  #     web: "judge"         # Main Judge web UI (judge.domain)
+  #     api: "api"           # Judge API (api.domain)
+  #     fulcio: "fulcio"     # Fulcio code signing CA (fulcio.domain)
+  #     dex: "dex"           # Dex OIDC provider (dex.domain)
+  #     tsa: "tsa"           # Timestamp Authority (tsa.domain)
+  #     kratos: "kratos"     # Kratos identity service (kratos.domain)
+  #     login: "login"       # Login UI (login.domain)
 
 # Istio service mesh configuration
 istio:
