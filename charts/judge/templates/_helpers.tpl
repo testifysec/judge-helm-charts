@@ -14,6 +14,18 @@ Usage: {{ include "judge.validateDomain" . }}
 {{- end -}}
 
 {{/*
+ArgoCD Job Annotations Helper
+Returns ArgoCD sync options annotation when global.argocd.enabled is true.
+Required for proper Job management in ArgoCD (Jobs are immutable).
+Usage: {{ include "judge.argocd.jobAnnotations" . | nindent 4 }}
+*/}}
+{{- define "judge.argocd.jobAnnotations" -}}
+{{- if and .Values.global.argocd .Values.global.argocd.enabled -}}
+argocd.argoproj.io/sync-options: "Force=true,Replace=true"
+{{- end -}}
+{{- end -}}
+
+{{/*
 Istio Ingress Hostname Helpers
 These construct public-facing hostnames for VirtualServices.
 Format: {subdomain}.{istio.domain}
