@@ -13,11 +13,9 @@ strategy:
 image:
   registry: YOUR_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
   repository: ""
-  tag: v1.1.0-token-update
+  # Tag managed via global.versions.kratos - defaults to Chart.AppVersion
+  tag: ""
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  #repository: ghcr.io/testifysec/kratos
-  #tag: "v1.0.0"
 
 imagePullSecrets: []
 nameOverride: ""

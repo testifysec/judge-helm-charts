@@ -13,7 +13,8 @@ image:
   # Set to empty string to enable global.registry.repository override (for marketplace deployments)
   repository: ""
   pullPolicy: IfNotPresent
-  tag: "v1.6.0"
+  # Tag managed via global.versions.kratosUI - defaults to Chart.AppVersion
+  tag: ""
   pullSecrets:
     - name: gcr-secret
 nameOverride: ""

@@ -88,13 +88,13 @@ tests:
           value: "arn:aws:iam::831646886084:role/demo-judge-judge-api"
 
   # ============================================================================
-  # Test 3: Marketplace ECR Images (from global.registry.marketplace)
+  # Test 3: Marketplace ECR Images (using global.versions)
   # ============================================================================
   - it: should use marketplace ECR for dex image
     template: charts/dex/templates/deployment.yaml
     set:
       global.registry.marketplace.enabled: true
-      global.registry.marketplace.versions.dex: "v2.43.1"
+      global.versions.dex: "v2.43.1"
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image
@@ -104,7 +104,7 @@ tests:
     template: charts/fulcio/templates/fulcio-deployment.yaml
     set:
       global.registry.marketplace.enabled: true
-      global.registry.marketplace.versions.fulcio: "v1.4.5"
+      global.versions.fulcio: "v1.4.5"
       server.ingress.enabled: false
     asserts:
       - matchRegex:
@@ -115,7 +115,7 @@ tests:
     template: charts/kratos/templates/deployment-kratos.yaml
     set:
       global.registry.marketplace.enabled: true
-      global.registry.marketplace.versions.kratos: "v1.0.0-token-update"
+      global.versions.kratos: "v1.0.0-token-update"
       kratos.automigration.enabled: false
     asserts:
       - matchRegex:
@@ -126,7 +126,7 @@ tests:
     template: charts/tsa/templates/tsa-deployment.yaml
     set:
       global.registry.marketplace.enabled: true
-      global.registry.marketplace.versions.tsa: "v1.6.0"
+      global.versions.tsa: "v1.6.0"
       server.ingress.enabled: false
     asserts:
       - matchRegex:
@@ -137,7 +137,8 @@ tests:
     template: charts/kratos-selfservice-ui-node/templates/deployment.yaml
     set:
       global.registry.marketplace.enabled: true
-      global.registry.marketplace.versions.kratosUI: "v1.6.0"
+      global.versions.kratosUI: "v1.6.0"
+      kratos-selfservice-ui-node.nameOverride: "judge-kratos-self-service"
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image

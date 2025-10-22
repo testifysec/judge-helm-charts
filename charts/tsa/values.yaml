@@ -3,8 +3,24 @@ namespace:
   name: tsa-system
 nameOverride: "tsa"
 
+# Image configuration (normalized structure for helm golf)
+image:
+  # Set to empty string to enable global.registry.repository override
+  repository: ""
+  pullPolicy: IfNotPresent
+  # Tag managed via global.versions.tsa - defaults to Chart.AppVersion
+  tag: ""
+  pullSecrets:
+    - name: gcr-secret
+
 server:
   replicaCount: 1
+  # Schema requires server.image - keeping for compatibility
+  image:
+    registry: ""
+    repository: ""
+    pullPolicy: IfNotPresent
+    version: ""
   name: server
   svcPort: 80
   grpcSvcPort: 5554
@@ -13,15 +29,6 @@ server:
     production: false
   env:
     GOOGLE_APPLICATION_CREDENTIALS: /etc/tsa-config/cloud_credentials
-  image:
-    registry: us-east4-docker.pkg.dev
-    # Set to empty string to enable global.registry.repository override (for marketplace deployments)
-    repository: ""
-    pullPolicy: IfNotPresent
-    tag: "v1.2.0"
-    version: "v1.2.0"
-    pullSecrets:
-      - name: gcr-secret
   args:
     port: 5555
     # Valid values: tink, kms, file

@@ -934,30 +934,45 @@ false
 {{- end -}}
 
 {{/*
-Get image tag for a service from the new versions structure
+Get image tag for a service - simplified version management
 Usage: {{ include "judge.imageTag" (dict "service" "api" "context" .) }}
-Falls back to global.judgeImageTag for backward compatibility
+Precedence:
+1. global.versions.{service} - Explicit service version
+2. global.versions.platform - Platform-wide default for Judge services
+3. .Chart.AppVersion - Chart default
 */}}
 {{- define "judge.imageTag" -}}
 {{- $service := .service -}}
 {{- $context := .context -}}
-{{- if $context.Values.global.versions -}}
-  {{- if hasKey $context.Values.global.versions $service -}}
-    {{- if index $context.Values.global.versions $service -}}
-      {{- index $context.Values.global.versions $service -}}
-    {{- else if $context.Values.global.versions.platform -}}
-      {{- $context.Values.global.versions.platform -}}
-    {{- else -}}
-      {{- $context.Values.global.judgeImageTag | default "latest" -}}
+{{- $tag := "" -}}
+{{/* Check global.versions.{service} */}}
+{{- if $context.Values.global -}}
+  {{- if $context.Values.global.versions -}}
+    {{- if hasKey $context.Values.global.versions $service -}}
+      {{- $version := index $context.Values.global.versions $service -}}
+      {{- if ne $version "" -}}
+        {{- $tag = $version -}}
+      {{- end -}}
     {{- end -}}
-  {{- else if $context.Values.global.versions.platform -}}
-    {{- $context.Values.global.versions.platform -}}
-  {{- else -}}
-    {{- $context.Values.global.judgeImageTag | default "latest" -}}
   {{- end -}}
-{{- else -}}
-  {{- $context.Values.global.judgeImageTag | default "latest" -}}
 {{- end -}}
+{{/* Fallback: global.versions.platform */}}
+{{- if eq $tag "" -}}
+  {{- if $context.Values.global -}}
+    {{- if $context.Values.global.versions -}}
+      {{- if $context.Values.global.versions.platform -}}
+        {{- if ne $context.Values.global.versions.platform "" -}}
+          {{- $tag = $context.Values.global.versions.platform -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{/* Final fallback: Chart.AppVersion */}}
+{{- if eq $tag "" -}}
+  {{- $tag = $context.Chart.AppVersion -}}
+{{- end -}}
+{{- $tag -}}
 {{- end -}}
 
 {{/*

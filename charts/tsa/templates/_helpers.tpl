@@ -134,3 +134,47 @@ service:
   port:
     number: {{ $servicePort | int }}
 {{- end -}}
+
+
+
+{{/*
+Get image tag for a service - simplified version management
+Usage: {{ include "judge.imageTag" (dict "service" "api" "context" .) }}
+Precedence:
+1. global.versions.{service} - Explicit service version
+2. global.versions.platform - Platform-wide default for Judge services
+3. .Chart.AppVersion - Chart default
+*/}}
+{{- define "judge.imageTag" -}}
+{{- $service := .service -}}
+{{- $context := .context -}}
+{{- $tag := "" -}}
+{{/* Check global.versions.{service} */}}
+{{- if $context.Values.global -}}
+  {{- if $context.Values.global.versions -}}
+    {{- if hasKey $context.Values.global.versions $service -}}
+      {{- $version := index $context.Values.global.versions $service -}}
+      {{- if ne $version "" -}}
+        {{- $tag = $version -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{/* Fallback: global.versions.platform */}}
+{{- if eq $tag "" -}}
+  {{- if $context.Values.global -}}
+    {{- if $context.Values.global.versions -}}
+      {{- if $context.Values.global.versions.platform -}}
+        {{- if ne $context.Values.global.versions.platform "" -}}
+          {{- $tag = $context.Values.global.versions.platform -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{/* Final fallback: Chart.AppVersion */}}
+{{- if eq $tag "" -}}
+  {{- $tag = $context.Chart.AppVersion -}}
+{{- end -}}
+{{- $tag -}}
+{{- end -}}

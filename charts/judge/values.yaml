@@ -15,12 +15,12 @@ global:
     gateway: ""     # Gateway service
     web: ""         # Web UI service
 
-    # Supporting services (always explicit versions)
-    dex: "v2.43.1"                # OIDC provider
-    fulcio: "v1.4.5"              # Code signing CA
-    tsa: "v1.6.0"                 # Timestamp authority
-    kratos: "v1.0.0-token-update" # Identity service
-    kratosUI: "v1.6.0"            # Login UI
+    # Supporting services (set explicit versions in deployment values files)
+    dex: ""                       # OIDC provider
+    fulcio: ""                    # Code signing CA
+    tsa: ""                       # Timestamp authority
+    kratos: ""                    # Identity service
+    kratosUI: ""                  # Login UI
     dapr: "1.14.1"                # Dapr runtime
     preflight: "v1.6.0"           # Preflight checks
 
@@ -348,7 +348,7 @@ kratos-selfservice-ui-node:
   nameOverride: "judge-kratos-self-service"  # ECR repo name
   fullnameOverride: ""  # Remove fullnameOverride to ensure consistent {release}-{nameOverride} naming
   image:
-    tag: v1.6.0
+    tag: ""  # Tag managed via global.versions.kratosUI - defaults to Chart.AppVersion
   enabled: true
   # Kratos URLs derived from istio.hosts.kratos + global.domain
   # Override only if you need non-standard URLs
@@ -477,9 +477,13 @@ tsa:
   nameOverride: "judge-timestamp-server"  # ECR repo name
   enabled: true
   image:
-    tag: v1.6.0
-    version: v1.6.0
+    tag: ""  # Tag managed via global.versions.tsa - defaults to Chart.AppVersion
   server:
+    image:
+      registry: ""
+      repository: ""
+      pullPolicy: IfNotPresent
+      version: ""
     args:
       signer: memory
 
