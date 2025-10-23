@@ -20,9 +20,6 @@ dependencies:
 - name: judge-web
   repository: file://../judge-web
   version: 1.6.4
-- name: dex
-  repository: file://../dex
-  version: 0.17.7
 - name: fulcio
   repository: file://../fulcio
   version: 2.3.30
@@ -41,5 +38,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.1
-digest: sha256:4a87f4b15215e8c7fb8d39f9679d98be412f52ff7014af532b8706b4616f21ca
-generated: "2025-10-23T08:42:19.028283-05:00"
+digest: sha256:1b9fb3b64b48ad5574a202cea162cc4868110df07800d61b045e78f12d7807be
+generated: "2025-10-23T08:47:19.22353-05:00"

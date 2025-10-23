@@ -90,15 +90,6 @@ tests:
   # ============================================================================
   # Test 3: Marketplace ECR Images (using global.versions)
   # ============================================================================
-  - it: should use marketplace ECR for dex image
-    template: charts/dex/templates/deployment.yaml
-    set:
-      global.registry.marketplace.enabled: true
-      global.versions.dex: "v2.43.1"
-    asserts:
-      - matchRegex:
-          path: spec.template.spec.containers[0].image
-          pattern: "709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-dex:v2\\.43\\.1"
 
   - it: should use marketplace ECR for fulcio image
     template: charts/fulcio/templates/fulcio-deployment.yaml
