@@ -164,29 +164,6 @@ spec:
             port:
               number: 80
 ---
-# Dex VirtualService
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: {{ include "judge.fullname" . }}-dex-vs
-  namespace: {{ .Release.Namespace }}
-  labels:
-    {{- include "judge.labels" . | nindent 4 }}
-spec:
-  hosts:
-    - {{ include "judge.ingress.host.dex" . | quote }}
-  gateways:
-    - istio-system/main-gateway
-  http:
-    - match:
-        - uri:
-            prefix: "/"
-      route:
-        - destination:
-            host: {{ printf "%s-%s" .Release.Name (default "judge-dex" .Values.dex.nameOverride) }}
-            port:
-              number: 5556
----
 # TSA VirtualService
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService

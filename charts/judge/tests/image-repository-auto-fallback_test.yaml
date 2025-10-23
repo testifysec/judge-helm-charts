@@ -1,8 +1,6 @@
 suite: Image Repository Auto-Fallback (configuration pattern #2)
 templates:
   # Test with infrastructure subcharts that use judge.image.repository helper
-  - charts/dex/templates/deployment.yaml
-  - charts/dex/templates/secret.yaml
   - charts/fulcio/templates/fulcio-configmap.yaml
   - charts/fulcio/templates/fulcio-deployment.yaml
   - charts/tsa/templates/tsa-configmap.yaml
@@ -18,17 +16,6 @@ tests:
   # ==============================================================================
   # Test 1: Empty repository should auto-fallback to global.registry.repository
   # ==============================================================================
-  - it: should use global.registry.repository when dex image.repository is empty
-    template: charts/dex/templates/deployment.yaml
-    set:
-      global.registry.repository: "testifysec"
-      global.registry.url: "709825985650.dkr.ecr.us-east-1.amazonaws.com"
-      dex.image.repository: ""  # Explicitly empty
-    asserts:
-      - matchRegex:
-          path: spec.template.spec.containers[0].image
-          pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-dex:"
-
   - it: should use global.registry.repository when fulcio image.repository is empty
     template: charts/fulcio/templates/fulcio-deployment.yaml
     set:
@@ -54,35 +41,7 @@ tests:
           pattern: "^709825985650\\.dkr\\.ecr\\.us-east-1\\.amazonaws\\.com/testifysec/judge-timestamp-server:"
 
   # ==============================================================================
-  # Test 2: Unset repository should also auto-fallback
-  # ==============================================================================
-  - it: should use global.registry.repository when dex image.repository is not set
-    template: charts/dex/templates/deployment.yaml
-    set:
-      global.registry.repository: "my-org"
-      global.registry.url: "ghcr.io"
-      # dex.image.repository not set at all
-    asserts:
-      - matchRegex:
-          path: spec.template.spec.containers[0].image
-          pattern: "^ghcr\\.io/my-org/judge-dex:"
-
-  # ==============================================================================
-  # Test 3: Explicit repository should override global
-  # ==============================================================================
-  - it: should use explicit repository when dex image.repository is set
-    template: charts/dex/templates/deployment.yaml
-    set:
-      global.registry.repository: "testifysec"
-      global.registry.url: "ghcr.io"
-      dex.image.repository: "custom-org"  # Explicitly set
-    asserts:
-      - matchRegex:
-          path: spec.template.spec.containers[0].image
-          pattern: "^ghcr\\.io/custom-org/judge-dex:"
-
-  # ==============================================================================
-  # Test 4: Verify all infrastructure charts support auto-fallback
+  # Test 2: Verify all infrastructure charts support auto-fallback
   # ==============================================================================
   - it: should auto-fallback for kratos main container
     template: charts/kratos/templates/deployment-kratos.yaml

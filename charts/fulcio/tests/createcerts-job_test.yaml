@@ -39,9 +39,11 @@ tests:
           path: spec.template.metadata.annotations["sidecar.istio.io/inject"]
           value: "false"
 
-  - it: should not create Job when disabled
+  - it: should not create Job when pki mode is vault
     set:
-      createcerts.enabled: false
+      global:
+        pki:
+          mode: vault
     asserts:
       - hasDocuments:
           count: 0

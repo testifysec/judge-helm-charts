@@ -38,10 +38,6 @@ Priority: global.istio.hosts.{service} → default
 {{ include "judge.istio.host" (dict "service" "fulcio" "default" "fulcio" "context" .) }}
 {{- end -}}
 
-{{- define "judge.ingress.host.dex" -}}
-{{ include "judge.istio.host" (dict "service" "dex" "default" "dex" "context" .) }}
-{{- end -}}
-
 {{- define "judge.ingress.host.tsa" -}}
 {{ include "judge.istio.host" (dict "service" "tsa" "default" "tsa" "context" .) }}
 {{- end -}}

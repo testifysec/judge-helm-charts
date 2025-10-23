@@ -75,7 +75,7 @@ spec:
             - name: PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.server.secret }}
+                  name: {{ include "fulcio.pkiSecretName" . }}
                   key: password
           {{- end }}
           livenessProbe:
@@ -142,7 +142,7 @@ spec:
         {{- if eq .Values.server.args.certificateAuthority "fileca" }}
         - name: fulcio-cert
           secret:
-            secretName: {{ .Values.server.secret }}
+            secretName: {{ include "fulcio.pkiSecretName" . }}
             items:
               - key: private
                 path: key.pem

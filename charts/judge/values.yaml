@@ -18,7 +18,6 @@ global:
     web: ""         # Web UI service
 
     # Supporting services (set explicit versions in deployment values files)
-    dex: ""                       # OIDC provider
     fulcio: ""                    # Code signing CA
     tsa: ""                       # Timestamp authority
     kratos: ""                    # Identity service
@@ -49,7 +48,6 @@ global:
       web: "judge"         # Main Judge web UI
       api: "api"           # Judge API
       fulcio: "fulcio"     # Fulcio code signing CA
-      dex: "dex"           # Dex OIDC provider
       tsa: "tsa"           # Timestamp Authority
       kratos: "kratos"     # Kratos identity service
       login: "login"       # Login UI
@@ -222,6 +220,31 @@ global:
   # Required for proper Job management in ArgoCD (Jobs are immutable)
   argocd:
     enabled: false  # Set to true when deploying via ArgoCD
+
+  # Fulcio Code Signing Configuration
+  # Defines OIDC issuers that Fulcio trusts for issuing code signing certificates
+  # This is the SINGLE SOURCE OF TRUTH for all code signing identity providers
+  fulcio:
+    issuers:
+      # GitHub Actions OIDC for CI/CD signing
+      # Enable this to allow GitHub Actions workflows to sign artifacts
+      githubActions:
+        enabled: false  # Set to true to enable GitHub Actions signing
+        issuerUrl: "https://token.actions.githubusercontent.com"
+        clientId: "sigstore"
+        type: "ci-provider"
+        # When enabled, automatically configures:
+        # - OIDC token validation against GitHub's OIDC provider
+        # - Certificate extensions with workflow metadata (repo, ref, SHA, etc.)
+        # - Subject Alternative Name from workflow ref
+
+      # Kubernetes Service Account tokens for workload identity
+      # Enable this for in-cluster workloads to sign artifacts
+      kubernetes:
+        enabled: true  # Enabled by default for cluster workloads
+        metaPattern: "https://kubernetes.*.svc"
+        clientId: "sigstore"
+        # Matches any Kubernetes API server URL pattern (dev, staging, prod clusters)
 
   # Istio/Networking Configuration (Optional - for configuration pattern)
   # Uncomment to set hostnames globally instead of root-level istio.hosts
@@ -416,34 +439,6 @@ dapr:
       name: judge-dapr-daprd
     injectorImage:
       name: judge-dapr-sidecar-injector
-dex:
-  nameOverride: "judge-dex"  # ECR repo name
-  enabled: true
-  image:
-    tag: ""  # Tag managed via global.versions.dex
-  config:
-    issuer: https://dex.example.com
-    storage:
-      type: memory
-    logger:
-      level: debug
-      format: json
-    oauth2:
-      responseTypes: ["code"]
-      skipApprovalScreen: true
-      alwaysShowLoginScreen: true
-    staticClients:
-      - id: testifysec
-        public: true
-        name: "testifysec"
-    connectors:
-      - type: gitlab
-        id: gitlab-fulcio-test
-        name: Gitlab
-        config:
-          clientID: your-gitlab-client-id
-          clientSecret: your-gitlab-client-secret
-          redirectURI: https://dex.example.com/callback
 fulcio:
   nameOverride: "judge-fulcio"  # ECR repo name
   enabled: true

@@ -1,4 +1,4 @@
-{{- if .Values.createcerts.enabled }}
+{{- if (include "fulcio.createcertsEnabled" . | eq "true") }}
 apiVersion: batch/v1
 kind: Job
 metadata:

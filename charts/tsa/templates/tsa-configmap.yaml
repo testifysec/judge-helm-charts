@@ -14,7 +14,13 @@ data:
   chain.pem: {{ required "KMS PEM-encoded certificate chain is required" .Values.server.args.cert_chain | quote }}
   {{- end }}
   {{- if (eq .Values.server.args.signer "file") }}
+  {{- if .Values.server.args.cert_chain }}
   chain.pem: {{ .Values.server.args.cert_chain | quote }}
+  {{- else }}
+  # Certificate chain will be mounted from secret in vault mode
+  # Placeholder - actual chain comes from ExternalSecret pki secret
+  chain.pem: ""
+  {{- end }}
   {{- end }}
   {{- if and .Values.server.args.creds (ne .Values.server.args.creds "") }}
   cloud_credentials: {{ .Values.server.args.creds | quote }}

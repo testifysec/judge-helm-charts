@@ -1,0 +1,135 @@
+suite: test fulcio configmap contents
+templates:
+  - fulcio-configmap.yaml
+tests:
+  # Test 1: GitHub Actions issuer enabled via global.fulcio.issuers
+  - it: should render GitHub Actions OIDC issuer from global config
+    set:
+      global:
+        fulcio:
+          issuers:
+            githubActions:
+              enabled: true
+              issuerUrl: "https://token.actions.githubusercontent.com"
+              clientId: "sigstore"
+              type: "ci-provider"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'oidc-issuers:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'https://token.actions.githubusercontent.com:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'issuer-url: https://token.actions.githubusercontent.com'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'client-id: sigstore'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'type: ci-provider'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'ci-issuer-metadata:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'github-workflow:'
+
+  # Test 2: Kubernetes meta-issuer enabled
+  - it: should render Kubernetes meta-issuer from global config
+    set:
+      global:
+        fulcio:
+          issuers:
+            kubernetes:
+              enabled: true
+              metaPattern: "https://kubernetes.*.svc"
+              clientId: "sigstore"
+    asserts:
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'meta-issuers:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'https://kubernetes\.\*\.svc:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'type: kubernetes'
+
+  # Test 3: Both GitHub Actions and Kubernetes enabled
+  - it: should render both issuers when both enabled
+    set:
+      global:
+        fulcio:
+          issuers:
+            githubActions:
+              enabled: true
+              issuerUrl: "https://token.actions.githubusercontent.com"
+              clientId: "sigstore"
+              type: "ci-provider"
+            kubernetes:
+              enabled: true
+              metaPattern: "https://kubernetes.*.svc"
+              clientId: "sigstore"
+    asserts:
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'oidc-issuers:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'meta-issuers:'
+
+  # Test 4: Backward compatibility - config.contents override
+  - it: should use config.contents when provided (backward compat)
+    set:
+      config:
+        contents:
+          OIDCIssuers:
+            "https://dex.example.com":
+              IssuerURL: "https://dex.example.com"
+              ClientID: "testifysec"
+              Type: "email"
+    asserts:
+      - matchRegex:
+          path: data["config.json"]
+          pattern: 'OIDCIssuers'
+      - matchRegex:
+          path: data["config.json"]
+          pattern: 'https://dex.example.com'
+
+  # Test 5: Default fallback (minimal Kubernetes issuer)
+  - it: should render default minimal config when no issuers configured
+    asserts:
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'oidc-issuers:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'https://kubernetes.default.svc:'
+
+  # Test 6: Only GitHub Actions enabled (no Kubernetes)
+  - it: should render only GitHub Actions when Kubernetes disabled
+    set:
+      global:
+        fulcio:
+          issuers:
+            githubActions:
+              enabled: true
+              issuerUrl: "https://token.actions.githubusercontent.com"
+              clientId: "sigstore"
+              type: "ci-provider"
+            kubernetes:
+              enabled: false
+    asserts:
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'oidc-issuers:'
+      - matchRegex:
+          path: data["config.yaml"]
+          pattern: 'https://token.actions.githubusercontent.com:'
+      - notMatchRegex:
+          path: data["config.yaml"]
+          pattern: 'meta-issuers:'
