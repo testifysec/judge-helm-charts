@@ -210,26 +210,83 @@ service:
 
 {{/*
 Return the contents for fulcio config.
+Supports both new YAML format (from global.fulcio.issuers) and old JSON format (backward compat).
 */}}
 {{- define "fulcio.configmap.contents" -}}
 {{- if .Values.config.contents -}}
+{{/* Backward compatibility: use config.contents if provided (JSON format) */}}
 {{- toPrettyJson .Values.config.contents }}
+{{- else if and .Values.global .Values.global.fulcio -}}
+{{/* New YAML format from global.fulcio.issuers */}}
+{{- $issuers := dict -}}
+{{- $metaIssuers := dict -}}
+{{- $ciMetadata := dict -}}
+{{/* GitHub Actions issuer */}}
+{{- if and .Values.global.fulcio.issuers.githubActions .Values.global.fulcio.issuers.githubActions.enabled -}}
+{{- $gh := .Values.global.fulcio.issuers.githubActions -}}
+{{- $ghIssuer := dict
+  "issuer-url" $gh.issuerUrl
+  "client-id" $gh.clientId
+  "type" $gh.type
+  "ci-provider" "github-workflow"
+-}}
+{{- $_ := set $issuers $gh.issuerUrl $ghIssuer -}}
+{{/* GitHub workflow CI metadata */}}
+{{- $ghWorkflow := dict
+  "default-template-values" (dict "url" "https://github.com")
+  "extension-templates" (dict
+    "github-workflow-trigger" "event_name"
+    "github-workflow-sha" "sha"
+    "github-workflow-name" "workflow"
+    "github-workflow-repository" "repository"
+    "github-workflow-ref" "ref"
+    "build-signer-uri" "{{ .url }}/{{ .job_workflow_ref }}"
+    "build-signer-digest" "job_workflow_sha"
+    "runner-environment" "runner_environment"
+    "source-repository-uri" "{{ .url }}/{{ .repository }}"
+    "source-repository-digest" "sha"
+    "source-repository-ref" "ref"
+    "source-repository-identifier" "repository_id"
+    "source-repository-owner-uri" "{{ .url }}/{{ .repository_owner }}"
+    "source-repository-owner-identifier" "repository_owner_id"
+    "build-config-uri" "{{ .url }}/{{ .workflow_ref }}"
+    "build-config-digest" "workflow_sha"
+    "build-trigger" "event_name"
+    "run-invocation-uri" "{{ .url }}/{{ .repository }}/actions/runs/{{ .run_id }}/attempts/{{ .run_attempt }}"
+    "source-repository-visibility-at-signing" "repository_visibility"
+  )
+  "subject-alternative-name-template" "{{ .url }}/{{ .job_workflow_ref }}"
+-}}
+{{- $_ := set $ciMetadata "github-workflow" $ghWorkflow -}}
+{{- end -}}
+{{/* Kubernetes meta-issuer */}}
+{{- if and .Values.global.fulcio.issuers.kubernetes .Values.global.fulcio.issuers.kubernetes.enabled -}}
+{{- $k8s := .Values.global.fulcio.issuers.kubernetes -}}
+{{- $k8sIssuer := dict
+  "client-id" $k8s.clientId
+  "type" "kubernetes"
+-}}
+{{- $_ := set $metaIssuers $k8s.metaPattern $k8sIssuer -}}
+{{- end -}}
+{{/* Build final config */}}
+{{- $config := dict -}}
+{{- if gt (len $issuers) 0 -}}
+{{- $_ := set $config "oidc-issuers" $issuers -}}
+{{- end -}}
+{{- if gt (len $metaIssuers) 0 -}}
+{{- $_ := set $config "meta-issuers" $metaIssuers -}}
+{{- end -}}
+{{- if gt (len $ciMetadata) 0 -}}
+{{- $_ := set $config "ci-issuer-metadata" $ciMetadata -}}
+{{- end -}}
+{{- toYaml $config }}
 {{- else -}}
-{
-  "OIDCIssuers": {
-    "https://kubernetes.default.svc": {
-      "IssuerURL": "https://kubernetes.default.svc",
-      "ClientID": "sigstore",
-      "Type": "kubernetes"
-    }
-  },
-  "MetaIssuers": {
-    "https://kubernetes.*.svc": {
-      "ClientID": "sigstore",
-      "Type": "kubernetes"
-    }
-  }
-}
+{{/* Default: minimal Kubernetes issuer (YAML format) */}}
+oidc-issuers:
+  https://kubernetes.default.svc:
+    issuer-url: https://kubernetes.default.svc
+    client-id: sigstore
+    type: kubernetes
 {{- end -}}
 {{- end -}}
 

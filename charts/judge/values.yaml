@@ -223,6 +223,31 @@ global:
   argocd:
     enabled: false  # Set to true when deploying via ArgoCD
 
+  # Fulcio Code Signing Configuration
+  # Defines OIDC issuers that Fulcio trusts for issuing code signing certificates
+  # This is the SINGLE SOURCE OF TRUTH for all code signing identity providers
+  fulcio:
+    issuers:
+      # GitHub Actions OIDC for CI/CD signing
+      # Enable this to allow GitHub Actions workflows to sign artifacts
+      githubActions:
+        enabled: false  # Set to true to enable GitHub Actions signing
+        issuerUrl: "https://token.actions.githubusercontent.com"
+        clientId: "sigstore"
+        type: "ci-provider"
+        # When enabled, automatically configures:
+        # - OIDC token validation against GitHub's OIDC provider
+        # - Certificate extensions with workflow metadata (repo, ref, SHA, etc.)
+        # - Subject Alternative Name from workflow ref
+
+      # Kubernetes Service Account tokens for workload identity
+      # Enable this for in-cluster workloads to sign artifacts
+      kubernetes:
+        enabled: true  # Enabled by default for cluster workloads
+        metaPattern: "https://kubernetes.*.svc"
+        clientId: "sigstore"
+        # Matches any Kubernetes API server URL pattern (dev, staging, prod clusters)
+
   # Istio/Networking Configuration (Optional - for configuration pattern)
   # Uncomment to set hostnames globally instead of root-level istio.hosts
   # istio:
