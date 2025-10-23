@@ -60,3 +60,10 @@ secrets:
       - private
       - public
       - password
+
+# RBAC Configuration
+rbac:
+  # -- Specifies whether cluster-scoped RBAC resources (ClusterRole, ClusterRoleBinding) should be created.
+  # Set to false to comply with ArgoCD project RBAC policies that restrict ClusterRole creation.
+  # If disabled, the preflight job will still run but will have limited access to cluster-wide resources.
+  createClusterScoped: false

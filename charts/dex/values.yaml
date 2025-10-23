@@ -99,7 +99,8 @@ rbac:
 
   # -- Specifies which RBAC resources should be created.
   # If disabled, the operator is responsible for creating the necessary resources (ClusterRole and RoleBinding or CRD's)
-  createClusterScoped: true
+  # Set to false to comply with ArgoCD project RBAC policies that restrict ClusterRole creation
+  createClusterScoped: false
 
 # -- Annotations to be added to deployment.
 deploymentAnnotations: {}
