@@ -333,3 +333,27 @@ Precedence:
 {{- end -}}
 {{- $tag -}}
 {{- end -}}
+
+{{/*
+PKI Secret Name - Returns the appropriate secret name based on global.pki.mode
+Usage: {{ include "fulcio.pkiSecretName" . }}
+*/}}
+{{- define "fulcio.pkiSecretName" -}}
+{{- if and .Values.global .Values.global.pki (eq .Values.global.pki.mode "vault") -}}
+{{- printf "%s-pki" (include "fulcio.fullname" .) -}}
+{{- else -}}
+{{- .Values.server.secret | default "fulcio-server-secret" -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+PKI Mode Check - Returns true if createcerts should be enabled (dev mode)
+Usage: {{ include "fulcio.createcertsEnabled" . }}
+*/}}
+{{- define "fulcio.createcertsEnabled" -}}
+{{- if and .Values.global .Values.global.pki -}}
+{{- eq .Values.global.pki.mode "dev" -}}
+{{- else -}}
+{{- .Values.createcerts.enabled | default true -}}
+{{- end -}}
+{{- end -}}

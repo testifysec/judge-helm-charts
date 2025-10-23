@@ -66,7 +66,7 @@ spec:
           - name: PASSWORD
             valueFrom:
               secretKeyRef:
-                name: {{ .Values.server.secret }}
+                name: {{ include "tsa.pkiSecretName" . }}
                 key: password
 {{- end }}
 {{- else if eq .Values.server.args.signer "file" }}
@@ -74,7 +74,7 @@ spec:
           - name: PASSWORD
             valueFrom:
               secretKeyRef:
-                name: {{ .Values.server.secret }}
+                name: {{ include "tsa.pkiSecretName" . }}
                 key: password
 {{- end }}
           volumeMounts:
@@ -99,12 +99,26 @@ spec:
     {{- end }}
       volumes:
         - name: tsa-config
+          {{- if and (eq .Values.server.args.signer "file") (eq .Values.global.pki.mode "vault") }}
+          # Vault mode: Use projected volume to combine configmap + cert-chain from secret
+          projected:
+            sources:
+              - configMap:
+                  name: {{ template "tsa.config" . }}
+              - secret:
+                  name: {{ include "tsa.pkiSecretName" . }}
+                  items:
+                    - key: cert-chain
+                      path: chain.pem
+          {{- else }}
+          # Dev mode: Use configmap only
           configMap:
             name: {{ template "tsa.config" . }}
+          {{- end }}
         {{- if eq .Values.server.args.signer "file" }}
         - name: tsa-key
           secret:
-            secretName: {{ .Values.server.secret }}
+            secretName: {{ include "tsa.pkiSecretName" . }}
             items:
               - key: private
                 path: key.pem
