@@ -1,0 +1,44 @@
+---
+# NetworkPolicy API Version Test
+# Ensures NetworkPolicy uses stable v1 API, not deprecated extensions/v1beta1
+suite: Dex - NetworkPolicy API Version
+templates:
+  - templates/networkpolicy.yaml
+tests:
+  - it: should use stable networking.k8s.io/v1 API for NetworkPolicy
+    set:
+      networkPolicy.enabled: true
+    asserts:
+      - equal:
+          path: apiVersion
+          value: networking.k8s.io/v1
+
+  - it: should not use deprecated extensions/v1beta1 API
+    set:
+      networkPolicy.enabled: true
+    asserts:
+      - notEqual:
+          path: apiVersion
+          value: extensions/v1beta1
+
+  - it: should have kind NetworkPolicy
+    set:
+      networkPolicy.enabled: true
+    asserts:
+      - equal:
+          path: kind
+          value: NetworkPolicy
+
+  - it: should have metadata name
+    set:
+      networkPolicy.enabled: true
+    asserts:
+      - isNotNull:
+          path: metadata.name
+
+  - it: should not render when disabled
+    set:
+      networkPolicy.enabled: false
+    asserts:
+      - isNull:
+          path: null

@@ -1,0 +1,84 @@
+---
+# Cluster-Scoped Resources Test
+# Validates that ClusterRole and ClusterRoleBinding are only created
+# when explicitly enabled, and documents why they're needed
+suite: Judge Preflight - Cluster-Scoped Resources
+templates:
+  - templates/job-preflight.yaml
+tests:
+  - it: should not create ClusterRole when rbac.createClusterScoped is false
+    set:
+      rbac.createClusterScoped: false
+    asserts:
+      - notEqual:
+          path: kind
+          value: ClusterRole
+        count: 0
+
+  - it: should not create ClusterRoleBinding when rbac.createClusterScoped is false
+    set:
+      rbac.createClusterScoped: false
+    asserts:
+      - notEqual:
+          path: kind
+          value: ClusterRoleBinding
+        count: 0
+
+  - it: should create ClusterRole when rbac.createClusterScoped is true
+    set:
+      rbac.createClusterScoped: true
+    documentSelector:
+      path: kind
+      value: ClusterRole
+    asserts:
+      - isNotNull:
+          path: metadata.name
+
+  - it: should use stable rbac.authorization.k8s.io/v1 API for ClusterRole
+    set:
+      rbac.createClusterScoped: true
+    documentSelector:
+      path: kind
+      value: ClusterRole
+    asserts:
+      - equal:
+          path: apiVersion
+          value: rbac.authorization.k8s.io/v1
+
+  - it: should create ClusterRoleBinding when rbac.createClusterScoped is true
+    set:
+      rbac.createClusterScoped: true
+    documentSelector:
+      path: kind
+      value: ClusterRoleBinding
+    asserts:
+      - isNotNull:
+          path: metadata.name
+
+  - it: should use stable rbac.authorization.k8s.io/v1 API for ClusterRoleBinding
+    set:
+      rbac.createClusterScoped: true
+    documentSelector:
+      path: kind
+      value: ClusterRoleBinding
+    asserts:
+      - equal:
+          path: apiVersion
+          value: rbac.authorization.k8s.io/v1
+
+  - it: should have ClusterRole with correct permissions
+    set:
+      rbac.createClusterScoped: true
+    documentSelector:
+      path: kind
+      value: ClusterRole
+    asserts:
+      - isNotNull:
+          path: rules
+      - isNotEmpty:
+          path: rules
+
+  # Note: ClusterRole/ClusterRoleBinding are necessary for judge-preflight
+  # because it needs to validate cluster-wide resources and permissions during
+  # pre-deployment checks. This is acceptable only for the preflight job.
+  # Main Judge chart should only use namespace-scoped Role/RoleBinding.

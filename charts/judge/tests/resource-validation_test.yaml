@@ -1,0 +1,115 @@
+---
+# Resource Validation Tests - Judge Umbrella Chart
+# Ensures all resources use stable API versions and are namespace-scoped
+suite: Resource Validation - Judge Chart API Versions
+templates:
+  - templates/istio-gateway.yaml
+  - templates/istio-virtualservices.yaml
+  - templates/secretstores.yaml
+  - templates/dapr-pubsub.yaml
+  - templates/preview-certificate.yaml
+  - templates/kratos-config.yaml
+tests:
+  # Test 1: Istio Gateway uses stable v1beta1 (allowed for Istio)
+  - it: should use Istio Gateway API (networking.istio.io/v1beta1)
+    documentSelector:
+      path: kind
+      value: Gateway
+    asserts:
+      - equal:
+          path: apiVersion
+          value: networking.istio.io/v1beta1
+
+  # Test 2: VirtualServices use stable Istio API (v1beta1 allowed)
+  - it: should use Istio VirtualService API (networking.istio.io/v1beta1)
+    documentSelector:
+      path: kind
+      value: VirtualService
+    asserts:
+      - equal:
+          path: apiVersion
+          value: networking.istio.io/v1beta1
+
+  # Test 3: SecretStore uses stable external-secrets.io/v1 API
+  - it: should use stable SecretStore API (external-secrets.io/v1)
+    documentSelector:
+      path: kind
+      value: SecretStore
+    asserts:
+      - equal:
+          path: apiVersion
+          value: external-secrets.io/v1
+
+  # Test 4: Certificate uses stable cert-manager API (cert-manager.io/v1)
+  - it: should use stable Certificate API (cert-manager.io/v1)
+    documentSelector:
+      path: kind
+      value: Certificate
+    asserts:
+      - equal:
+          path: apiVersion
+          value: cert-manager.io/v1
+
+  # Test 5: Dapr Component uses allowed alpha API
+  - it: should use Dapr Component alpha API (dapr.io/v1alpha1)
+    documentSelector:
+      path: kind
+      value: Component
+    asserts:
+      - equal:
+          path: apiVersion
+          value: dapr.io/v1alpha1
+
+  # Test 6: ConfigMap uses stable v1 API
+  - it: should use stable ConfigMap API (v1)
+    documentSelector:
+      path: kind
+      value: ConfigMap
+    asserts:
+      - equal:
+          path: apiVersion
+          value: v1
+
+  # Test 7: All namespace-scoped resources have metadata.namespace
+  - it: should have metadata.namespace for Gateway
+    documentSelector:
+      path: kind
+      value: Gateway
+    asserts:
+      - isNotNull:
+          path: metadata.namespace
+      - notEqual:
+          path: metadata.namespace
+          value: ""
+
+  # Test 8: VirtualServices have namespace
+  - it: should have metadata.namespace for VirtualServices
+    documentSelector:
+      path: kind
+      value: VirtualService
+    asserts:
+      - isNotNull:
+          path: metadata.namespace
+      - notEqual:
+          path: metadata.namespace
+          value: ""
+
+  # Test 9: SecretStores have namespace
+  - it: should have metadata.namespace for SecretStore
+    documentSelector:
+      path: kind
+      value: SecretStore
+    asserts:
+      - isNotNull:
+          path: metadata.namespace
+      - notEqual:
+          path: metadata.namespace
+          value: ""
+
+  # Test 10: No deprecated API versions
+  - it: should not use deprecated extensions API
+    asserts:
+      - notMatchRegex:
+          path: apiVersion
+          pattern: "extensions/v1beta1"
+
