@@ -414,6 +414,12 @@ dapr:
   enabled: true
   # Dapr uses its own registry field to avoid conflicts with parent chart's global.registry
   registry: ghcr.io/dapr
+  # Dapr RBAC configuration
+  global:
+    rbac:
+      # Namespace-scoped RBAC is enabled by default for security
+      # Set to false if you need cluster-wide Dapr permissions
+      namespaced: true
   # Dapr pubsub configuration for SNS/SQS messaging
   pubsub:
     enabled: true

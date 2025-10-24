@@ -28,7 +28,9 @@ global:
   nodeSelector: {}
   tolerations: []
   rbac:
-    namespaced: false
+    # Namespace-scoped RBAC is enabled by default for security (removes cluster-wide permissions)
+    # Override with global.dapr.clusterWideRbac=true if you need cluster-wide permissions
+    namespaced: true
   ha:
     enabled: false
     replicaCount: 3
