@@ -411,9 +411,15 @@ judge-web:
     enabled: false  # Disabled by default - hardcoded service names cause issues with release prefixes
     clientMaxBodySize: "100M"
 dapr:
-  enabled: true
+  enabled: false  # Disabled by default (requires cluster-admin for CRDs/webhooks)
   # Dapr uses its own registry field to avoid conflicts with parent chart's global.registry
   registry: ghcr.io/dapr
+  # Dapr RBAC configuration
+  global:
+    rbac:
+      # Namespace-scoped RBAC is enabled by default for security
+      # Set to false if you need cluster-wide Dapr permissions
+      namespaced: true
   # Dapr pubsub configuration for SNS/SQS messaging
   pubsub:
     enabled: true
