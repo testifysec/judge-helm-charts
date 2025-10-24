@@ -30,7 +30,7 @@ serviceAccount:
   name: ""  # Leave empty for auto-generated name: {release-name}-judge-archivista
 
 dapr:
-  enabled: true  # Enable Dapr for pub/sub by default
+  enabled: false  # Disabled by default (requires cluster-admin for Dapr control plane)
 
 vault:
   enabled: false
