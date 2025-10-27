@@ -25,7 +25,7 @@ dependencies:
   version: 2.3.31
 - name: tsa
   repository: file://../tsa
-  version: 1.6.9
+  version: 1.6.10
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.1
@@ -38,5 +38,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.1
-digest: sha256:c24bf0cb290e2037e1de7b4323c0f8b9769add7ba52368eee2dbaee4f459bb5e
-generated: "2025-10-24T16:22:36.179087-05:00"
+digest: sha256:94f3d8bfb57705c186fe8ac0f75e80e3630341c52bfb0f4f337764328393eb11
+generated: "2025-10-27T09:25:17.291522-05:00"
