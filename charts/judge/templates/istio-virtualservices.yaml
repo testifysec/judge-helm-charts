@@ -141,13 +141,13 @@ spec:
             port:
               number: 8080
 ---
-# Fulcio gRPC VirtualService
-# Routes to native gRPC port (5554) to support witness keyless signing
-# Istio automatically handles HTTP/2 (gRPC) over HTTPS
+# Fulcio HTTP VirtualService
+# Routes to grpc-gateway on port 80 (→5555) which translates HTTP→gRPC
+# Enables witness keyless signing over HTTP/1.1 (Classic LB compatible)
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: {{ include "judge.fullname" . }}-fulcio-grpc-vs
+  name: {{ include "judge.fullname" . }}-fulcio-http-vs
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "judge.labels" . | nindent 4 }}
@@ -164,7 +164,7 @@ spec:
         - destination:
             host: {{ printf "%s-judge-fulcio-server" .Release.Name }}
             port:
-              number: 5554
+              number: 80
 ---
 # TSA VirtualService
 apiVersion: networking.istio.io/v1beta1
