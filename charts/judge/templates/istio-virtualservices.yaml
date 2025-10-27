@@ -185,7 +185,7 @@ spec:
             prefix: "/"
       route:
         - destination:
-            host: {{ printf "%s-judge-timestamp-server" .Release.Name }}
+            host: {{ printf "%s-judge-timestamp-server-serve" .Release.Name }}
             port:
               number: 80
 ---
