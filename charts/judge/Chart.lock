@@ -22,10 +22,10 @@ dependencies:
   version: 1.6.4
 - name: fulcio
   repository: file://../fulcio
-  version: 2.3.31
+  version: 2.3.32
 - name: tsa
   repository: file://../tsa
-  version: 1.6.9
+  version: 1.6.10
 - name: judge-ai-proxy
   repository: file://../judge-ai-proxy
   version: 0.1.1
@@ -38,5 +38,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.1
-digest: sha256:c24bf0cb290e2037e1de7b4323c0f8b9769add7ba52368eee2dbaee4f459bb5e
-generated: "2025-10-24T16:22:36.179087-05:00"
+digest: sha256:696369f68cfa130bac69c3ed3402c1fb4529bcdde135dce5a8807a5d99a9bfe5
+generated: "2025-10-27T09:33:39.221415-05:00"

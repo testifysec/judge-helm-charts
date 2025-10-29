@@ -63,24 +63,26 @@
             "type": "object",
             "default": {},
             "title": "The config Schema",
-            "required": [
-                "contents"
-            ],
+            "required": [],
             "properties": {
                 "contents": {
-                    "type": "object",
+                    "type": ["object", "null"],
                     "default": {},
                     "title": "The contents Schema",
                     "required": [],
                     "properties": {},
                     "examples": [
-                        {}
+                        {},
+                        null
                     ]
                 }
             },
             "examples": [
                 {
                     "contents": {}
+                },
+                {
+                    "contents": null
                 }
             ]
         },
