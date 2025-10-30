@@ -158,7 +158,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "kratos.secretname" . }}
-                  key: dsn
+                  key: {{ include "kratos.dsn.secretKey" . }}
           {{- if $migrationExtraEnv }}
             {{- toYaml $migrationExtraEnv | nindent 12 }}
           {{- end }}
@@ -229,7 +229,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ include "kratos.secretname" . }}
-                  key: dsn
+                  key: {{ include "kratos.dsn.secretKey" . }}
             - name: SECRETS_DEFAULT
               valueFrom:
                 secretKeyRef:

@@ -219,6 +219,7 @@ global:
         secretKey: ""     # Override default secret key
       kratos:
         secretName: ""    # Override default secret name
+        secretKey: ""     # Override default secret key (DSN)
 
   # Authentication Configuration (NEW - more accessible OIDC config)
   auth:
