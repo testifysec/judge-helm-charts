@@ -73,9 +73,13 @@ If release name contains chart name it will be used as a full name.
 
 {{/*
 Create a secret name which can be overridden.
+Configuration pattern: Supports global configuration via global.secrets.manual.kratos
+Priority: global.secrets.manual.kratos.secretName (if set) → local secret.nameOverride → default
 */}}
 {{- define "kratos.secretname" -}}
-{{- if .Values.secret.nameOverride -}}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.manual .Values.global.secrets.manual.kratos .Values.global.secrets.manual.kratos.secretName -}}
+{{- .Values.global.secrets.manual.kratos.secretName -}}
+{{- else if .Values.secret.nameOverride -}}
 {{- .Values.secret.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
 {{ include "kratos.fullname" . }}
@@ -94,6 +98,19 @@ Generate the dsn value
 */}}
 {{- define "kratos.dsn" -}}
 {{- .Values.kratos.config.dsn }}
+{{- end -}}
+
+{{/*
+Create the key for DSN secret
+Configuration pattern: Supports global configuration via global.secrets.manual.kratos
+Priority: global.secrets.manual.kratos.secretKey (if set) → default "dsn"
+*/}}
+{{- define "kratos.dsn.secretKey" -}}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.manual .Values.global.secrets.manual.kratos .Values.global.secrets.manual.kratos.secretKey -}}
+{{- .Values.global.secrets.manual.kratos.secretKey -}}
+{{- else -}}
+dsn
+{{- end -}}
 {{- end -}}
 
 {{/*

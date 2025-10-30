@@ -209,6 +209,18 @@ global:
         archivista: ""    # Leave empty to use computed name from release
         kratos: ""        # Leave empty to use computed name from release
 
+    # Manual secret configuration (when provider is not "vault")
+    manual:
+      judgeApi:
+        secretName: ""    # Override default secret name
+        secretKey: ""     # Override default secret key
+      archivista:
+        secretName: ""    # Override default secret name
+        secretKey: ""     # Override default secret key
+      kratos:
+        secretName: ""    # Override default secret name
+        secretKey: ""     # Override default secret key (DSN)
+
   # Authentication Configuration (NEW - more accessible OIDC config)
   auth:
     github:
