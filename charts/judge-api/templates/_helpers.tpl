@@ -4,9 +4,16 @@ Precedence: .Values.image.repository (if non-empty) → .Values.global.registry.
 */}}
 {{- define "judge.image.repository" -}}
 {{- $chartName := default .Chart.Name .Values.nameOverride }}
-{{- $registryUrl := coalesce ((.Values.image).registry) ((.Values.global).registry.url | default "") "ghcr.io" }}
+{{- $globalRegistryUrl := "" }}
+{{- $globalRepo := "" }}
+{{- if .Values.global }}
+{{- if .Values.global.registry }}
+{{- $globalRegistryUrl = .Values.global.registry.url | default "" }}
+{{- $globalRepo = .Values.global.registry.repository | default "" }}
+{{- end }}
+{{- end }}
+{{- $registryUrl := coalesce ((.Values.image).registry) $globalRegistryUrl "ghcr.io" }}
 {{- $localRepo := ((.Values.image).repository) | default "" }}
-{{- $globalRepo := ((.Values.global).registry.repository) | default "" }}
 {{- $repository := "" }}
 {{- if ne $localRepo "" }}
   {{- $repository = $localRepo }}
@@ -123,23 +130,43 @@ Priority: local serviceAccount.name → global.secrets.vault.serviceAccounts.jud
 
 {{/*
 Create the name of the secret to use for the connection string
+Configuration pattern: Supports global configuration via global.secrets.manual.judgeApi
+Priority: local sqlStore.secretName → global.secrets.manual.judgeApi.secretName → default
 */}}
 {{- define "judge-api.connectionStringSecret.name" -}}
 {{- if .Values.sqlStore.createSecret }}
 {{- default (include "judge-api.fullname" .) .Values.sqlStore.secretName }}
 {{- else }}
-{{- default (printf "%s-database" (include "judge-api.fullname" .)) .Values.sqlStore.secretName }}
+{{- $globalName := "" -}}
+{{- if and .Values.global (hasKey .Values.global "secrets") -}}
+  {{- if and .Values.global.secrets (hasKey .Values.global.secrets "manual") -}}
+    {{- if and .Values.global.secrets.manual (hasKey .Values.global.secrets.manual "judgeApi") -}}
+      {{- if hasKey .Values.global.secrets.manual.judgeApi "secretName" -}}
+        {{- $globalName = .Values.global.secrets.manual.judgeApi.secretName -}}
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- $localName := .Values.sqlStore.secretName | default "" -}}
+{{- $defaultName := printf "%s-database" (include "judge-api.fullname" .) -}}
+{{- coalesce $localName $globalName $defaultName -}}
 {{- end }}
 {{- end }}
 
 {{/*
 Create the key of the secret to use for the connection string
+Configuration pattern: Supports global configuration via global.secrets.manual.judgeApi
+Priority: global.secrets.manual.judgeApi.secretKey (if set) → local sqlStore.secretKey → default
 */}}
 {{- define "judge-api.connectionStringSecret.key" -}}
 {{- if .Values.sqlStore.createSecret }}
 {{- default "connectionstring" .Values.sqlStore.secretKey }}
 {{- else }}
-{{- .Values.sqlStore.secretKey }}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.manual .Values.global.secrets.manual.judgeApi .Values.global.secrets.manual.judgeApi.secretKey -}}
+{{- .Values.global.secrets.manual.judgeApi.secretKey -}}
+{{- else -}}
+{{- .Values.sqlStore.secretKey | default "connectionString" -}}
+{{- end -}}
 {{- end }}
 {{- end }}
 
