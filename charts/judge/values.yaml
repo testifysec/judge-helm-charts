@@ -209,6 +209,23 @@ global:
         archivista: ""    # Leave empty to use computed name from release
         kratos: ""        # Leave empty to use computed name from release
 
+  # S3 Bucket Name Overrides
+  # Allows customers to specify custom bucket names instead of the default {prefix}-{service} pattern
+  #
+  # Precedence order (highest to lowest):
+  #   1. Custom bucket name (e.g., global.buckets.judgeApi)
+  #   2. Default pattern (e.g., {aws.prefix}-judge)
+  #
+  # Example with custom buckets:
+  #   buckets:
+  #     judgeApi: "my-company-artifacts"
+  #     archivista: "my-company-attestations"
+  #
+  # If empty, uses default pattern: {aws.prefix}-judge and {aws.prefix}-archivista
+  buckets:
+    judgeApi: ""      # Override default: {aws.prefix}-judge
+    archivista: ""    # Override default: {aws.prefix}-archivista
+
   # Authentication Configuration (NEW - more accessible OIDC config)
   auth:
     github:

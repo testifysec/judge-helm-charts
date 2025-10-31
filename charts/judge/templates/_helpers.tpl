@@ -414,14 +414,23 @@ arn:aws:iam::{{ include "judge.aws.accountId" . }}:role/{{ include "judge.aws.pr
 
 {{/*
 AWS S3 Bucket Helpers
-Constructs: {prefix}-{service}
+Constructs: {prefix}-{service} or uses custom bucket name if provided
+Priority: global.buckets.{service} → {prefix}-{service}
 */}}
 {{- define "judge.aws.s3.judgeApiBucket" -}}
+{{- if and .Values.global.buckets .Values.global.buckets.judgeApi -}}
+{{ .Values.global.buckets.judgeApi }}
+{{- else -}}
 {{ include "judge.aws.prefix" . }}-judge
+{{- end -}}
 {{- end -}}
 
 {{- define "judge.aws.s3.archivistaBucket" -}}
+{{- if and .Values.global.buckets .Values.global.buckets.archivista -}}
+{{ .Values.global.buckets.archivista }}
+{{- else -}}
 {{ include "judge.aws.prefix" . }}-archivista
+{{- end -}}
 {{- end -}}
 
 {{/*
