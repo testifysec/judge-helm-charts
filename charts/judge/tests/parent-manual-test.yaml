@@ -1,0 +1,19 @@
+suite: Parent Chart Manual Secret Tests
+templates:
+  - charts/judge-api/templates/deployment.yaml
+
+tests:
+  - it: parent chart should pass manual values to judge-api subchart
+    template: charts/judge-api/templates/deployment.yaml
+    set:
+      global.secrets.provider: manual
+      global.secrets.manual.judgeApi.secretName: my-custom-db-secret
+      global.secrets.manual.judgeApi.secretKey: db-url
+      judge-api.vault.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="JUDGE_API_SQL_STORE_CONNECTION_STRING")].valueFrom.secretKeyRef.name
+          value: my-custom-db-secret
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="JUDGE_API_SQL_STORE_CONNECTION_STRING")].valueFrom.secretKeyRef.key
+          value: db-url

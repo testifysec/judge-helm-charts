@@ -1,0 +1,25 @@
+global:
+  secrets:
+    provider: manual
+    manual:
+      judgeApi:
+        secretName: my-custom-db-secret
+        secretKey: db-url
+      archivista:
+        secretName: my-custom-archivista-secret
+        secretKey: archivista-url
+      kratos:
+        secretName: my-custom-kratos-secret
+        secretKey: dsn
+
+judge-api:
+  vault:
+    enabled: false
+  sqlStore:
+    createSecret: false
+
+archivista:
+  enabled: false
+
+kratos:
+  enabled: false

@@ -76,7 +76,7 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       name: {{ include "kratos.secretname" . }}
-                      key: dsn
+                      key: {{ include "kratos.dsn.secretKey" . }}
               {{- end }}
                 {{- with $cleanupCronjobExtraEnv }}
                   {{- toYaml . | nindent 16 }}
