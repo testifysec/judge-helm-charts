@@ -1,0 +1,74 @@
+suite: Custom S3 Bucket Names
+templates:
+  - ../charts/judge-api/templates/deployment.yaml
+  - ../charts/archivista/templates/deployment.yaml
+
+tests:
+  # ============================================================================
+  # JUDGE-API BUCKET OVERRIDE TESTS
+  # ============================================================================
+
+  - it: should use default judge-api bucket name when no override provided
+    template: ../charts/judge-api/templates/deployment.yaml
+    set:
+      global.aws.enabled: true
+      global.aws.prefix: demo-judge
+      global.mode: aws
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="BLOB_STORE_BUCKET_NAME")].value
+          value: demo-judge-judge
+
+  - it: should use custom judge-api bucket name when override provided
+    template: ../charts/judge-api/templates/deployment.yaml
+    set:
+      global.aws.enabled: true
+      global.aws.prefix: demo-judge
+      global.mode: aws
+      global.buckets.judgeApi: my-company-artifacts
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="BLOB_STORE_BUCKET_NAME")].value
+          value: my-company-artifacts
+
+  # ============================================================================
+  # ARCHIVISTA BUCKET OVERRIDE TESTS
+  # ============================================================================
+
+  - it: should use default archivista bucket name when no override provided
+    template: ../charts/archivista/templates/deployment.yaml
+    set:
+      global.aws.enabled: true
+      global.aws.prefix: demo-judge
+      global.mode: aws
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_BUCKET_NAME")].value
+          value: demo-judge-archivista
+
+  - it: should use custom archivista bucket name when override provided
+    template: ../charts/archivista/templates/deployment.yaml
+    set:
+      global.aws.enabled: true
+      global.aws.prefix: demo-judge
+      global.mode: aws
+      global.buckets.archivista: my-company-attestations
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_BLOB_STORE_BUCKET_NAME")].value
+          value: my-company-attestations
+
+  # ============================================================================
+  # BACKWARD COMPATIBILITY TEST
+  # ============================================================================
+
+  - it: should work when global.buckets is not defined at all
+    template: ../charts/judge-api/templates/deployment.yaml
+    set:
+      global.aws.enabled: true
+      global.aws.prefix: demo-judge
+      global.mode: aws
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="BLOB_STORE_BUCKET_NAME")].value
+          value: demo-judge-judge

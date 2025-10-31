@@ -234,6 +234,41 @@ judge-api:
 
 **IMPORTANT**: You must create these IAM roles with appropriate S3, SNS, and SQS permissions. See [examples/terraform/aws/complete/](../../examples/terraform/aws/complete/) for complete infrastructure setup with Terraform.
 
+#### Custom S3 Bucket Names
+
+If you need to use existing S3 buckets or prefer custom bucket names instead of the default `{prefix}-{service}` pattern, you can override them using `global.buckets`:
+
+```yaml
+global:
+  aws:
+    prefix: "demo-judge"  # Still used for IAM roles, SNS/SQS
+
+  # Override S3 bucket names (optional)
+  buckets:
+    judgeApi: "my-company-artifacts"       # Instead of demo-judge-judge
+    archivista: "my-company-attestations"  # Instead of demo-judge-archivista
+```
+
+**When to use custom bucket names:**
+- Using existing S3 buckets from prior deployments
+- Corporate naming standards require specific bucket names
+- Sharing buckets across multiple Judge deployments
+- Bucket names must meet specific compliance requirements
+
+**Backward Compatibility:**
+- If `global.buckets.judgeApi` is empty or not defined, defaults to `{prefix}-judge`
+- If `global.buckets.archivista` is empty or not defined, defaults to `{prefix}-archivista`
+
+**Example with mixed naming:**
+```yaml
+global:
+  aws:
+    prefix: "prod-judge"
+  buckets:
+    judgeApi: "corporate-compliance-artifacts-2024"  # Custom name
+    archivista: ""  # Empty = use default: prod-judge-archivista
+```
+
 ### Database Architecture
 
 **CRITICAL REQUIREMENT: Separate Databases Per Service**
