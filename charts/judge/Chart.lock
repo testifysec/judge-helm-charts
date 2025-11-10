@@ -4,7 +4,7 @@ dependencies:
   version: 0.1.17
 - name: kratos
   repository: file://../kratos
-  version: 1.6.32
+  version: 1.6.33
 - name: kratos-selfservice-ui-node
   repository: file://../kratos-selfservice-ui-node
   version: 1.6.9
@@ -38,5 +38,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.1
-digest: sha256:b5d11e9bec25206bb4c82a4b0f4966852f8560a181dff2636798b8af848a64f1
-generated: "2025-11-10T01:35:44.795594-05:00"
+digest: sha256:5bdfacd663be40fc677f0c473024b68e629466ed7e69c76d5bca73af1426ad2c
+generated: "2025-11-10T01:56:30.364988-05:00"
