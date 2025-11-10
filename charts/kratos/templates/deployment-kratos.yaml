@@ -61,33 +61,166 @@ spec:
             - /bin/sh
             - -c
             - |
-              echo "=== Starting Kratos config processing ==="
-              echo "OIDC_GITHUB_CLIENT_ID=$OIDC_GITHUB_CLIENT_ID"
-              echo "OIDC_GITHUB_CLIENT_SECRET=$OIDC_GITHUB_CLIENT_SECRET"
+              set -e  # Exit on any error
 
-              # List source ConfigMap contents
-              echo "=== Source ConfigMap files at /etc/config/kratos ==="
-              ls -la /etc/config/kratos/
-              echo "=== Checking for jsonnet files ==="
-              find /etc/config/kratos -name "*.jsonnet" -exec ls -la {} \;
+              echo "========================================="
+              echo "Kratos Configuration Processor v2.0"
+              echo "========================================="
+              echo ""
 
-              # Process kratos.yaml with sed for credential substitution
-              echo "=== Processing kratos.yaml ==="
+              # Track errors
+              ERRORS=0
+
+              # Function to check environment variable
+              check_env_var() {
+                VAR_NAME=$1
+                VAR_VALUE=$(eval echo \$$VAR_NAME)
+
+                if [ -z "${VAR_VALUE}" ]; then
+                  echo "ERROR: ${VAR_NAME} is not set or empty"
+                  return 1
+                else
+                  # Show partial value for security (first 4 chars only)
+                  MASKED_VALUE=$(echo "${VAR_VALUE}" | cut -c1-4)
+                  echo "OK: ${VAR_NAME} is set (starts with: ${MASKED_VALUE}***)"
+                  return 0
+                fi
+              }
+
+              # Check if OIDC is enabled in config by looking for OIDC placeholder
+              OIDC_ENABLED=false
+              if grep -q '\${OIDC_GITHUB_CLIENT_ID}' /etc/config/kratos/kratos.yaml; then
+                OIDC_ENABLED=true
+              fi
+
+              # Check OIDC environment variables only if OIDC is enabled
+              if [ "$OIDC_ENABLED" = "true" ]; then
+                echo "=== OIDC is enabled - Checking Credentials ==="
+
+                if ! check_env_var "OIDC_GITHUB_CLIENT_ID"; then
+                  ERRORS=$((ERRORS + 1))
+                fi
+
+                if ! check_env_var "OIDC_GITHUB_CLIENT_SECRET"; then
+                  ERRORS=$((ERRORS + 1))
+                fi
+              else
+                echo "=== OIDC is disabled - Skipping credential checks ==="
+              fi
+
+              if [ $ERRORS -gt 0 ]; then
+                echo ""
+                echo "========================================="
+                echo "FATAL: Missing OIDC Credentials"
+                echo "========================================="
+                echo ""
+                echo "OIDC authentication is enabled in Kratos config,"
+                echo "but the GitHub OIDC credentials are not available."
+                echo ""
+                echo "TROUBLESHOOTING STEPS:"
+                echo ""
+                echo "1. Check if the Kratos secret exists:"
+                echo "   kubectl get secret -n {{ .Release.Namespace }} | grep kratos"
+                echo ""
+                echo "2. The secret should be named: {{ include "kratos.secretname" . }}"
+                echo ""
+                echo "3. Verify the secret has required keys:"
+                echo "   kubectl describe secret {{ include "kratos.secretname" . }} -n {{ .Release.Namespace }}"
+                echo ""
+                echo "   Should contain:"
+                echo "   - oidcGithubClientId"
+                echo "   - oidcGithubClientSecret"
+                echo ""
+                echo "4. If using External Secrets Operator:"
+                echo "   kubectl get externalsecret -n {{ .Release.Namespace }}"
+                echo "   kubectl describe externalsecret {{ include "kratos.fullname" . }} -n {{ .Release.Namespace }}"
+                echo ""
+                echo "5. Create the secret manually if needed:"
+                echo "   kubectl create secret generic {{ include "kratos.secretname" . }} \\"
+                echo "     -n {{ .Release.Namespace }} \\"
+                echo "     --from-literal=oidcGithubClientId='YOUR_CLIENT_ID' \\"
+                echo "     --from-literal=oidcGithubClientSecret='YOUR_SECRET'"
+                echo ""
+                echo "6. To disable OIDC (if not needed), set in values.yaml:"
+                echo "   kratos:"
+                echo "     kratos:"
+                echo "       config:"
+                echo "         selfservice:"
+                echo "           methods:"
+                echo "             oidc:"
+                echo "               enabled: false"
+                echo ""
+                echo "========================================="
+                exit 1
+              fi
+
+              echo ""
+              echo "=== Processing Configuration Files ==="
+
+              # Check source files exist
+              if [ ! -f "/etc/config/kratos/kratos.yaml" ]; then
+                echo "ERROR: Source kratos.yaml not found!"
+                exit 1
+              fi
+              echo "OK: Found source kratos.yaml"
+
+              # Process kratos.yaml with sed
+              echo "Processing kratos.yaml with credential substitution..."
               sed -e "s/\${OIDC_GITHUB_CLIENT_ID}/${OIDC_GITHUB_CLIENT_ID}/g" \
                   -e "s/\${OIDC_GITHUB_CLIENT_SECRET}/${OIDC_GITHUB_CLIENT_SECRET}/g" \
                   /etc/config/kratos/kratos.yaml > /etc/config/kratos-processed/kratos.yaml
-              echo "kratos.yaml processed successfully"
 
-              # Copy OIDC mapper files (github.jsonnet, gitlab.jsonnet, etc.)
-              echo "=== Copying mapper files ==="
-              cp /etc/config/kratos/github.jsonnet /etc/config/kratos-processed/ && echo "Copied github.jsonnet" || echo "FAILED to copy github.jsonnet"
-              cp /etc/config/kratos/gitlab.jsonnet /etc/config/kratos-processed/ && echo "Copied gitlab.jsonnet" || echo "FAILED to copy gitlab.jsonnet"
+              # Validate substitution worked
+              echo "Validating substitution..."
+              if grep -q '\${OIDC_GITHUB' /etc/config/kratos-processed/kratos.yaml; then
+                echo "ERROR: Some placeholders were not replaced:"
+                grep -n '\${OIDC_GITHUB' /etc/config/kratos-processed/kratos.yaml
+                exit 1
+              fi
+              echo "OK: All placeholders replaced successfully"
 
-              # Verify files were copied
-              echo "=== Target emptyDir volume contents ==="
+              # Validate YAML structure (check for empty values)
+              echo "Checking for empty client_id or client_secret..."
+              if grep -E "client_id:\s*$|client_secret:\s*$" /etc/config/kratos-processed/kratos.yaml > /dev/null; then
+                echo "ERROR: Empty client_id or client_secret detected!"
+                echo "This will cause Kratos validation to fail with nil values."
+                grep -n -E "client_id:|client_secret:" /etc/config/kratos-processed/kratos.yaml | head -5
+                exit 1
+              else
+                echo "OK: OIDC credentials appear to be set correctly"
+              fi
+
+              # Copy mapper files
+              echo ""
+              echo "=== Copying Mapper Files ==="
+              for file in github.jsonnet gitlab.jsonnet; do
+                if [ -f "/etc/config/kratos/${file}" ]; then
+                  cp "/etc/config/kratos/${file}" /etc/config/kratos-processed/
+                  echo "OK: Copied ${file}"
+                else
+                  echo "INFO: ${file} not found (may be optional)"
+                fi
+              done
+
+              # Final summary
+              echo ""
+              echo "=== Final Configuration Status ==="
               ls -la /etc/config/kratos-processed/
 
-              echo "=== Config processing complete ==="
+              echo ""
+              echo "========================================="
+              echo "Configuration Processing Complete"
+              echo "========================================="
+              echo ""
+              echo "Processed files:"
+              for file in /etc/config/kratos-processed/*; do
+                if [ -f "$file" ]; then
+                  echo "  - $(basename $file) ($(wc -l < $file | tr -d ' ') lines)"
+                fi
+              done
+              echo ""
+              echo "OK: Kratos configuration is ready"
+              echo ""
           volumeMounts:
             - name: {{ include "kratos.name" . }}-config-volume
               mountPath: /etc/config/kratos
