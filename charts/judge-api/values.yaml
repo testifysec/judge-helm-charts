@@ -1,6 +1,14 @@
 replicaCount: 1
 logLevel: "info"
 
+# Global values structure (for subchart to receive parent's global values)
+global:
+  secrets:
+    manual:
+      judgeApi:
+        secretName: ""
+        secretKey: ""
+
 image:
   registry: ""      # Inherit from global.registry.url (marketplace or custom)
   repository: ""    # Inherit from global.registry.repository

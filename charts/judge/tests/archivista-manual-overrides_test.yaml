@@ -1,0 +1,50 @@
+suite: Manual Secret Overrides - Archivista
+templates:
+  - ../charts/archivista/templates/deployment.yaml
+
+tests:
+  # ============================================================================
+  # ARCHIVISTA SECRET OVERRIDE TESTS
+  # ============================================================================
+
+  - it: should use custom archivista secret name when manual override provided
+    template: ../charts/archivista/templates/deployment.yaml
+    set:
+      global.secrets.provider: manual
+      global.secrets.manual.archivista.secretName: my-custom-archivista-secret
+      archivista.vault.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_SQL_STORE_CONNECTION_STRING")].valueFrom.secretKeyRef.name
+          value: my-custom-archivista-secret
+
+  - it: should use custom archivista secret key when manual override provided
+    template: ../charts/archivista/templates/deployment.yaml
+    set:
+      global.secrets.provider: manual
+      global.secrets.manual.archivista.secretKey: archivista-url
+      archivista.vault.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_SQL_STORE_CONNECTION_STRING")].valueFrom.secretKeyRef.key
+          value: archivista-url
+
+  - it: should use default archivista secret name when no manual override
+    template: ../charts/archivista/templates/deployment.yaml
+    set:
+      global.secrets.provider: manual
+      archivista.vault.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_SQL_STORE_CONNECTION_STRING")].valueFrom.secretKeyRef.name
+          value: RELEASE-NAME-judge-archivista-database
+
+  - it: should use default archivista secret key when no manual override
+    template: ../charts/archivista/templates/deployment.yaml
+    set:
+      global.secrets.provider: manual
+      archivista.vault.enabled: false
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="ARCHIVISTA_SQL_STORE_CONNECTION_STRING")].valueFrom.secretKeyRef.key
+          value: connectionString

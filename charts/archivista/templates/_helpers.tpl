@@ -123,22 +123,34 @@ Priority: local serviceAccount.name → global.secrets.vault.serviceAccounts.arc
 
 {{/*
 Create the name of the secret to use for the connection string
+Configuration pattern: Supports global configuration via global.secrets.manual.archivista
+Priority: global.secrets.manual.archivista.secretName (if set) → local sqlStore.secretName → default
 */}}
 {{- define "archivista.connectionStringSecret.name" -}}
 {{- if .Values.sqlStore.createSecret }}
 {{- default (include "archivista.fullname" .) .Values.sqlStore.secretName }}
 {{- else }}
-{{- default (printf "%s-database" (include "archivista.fullname" .)) .Values.sqlStore.secretName }}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.manual .Values.global.secrets.manual.archivista .Values.global.secrets.manual.archivista.secretName -}}
+{{- .Values.global.secrets.manual.archivista.secretName -}}
+{{- else -}}
+{{- .Values.sqlStore.secretName | default (printf "%s-database" (include "archivista.fullname" .)) -}}
+{{- end -}}
 {{- end }}
 {{- end }}
 {{/*
 Create the key of the secret to use for the connection string
+Configuration pattern: Supports global configuration via global.secrets.manual.archivista
+Priority: global.secrets.manual.archivista.secretKey (if set) → local sqlStore.secretKey → default
 */}}
 {{- define "archivista.connectionStringSecret.key" -}}
 {{- if .Values.sqlStore.createSecret }}
 {{- default "connectionstring" .Values.sqlStore.secretKey }}
 {{- else }}
-{{- .Values.sqlStore.secretKey }}
+{{- if and .Values.global .Values.global.secrets .Values.global.secrets.manual .Values.global.secrets.manual.archivista .Values.global.secrets.manual.archivista.secretKey -}}
+{{- .Values.global.secrets.manual.archivista.secretKey -}}
+{{- else -}}
+{{- .Values.sqlStore.secretKey | default "connectionString" -}}
+{{- end -}}
 {{- end }}
 {{- end }}
 
