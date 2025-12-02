@@ -236,6 +236,39 @@ eks.amazonaws.com/role-arn: arn:aws:iam::{{ $accountId }}:role/{{ $prefix }}-{{ 
 {{- end -}}
 
 {{/*
+Create the name of the secret to use for OIDC GitHub configuration
+*/}}
+{{- define "judge-api.oidcGithubSecret.name" -}}
+{{- if .Values.oidcGithub.createSecret }}
+{{- default (printf "%s-oidc-github" (include "judge-api.fullname" .)) .Values.oidcGithub.secretName }}
+{{- else }}
+{{- .Values.oidcGithub.secretName }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create the key of the secret to use for the OIDC GitHub client ID
+*/}}
+{{- define "judge-api.oidcGithubSecret.clientIdKey" -}}
+{{- if .Values.oidcGithub.createSecret }}
+{{- default "clientId" .Values.oidcGithub.clientIdKey }}
+{{- else }}
+{{- .Values.oidcGithub.clientIdKey }}
+{{- end }}
+{{- end }}
+
+{{/*
+Create the key of the secret to use for the OIDC GitHub private key
+*/}}
+{{- define "judge-api.oidcGithubSecret.privateKeyKey" -}}
+{{- if .Values.oidcGithub.createSecret }}
+{{- default "privateKey" .Values.oidcGithub.privateKeyKey }}
+{{- else }}
+{{- .Values.oidcGithub.privateKeyKey }}
+{{- end }}
+{{- end }}
+
+{{/*
 Service URL helper for Kratos Admin (fallback for standalone lint)
 */}}
 {{- define "judge.service.kratosAdminUrl" -}}
