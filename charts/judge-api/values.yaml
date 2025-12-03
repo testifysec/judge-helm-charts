@@ -90,6 +90,16 @@ secret:
   apiKey: "" # Your Anthropic API key (required if create is true)
   existingSecret: "" # Name of existing secret to use instead of creating one
 
+# OIDC GitHub App configuration for authentication
+oidcGithub:
+  enabled: false
+  createSecret: false  # Set to true to create a secret from values
+  secretName: ""  # Name of the secret (auto-generated if not specified)
+  clientIdKey: "clientId"  # Key name for client ID in the secret
+  privateKeyKey: "privateKey"  # Key name for private key in the secret
+  clientId: ""  # GitHub App Client ID (required if createSecret is true)
+  privateKey: ""  # GitHub App Private Key in PEM format (required if createSecret is true)
+
 serviceAccount:
   create: true  # Enable by default for IRSA support
   annotations: {}
