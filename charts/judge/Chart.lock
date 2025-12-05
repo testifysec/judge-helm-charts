@@ -7,7 +7,7 @@ dependencies:
   version: 1.6.35
 - name: kratos-selfservice-ui-node
   repository: file://../kratos-selfservice-ui-node
-  version: 1.6.9
+  version: 1.6.10
 - name: archivista
   repository: file://../archivista
   version: 1.6.20
@@ -38,5 +38,5 @@ dependencies:
 - name: preview-router
   repository: file://../preview-router
   version: 0.1.1
-digest: sha256:809037a44667af3f103b50e21a17fee99d22889ad5a55914a91fd4d227a70d0a
-generated: "2025-11-10T02:42:06.341051-05:00"
+digest: sha256:bb403f2f8194986a44763ecbaa19ae94a81a95e161a4d48313c51179827577e2
+generated: "2025-12-05T11:34:42.715708-05:00"
