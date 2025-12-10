@@ -1,6 +1,6 @@
 # Cross-Account IAM Trust Relationship Analysis
 **Accounts Investigated:**
-- **Source Account (Current)**: 831646886084 (conda-demo)
+- **Source Account (Current)**: 831646886084 (demo)
 - **Target Account (Marketplace)**: 709825985650 (AWS Marketplace ECR)
 - **Internal ECR Account**: 178674732984 (TestifySec Master/Organization Root)
 
@@ -8,7 +8,7 @@
 
 **Organization ID**: o-zpnf5rfjh0
 **Master Account**: 178674732984 (cto@testifysec.com)
-**Member Account**: 831646886084 (conda-demo)
+**Member Account**: 831646886084 (demo)
 **Features**: All features enabled, SCPs enabled
 
 **Note**: Account 709825985650 is NOT part of the TestifySec organization - it's the AWS Marketplace vendor account.
@@ -290,7 +290,7 @@ For comparison (Internal ECR - Working):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ Account 831646886084 (conda-demo)                           │
+│ Account 831646886084 (demo)                                 │
 │                                                              │
 │  ┌──────────────────────────────────────┐                   │
 │  │ IRSA Role: demo-judge-image-pull     │                   │

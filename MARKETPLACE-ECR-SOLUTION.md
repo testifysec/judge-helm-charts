@@ -21,11 +21,11 @@ When attempting to deploy Judge platform using marketplace container images, the
 
 The solution consists of **3 independent fixes** that work together:
 
-### Part 1: Values File Override (cust-anaconda-values)
+### Part 1: Values File Override (judge-platform-values)
 **Purpose**: Provide immediate marketplace deployment capability without modifying Helm charts
 **Fix**: Set `image.repository: ""` for marketplace services to enable global registry cascade
 
-### Part 2: Terraform IAM Configuration (cust-anaconda-terraform-aws)
+### Part 2: Terraform IAM Configuration (judge-terraform-aws)
 **Purpose**: Enable kubelet (node-level) image pulling from marketplace ECR
 **Fix**: Add marketplace ECR account (709825985650) to node IAM policy
 
@@ -84,7 +84,7 @@ Resource = [
 
 ### Part 1: Values File Changes
 
-**File**: `/Users/nkennedy/proj/cust/conda/repos/cust-anaconda-values/values/staging-marketplace-values.yaml`
+**File**: `judge-platform-values/values/staging-marketplace-values.yaml`
 
 Added for 5 marketplace services:
 ```yaml
@@ -118,7 +118,7 @@ kratos-selfservice-ui-node:
 
 ### Part 2: Terraform IAM Policy Changes
 
-**File**: `/Users/nkennedy/proj/cust/conda/repos/cust-anaconda-terraform-aws/modules/ecr-cross-account/main.tf`
+**File**: `judge-terraform-aws/modules/ecr-cross-account/main.tf`
 
 **Changes**:
 - Updated module description (lines 1-5)
@@ -140,7 +140,7 @@ Resource = [
 ]
 ```
 
-**Commit**: `051e926` (cust-anaconda-terraform-aws repo)
+**Commit**: `051e926` (judge-terraform-aws repo)
 **Applied**: `terraform apply -target=module.ecr_cross_account` ✅
 
 ### Part 3: Subchart Default Changes
@@ -210,7 +210,7 @@ kubectl describe pod judge-platform-staging-marketplace-judge-dex-* -n staging-m
 
 ```bash
 # 1. Set environment
-export AWS_PROFILE=conda-demo
+export AWS_PROFILE=demo
 kubectl config use-context arn:aws:eks:us-east-1:831646886084:cluster/demo-judge
 
 # 2. Apply marketplace values
@@ -340,7 +340,7 @@ helm dependency update charts/judge
 | Part | Repository | Commit | Change | Status |
 |------|------------|--------|--------|--------|
 | 1 | judge-platform-values | `76cd864` | Add empty repository to 5 subcharts | ✅ Pushed |
-| 2 | cust-anaconda-terraform-aws | `051e926` | Add marketplace ECR to node IAM policy | ✅ Applied |
+| 2 | judge-terraform-aws | `051e926` | Add marketplace ECR to node IAM policy | ✅ Applied |
 | 3 | judge-helm-charts | `a2ac734` | Set subchart defaults + version bumps | ✅ Pushed |
 
 ---
@@ -348,8 +348,8 @@ helm dependency update charts/judge
 ## Related Documentation
 
 - **Helm Charts**: `charts/judge/PUBLIC-ECR-MIGRATION.md`
-- **Values Configuration**: `cust-anaconda-values/CLAUDE.md`
-- **Terraform Configuration**: `cust-anaconda-terraform-aws/CLAUDE.md`
+- **Values Configuration**: `judge-platform-values/CLAUDE.md`
+- **Terraform Configuration**: `judge-terraform-aws/CLAUDE.md`
 - **Platform Architecture**: `judge/.grc/platform-architecture.md`
 
 ---

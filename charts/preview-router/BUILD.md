@@ -9,7 +9,7 @@ Open Docker Desktop app and ensure it's running properly.
 
 ### 2. Authenticate to ECR
 ```bash
-export AWS_PROFILE=conda-demo
+export AWS_PROFILE=demo
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 178674732984.dkr.ecr.us-east-1.amazonaws.com
 ```
 
@@ -21,7 +21,7 @@ aws ecr create-repository --repository-name preview-router --region us-east-1
 
 ### 4. Build the Docker Image
 ```bash
-cd /Users/nkennedy/proj/cust/conda/repos/judge-helm-charts/charts/preview-router
+cd charts/preview-router
 docker build -t preview-router:v0.1.0 .
 ```
 
@@ -41,7 +41,7 @@ docker push 178674732984.dkr.ecr.us-east-1.amazonaws.com/preview-router:latest
 
 ### 1. Apply Terraform Changes for DNS
 ```bash
-cd /Users/nkennedy/proj/cust/conda/repos/cust-anaconda-terraform-aws
+cd judge-terraform-aws
 terraform apply -target=module.route53
 ```
 
@@ -65,7 +65,7 @@ git add charts/preview-router
 git commit -m "feat: add preview-router for preview environment authentication"
 git push
 
-# In cust-anaconda-terraform-aws repo
+# In judge-terraform-aws repo
 git add modules/route53/main.tf
 git commit -m "feat: add DNS record for preview subdomain"
 git push

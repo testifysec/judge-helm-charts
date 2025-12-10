@@ -33,10 +33,10 @@
 ### 1. Build and Push Docker Image
 ```bash
 # After Docker Desktop is working:
-cd /Users/nkennedy/proj/cust/conda/repos/judge-helm-charts/charts/preview-router
+cd charts/preview-router
 
 # Authenticate to ECR
-export AWS_PROFILE=conda-demo
+export AWS_PROFILE=demo
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 178674732984.dkr.ecr.us-east-1.amazonaws.com
 
 # Create ECR repository if needed
@@ -55,7 +55,7 @@ docker push 178674732984.dkr.ecr.us-east-1.amazonaws.com/preview-router:latest
 
 ### 2. Apply Terraform DNS Changes
 ```bash
-cd /Users/nkennedy/proj/cust/conda/repos/cust-anaconda-terraform-aws
+cd judge-terraform-aws
 
 # Review changes
 terraform plan -target=module.route53

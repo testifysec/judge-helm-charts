@@ -94,15 +94,13 @@ judge-platform-staging-marketplace-judge-fulcio-createcertt97q4        0/1 Compl
 
 ## Working Repositories
 
-### 1. judge-helm-charts (Upstream - Active Development)
-- **Path**: `/Users/nkennedy/proj/cust/conda/repos/judge-helm-charts`
-- **Remote**: `upstream` → `git@github.com:testifysec/judge-helm-charts.git`
+### 1. judge-helm-charts (Active Development)
+- **Remote**: `git@github.com:testifysec/judge-helm-charts.git`
 - **Branch**: `feature/eso-vault-integration`
 - **PR**: https://github.com/testifysec/judge-helm-charts/pull/1
 - **Purpose**: Upstream PR with ESO/Vault integration, SecretStore templates, architecture diagrams
 
 ### 2. judge-platform-values (Private Values Repository)
-- **Path**: `/Users/nkennedy/proj/cust/conda/repos/cust-anaconda-values`
 - **Remote**: `origin` → `git@github.com:testifysec/judge-platform-values.git`
 - **Branch**: `main`
 - **Purpose**: AWS-specific configuration values (accounts, regions, IAM roles, S3 buckets)
@@ -112,8 +110,7 @@ judge-platform-staging-marketplace-judge-fulcio-createcertt97q4        0/1 Compl
   - `argocd/judge-application.yaml` - ArgoCD Application manifest
 - **ArgoCD Source**: Values source (Source 2)
 
-### 3. cust-anaconda-terraform-aws (Infrastructure)
-- **Path**: `/Users/nkennedy/proj/cust/conda/repos/cust-anaconda-terraform-aws`
+### 3. judge-terraform-aws (Infrastructure)
 - **Purpose**: Terraform modules for AWS infrastructure
 - **Key Modules**:
   - `modules/vault-config/` - Vault Kubernetes auth roles
@@ -236,7 +233,7 @@ Vault must be configured with:
 - **Database Secrets Engine**: For dynamic credentials (optional)
 - **KV v2 Secrets Engine**: Mounted at `/secret`
 
-Example Terraform: See `cust-anaconda-terraform-aws/modules/vault-config/`
+Example Terraform: See `judge-terraform-aws/modules/vault-config/`
 
 ### 3. Service Accounts
 
@@ -313,7 +310,6 @@ Each Judge service MUST have its own PostgreSQL database:
 
 - **EKS Cluster**: `demo-judge` in AWS account `831646886084`
   - Region: `us-east-1`
-  - AWS Profile: `conda-demo`
   - Kubectl context: `arn:aws:eks:us-east-1:831646886084:cluster/demo-judge`
 
 - **RDS PostgreSQL**: `demo-judge-postgres.cenw4a6wen6f.us-east-1.rds.amazonaws.com`

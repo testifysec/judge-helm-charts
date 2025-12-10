@@ -411,8 +411,8 @@ To switch from AWS to GCP, customers only need to:
 
 ## Relationship to Other Repos
 
-1. **Deployed to**: `cust-anaconda-terraform-aws` (EKS cluster)
-2. **Managed by**: `cust-anaconda-gitops` (ArgoCD applications)
+1. **Deployed to**: EKS cluster (managed by Terraform)
+2. **Managed by**: ArgoCD applications
 3. **Linked to**: Epic #1947, Issue #1946 (Istio Service Mesh Testing)
 
 ## Deployment Workflow
@@ -425,7 +425,7 @@ helm dependency update charts/judge
 helm install judge charts/judge \
   --namespace judge \
   --create-namespace \
-  --values values-anaconda.yaml
+  --values values.yaml
 
 # 3. Verify Istio injection
 kubectl get pods -n judge -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[*].name}{"\n"}{end}'
@@ -443,11 +443,11 @@ ArgoCD Application referencing these charts:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: judge-anaconda
+  name: judge-platform
   namespace: argocd
 spec:
   source:
-    repoURL: https://github.com/testifysec/cust-anaconda-helm-charts
+    repoURL: https://github.com/testifysec/judge-helm-charts
     targetRevision: main
     path: charts/judge
     helm:

@@ -17,7 +17,7 @@ In Route53:
 - Value: Get from `kubectl -n istio-system get svc istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'`
 
 ### 3. Enable in Values (2 min)
-Edit `cust-anaconda-values/values/base-values.yaml`:
+Edit `judge-platform-values/values/base-values.yaml`:
 ```yaml
 preview-router:
   enabled: true
@@ -28,7 +28,7 @@ preview-router:
 # In judge-helm-charts
 git add -A && git commit -m "feat: add preview-router" && git push
 
-# In cust-anaconda-values
+# In judge-platform-values
 git add -A && git commit -m "values: enable preview-router" && git push
 
 # Deploy

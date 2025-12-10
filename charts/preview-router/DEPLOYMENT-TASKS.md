@@ -65,7 +65,7 @@ spec:
 _Once infrastructure is ready_
 
 ### 2.1 Enable in Values
-- [ ] Edit: `cust-anaconda-values/values/base-values.yaml`
+- [ ] Edit: `judge-platform-values/values/base-values.yaml`
 ```yaml
 preview-router:
   enabled: true
@@ -81,7 +81,7 @@ preview-router:
   git commit -m "feat: add preview-router for preview environment authentication"
   git push origin feature/eso-vault-integration
   ```
-- [ ] In `cust-anaconda-values`:
+- [ ] In `judge-platform-values`:
   ```bash
   git add values/base-values.yaml
   git commit -m "values: enable preview-router"
